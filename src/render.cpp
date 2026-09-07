@@ -364,15 +364,33 @@ void Renderer::background(int theme, float camera, float time) {
   sprite(worlds, theme, -drift, 0, W, H, mirrored);
   sprite(worlds, theme, W - drift, 0, W, H, !mirrored);
   rect(0, 0, W, H, 0x0A182A28);
-  // Reuse the authored industrial tile atlas as a soft middle-distance pass.
-  // These panels move at 34% of camera speed, between the painted world and
-  // the gameplay plane, giving the large background shapes a measurable depth.
+  // Thin diagonal shafts and fog bands suggest volumetric light without a
+  // shader. The slow travel rate keeps them attached to the distant scene.
+  uint32_t shaft = theme == 1   ? 0x72D7CE18
+                   : theme == 4 ? 0x7BCDEB1C
+                   : theme == 3 ? 0xF4785916
+                   : theme == 5 ? 0xF48A4717
+                                 : 0xF4C46A14;
+  for (int i = 0; i < 4; i++) {
+    float x = std::fmod(i * 173.0f - camera * .12f + 560.0f, 620.0f) - 70.0f;
+    float lean = 22.0f + (i % 3) * 14.0f;
+    for (int j = 0; j < 9; j++) {
+      float t = (j - 4) / 8.0f;
+      line(x + t * 28.0f, 34, x + lean + t * 118.0f, 203, shaft);
+    }
+  }
+  // A soft middle-distance silhouette pass moves at 34% of camera speed,
+  // between the painted world and the gameplay plane. It stays geometric and
+  // low contrast so the authored background remains the visual anchor.
   float midTravel = camera * .34f - time * (theme == 2 ? 5.0f : 2.0f);
   for (int i = 0; i < 6; i++) {
     float x = std::fmod(i * 137.0f - midTravel + 700.0f, 620.0f) - 80.0f;
     float y = 148.0f + (i % 3) * 13.0f;
-    sprite(props, (theme + i) % 6, x, y, 94, 43, false, 0, 34);
-    rect(x + 7, y + 39, 80, 2, theme == 4 ? 0x5DBDD655 : 0xD28B4A44);
+    uint32_t silhouette = theme == 1 || theme == 4 ? 0x102C3838 : 0x151C2738;
+    rect(x, y, 94, 43, silhouette);
+    rect(x + 7, y + 8, 80, 2, theme == 4 ? 0x5DBDD63A : 0xD28B4A32);
+    rect(x + 18, y + 15, 12, 20, theme == 1 ? 0x1B4B5140 : 0x22263240);
+    rect(x + 48, y + 15, 24, 20, theme == 3 ? 0x6A2A2038 : 0x25323A38);
   }
   // Slow second-depth silhouettes keep scrolling distinct from the far scenery.
   for (int i = 0; i < 6; i++) {
@@ -441,6 +459,51 @@ void Renderer::foregroundDepth(int theme, float camera, float time) {
     rect(x + sway - 3, 120 + (i % 2) * 22, 7, 5, 0x1D2B32BB);
   }
 }
+void Renderer::lightingPass(const Game &g, float camera, float time, float alpha) {
+  const int theme = g.levelIndex;
+  uint32_t wash = theme == 1   ? 0x12343B12
+                  : theme == 4 ? 0x0E243516
+                  : theme == 3 ? 0x3A171412
+                  : theme == 5 ? 0x32171914
+                                : 0x2B211512;
+  // A restrained ambient grade leaves the authored backgrounds moody while
+  // keeping HUD and gameplay sprites at their original contrast.
+  rect(0, 27, W, 242, wash);
+  for (int i = 0; i < 7; i++) {
+    uint8_t a = uint8_t(8 + i * 4);
+    rect(0, 27, 7 + i * 3, 242, 0x050B1200 | a);
+    rect(W - 7 - i * 3, 27, 7 + i * 3, 242, 0x050B1200 | a);
+    rect(0, 265 - i * 2, W, 2, 0x050B1200 | uint8_t(a * .8f));
+  }
+  auto glow = [&](float x, float y, float radius, uint32_t color) {
+    for (int i = 6; i >= 1; i--) {
+      float t = i / 6.0f;
+      uint8_t a = uint8_t((1.0f - t) * 28 + 5);
+      ring(x, y, radius * t, radius * .62f * t, (color & 0xFFFFFF00) | a);
+    }
+    rect(x - 2, y - 2, 4, 4, (color & 0xFFFFFF00) | 148);
+  };
+  // Practical lamps repeat with the same period as the middle-distance tiles.
+  for (int i = 0; i < 9; i++) {
+    float x = std::fmod(i * 67.0f - camera * .78f + 700.0f, 540.0f) - 20.0f;
+    bool lit = (int(time * 2.0f) + i + theme) % 4 != 0;
+    if (lit) {
+      uint32_t point = theme == 1 || theme == 4 ? 0x82DCC700 : 0xF4A34A00;
+      glow(x + 1, 204 + (i % 3) * 3, theme == 4 ? 8.0f : 6.0f, point);
+    }
+  }
+  float px = between(g.player.prevX, g.player.x, alpha) - camera;
+  if (g.player.recoil > 0 && g.status == Status::Play)
+    glow(px + g.player.dir * (g.player.vehicleHP ? 31.0f : 24.0f),
+         between(g.player.prevY, g.player.y, alpha) - (g.player.vehicleHP ? 36.0f : 27.0f),
+         g.player.vehicleHP ? 12.0f : 7.0f, g.player.weapon == 5 ? 0x63D8E500 : 0xF4B64A00);
+  if (g.boss.active && !g.boss.dead) {
+    float bx = between(g.boss.prevX, g.boss.x, alpha) - camera;
+    float by = between(g.boss.prevY, g.boss.y, alpha) - 60.0f;
+    glow(bx, by, g.level().bossKind == 4 ? 19.0f : 13.0f,
+         g.level().bossKind == 4 ? 0x55DCE400 : 0xF4A34A00);
+  }
+}
 void Renderer::drawGame(const Game &g, const ViewState &v) {
   const float alpha = std::clamp(v.interpolation, 0.0f, 1.0f);
   const float camera = between(g.prevCamera, g.camera, alpha);
@@ -450,6 +513,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
   offsetX = sx;
   offsetY = sy;
   background(g.levelIndex, camera, time);
+  lightingPass(g, camera, time, alpha);
   const auto &l = g.level();
   for (auto &p : l.platforms) {
     float x = p.box.x - camera;
