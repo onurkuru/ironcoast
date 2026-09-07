@@ -20,7 +20,8 @@ struct ViewState {
 class Renderer {
   SDL_Renderer *r;
   std::string assets;
-  Atlas hero, enemies, worlds, machines, props, aim, melee;
+  Atlas hero, enemies, worlds, machines, props, aim, melee, vehicle;
+  std::array<Atlas, 6> bosses;
   float offsetX = 0, offsetY = 0;
   Atlas load(const std::string &, int, int, bool trim = false, bool paperKey = false);
 

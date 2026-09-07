@@ -8,7 +8,7 @@ An original 2D run-and-gun game for PS Vita and desktop. It includes running, ju
 - `kiyi-hurdasi.vpk` — VitaSDK ARM Vita homebrew package.
 - `data/campaign.json` — editable story, map, enemy, item and hazard data for all six missions.
 - `src/` — C++ game, renderer and audio code.
-- `assets/` — generated sprite and environment atlases.
+- `assets/` — original sprite, boss, vehicle and environment atlases.
 - `tests/` — level reachability and gameplay rule tests.
 
 ## macOS'ta çalıştırma
@@ -52,11 +52,22 @@ Up + fire aims upward. Down + fire in the air aims downward. A fire command aime
 SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./build/kiyi_hurdasi --assets ../assets --stage 4 --showcase 2 --frames 150 --fast --capture boss.png
 ```
 
-`--stage 1..6`, `--demo`, `--showcase 1..3`, `--frames N`, `--capture path.png` and `--screen map|brief|controls` are development preview options.
+`--stage 1..6`, `--demo`, `--showcase 1..5`, `--frames N`, `--capture path.png` and `--screen map|brief|controls` are development preview options.
+
+## Original sprite atlas pass
+
+The player uses `hero-v2.png` with eight authored rows: run, idle/fire, jump/crouch,
+grenade, melee, death and run-fire. `enemies-v2.png` contains eight frames for
+guards, grenadiers, shield troops, drones, turrets and rescued workers. `vehicle-v2.png`
+adds movement, firing, damage and collapse frames for the Scrap Walker. Each of the
+six missions has its own `boss0-v2.png` through `boss5-v2.png` 4×4 atlas so Vita never
+needs to upload an oversized texture. `tools/prepare_sprite_atlases.py` documents the
+normalization and backdrop-keying step; the `tools/sourceboards/` files are only source
+boards and are not loaded by the game.
 
 ## Boss motion and animation pass
 
-All six bosses now move through the arena with acceleration and braking. Encounters follow entry, repositioning, preparation, attack and recovery states, with an overload transition below half health. The crane and walkers articulate their feet, the hammer has a timed backswing/contact/recovery, tracked machines roll and recoil, and the flying relay follows a continuous aerial path. The existing machine atlas is rendered as pivoted parts; this update does not add new hand-drawn sprite frames.
+All six bosses now move through the arena with acceleration and braking. Encounters follow entry, repositioning, preparation, attack and recovery states, with an overload transition below half health. The crane and walkers use authored locomotion frames, the hammer has a timed backswing/contact/recovery, tracked machines roll and recoil, and the flying relay follows a continuous aerial path. The new boss atlases provide complete movement, attack, recovery and destruction poses; the state machine selects them without whole-sprite scale pops.
 
 Player, camera, enemies, bullets and particles now share interpolation between simulation ticks. Player running frames follow distance travelled, and firing frames restart on the actual shot. Mechanical footsteps and impacts play at animation events.
 

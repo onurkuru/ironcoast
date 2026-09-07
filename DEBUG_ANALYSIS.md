@@ -28,6 +28,8 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 - Added walk bob, idle breathing, vehicle bob, muzzle flash and landing dust.
 - Extended melee and grenade pose timing so their frames are readable instead of being consumed in a few ticks.
 - Fire poses and muzzle flashes persist for the weapon cooldown, so releasing the button cannot cut the contact frame in half.
+- Replaced the player, infantry and Scrap Walker presentation with original v2 pose boards. The player now has eight rows and distance-driven run/run-fire frames; enemies use six eight-frame rows and retain a readable procedural death arc.
+- Added six separate 4×4 boss atlases with locomotion, attack, recovery and destruction rows. The renderer selects a pose from the explicit boss state and uses one texture per boss to stay within Vita texture limits.
 - Enemy deaths now use a short upward arc, rotation, scale change, fade and ground shadow. Player deaths use the four death frames with a squash, arc and rotation. Boss deaths keep their multi-burst explosion sequence.
 
 ### Weapons
@@ -55,7 +57,7 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 - `ctest --test-dir work/build-desktop --output-on-failure` passes all gameplay, geometry, boss, weapon-pool and long-simulation assertions.
 - Desktop and Vita targets compile successfully.
 - The packaged macOS app launches with the updated HUD and gameplay code.
-- The VPK contains the updated executable and the seven PNG runtime atlases.
+- The VPK contains the updated executable plus the v2 hero, enemy, vehicle and six boss atlases alongside the environment, aim, melee and effects sheets.
 
 Physical Vita hardware was not used in this pass; testing remains on the desktop target as requested.
 
@@ -89,6 +91,6 @@ The renderer samples player, boss, camera, enemy, bullet and particle positions 
 - Each of the six bosses was exercised for 30 seconds in each phase. Regression checks cover visible travel, arena bounds, no teleport frames, actual projectiles, preparation time, recovery vulnerability and moving weapon/leg poses.
 - A separate transition check prevents the hammer from snapping between its held windup and released swing.
 - Desktop and Vita builds succeed. The six-boss montage was captured from the real game renderer at 30 fps and inspected at preparation and repositioning points.
-- This is a code-driven articulated rig using the existing art. Dedicated additional hand-drawn animation frames, broad playtesting of difficulty and physical Vita frame-time/audio testing are still separate work.
+- The new player, enemy, vehicle and boss frames are original artwork generated for this project; the linked Metal Slug sheets were used only as high-level timing and silhouette references. Broad playtesting of difficulty and physical Vita frame-time/audio testing remain separate work.
 
 Reference: [SNK Metal Slug overview](https://www.snk-corp.co.jp/us/games/acaneogeo/metalslug/), [SNK Metal Slug series page](https://game.snk-corp.co.jp/official/metalslug_sp/english/index.html), and [RetroGameZone Metal Slug Sprite Database](https://retrogamezone.co.uk/metalslug/).

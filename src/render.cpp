@@ -46,17 +46,22 @@ static const std::map<char, std::array<unsigned char, 7>> FONT = {
 Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move(path)) {
   // Keep the authored grid cells intact. Per-cell trimming makes a pose with
   // an outstretched arm occupy a different visual scale from its idle pose.
-  hero = load("hero.png", 8, 4, false);
-  enemies = load("enemies.png", 4, 6, false);
+  hero = load("hero-v2.png", 8, 8, false, true);
+  enemies = load("enemies-v2.png", 8, 6, false, true);
   worlds = load("worlds.png", 2, 3);
   machines = load("machines.png", 3, 3, false);
+  vehicle = load("vehicle-v2.png", 4, 4, false);
+  for (int i = 0; i < 6; i++)
+    bosses[i] = load("boss" + std::to_string(i) + "-v2.png", 4, 4, false);
   props = load("props.png", 4, 4, false);
   aim = load("aim.png", 4, 3, false, true);
   melee = load("melee.png", 2, 2, false, true);
 }
 Renderer::~Renderer() {
-  for (auto *a : {&hero, &enemies, &worlds, &machines, &props, &aim, &melee})
+  for (auto *a : {&hero, &enemies, &worlds, &machines, &props, &aim, &melee, &vehicle})
     SDL_DestroyTexture(a->texture);
+  for (auto &a : bosses)
+    SDL_DestroyTexture(a.texture);
 }
 Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, bool paperKey) {
   Atlas a;
@@ -218,6 +223,58 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
       for (int j = 0; j < 7; j++)
         text("<", cx - 68 - j * 16, 224, 1, RED);
     }
+  }
+  // The v2 boss atlas contains four authored rows per boss: locomotion,
+  // attack, recovery and destruction. Selecting a complete pose keeps the
+  // silhouette coherent while the state machine supplies the timing.
+  const Atlas &bossAtlas = bosses[std::clamp(k, 0, int(bosses.size()) - 1)];
+  if (bossAtlas.texture) {
+    int group = 0;
+    float phase = 0;
+    if (b.dead) {
+      group = 3;
+      phase = 1.0f - std::clamp(b.death / 3.2f, 0.0f, 1.0f);
+    } else if (b.state == BossState::Windup || b.state == BossState::Attack ||
+               b.state == BossState::Overload) {
+      group = 1;
+      phase = b.duration > 0 ? std::clamp(b.stateAge / b.duration, 0.0f, 1.0f) : 0;
+    } else if (b.state == BossState::Recover) {
+      group = 2;
+      phase = b.duration > 0 ? std::clamp(b.stateAge / b.duration, 0.0f, 1.0f) : 0;
+    } else {
+      group = 0;
+      phase = std::fmod(b.age * (k == 4 ? 3.0f : 5.0f), 1.0f);
+    }
+    int poseFrame = std::min(3, std::max(0, int(phase * 4.0f)));
+    int frame = group * 4 + poseFrame;
+    float bob = b.dead ? -phase * 7.0f : std::sin(b.age * 5.0f) * (group == 0 ? 1.2f : .35f);
+    float drawW = k == 4 ? 142.0f : 152.0f;
+    float drawH = k == 4 ? 118.0f : 128.0f;
+    float drawY = cy - drawH + (k == 4 ? 7.0f : 0.0f) + bob;
+    SDL_SetTextureColorMod(bossAtlas.texture, b.hurt > 0 ? 255 : 255, b.hurt > 0 ? 175 : 255,
+                           b.hurt > 0 ? 145 : 255);
+    sprite(bossAtlas, frame, cx - drawW / 2, drawY, drawW, drawH, false, 0, opacity);
+    SDL_SetTextureColorMod(bossAtlas.texture, 255, 255, 255);
+    if (b.dead)
+      return;
+    float bodyY = drawY + 54;
+    if (pose.charge > 0) {
+      ring(cx, bodyY, 15 + (1 - pose.charge) * 16, 12 + (1 - pose.charge) * 12,
+           k == 4 ? TEAL : GOLD);
+      text(b.state == BossState::Overload ? "OVERDRIVE" : "!", cx - 24, drawY - 9, 1, GOLD);
+    }
+    if (pose.core > 0) {
+      ring(cx, bodyY, 10 + pose.core * 6, 10 + pose.core * 6, TEAL);
+      text("CORE OPEN", cx - 26, drawY - 9, 1, TEAL);
+    }
+    if (pose.kick > 0) {
+      float muzzleX = cx - 49, muzzleY = cy - 51 + pose.lift;
+      rect(muzzleX - 13 * pose.kick, muzzleY - 2, 13 * pose.kick, 4, GOLD);
+      rect(muzzleX - 8 * pose.kick, muzzleY - 1, 8 * pose.kick, 2, CREAM);
+    }
+    if (b.impact > .3f)
+      ring(cx - 35, 231, (1 - b.impact) * 50 + 12, 3, 0xEAB66CAA);
+    return;
   }
   if (b.hurt > 0)
     SDL_SetTextureColorMod(machines.texture, 255, 180, 150);
@@ -421,9 +478,9 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     float x = i.x - camera;
     if (i.kind == 0) {
       if (!i.used)
-        sprite(enemies, 20 + int(time * 2) % 2, x - 18, i.y - 27, 36, 43);
+        sprite(enemies, 40 + int(time * 2) % 2, x - 18, i.y - 27, 36, 43);
       else if (i.anim < 2)
-        sprite(enemies, i.anim < .5f ? 22 : 23, x - 18 + i.anim * 40, i.y - 27, 36, 43, false, 0,
+        sprite(enemies, 40 + (i.anim < .5f ? 2 : 3), x - 18 + i.anim * 40, i.y - 27, 36, 43, false, 0,
                uint8_t(255 * (1 - i.anim / 2)));
     } else if (!i.used) {
       float y = i.y + std::sin(time * 4 + i.x) * 2;
@@ -439,7 +496,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     }
   }
   if (g.vehicleAvailable && g.vehicleX > camera - 80 && g.vehicleX < camera + W + 80) {
-    sprite(machines, 6, g.vehicleX - camera - 35, g.floorAt(g.vehicleX) - 62, 70, 62);
+    sprite(vehicle, int(time * 5) % 4, g.vehicleX - camera - 35, g.floorAt(g.vehicleX) - 62, 70, 62);
     if (std::fabs(g.player.x - g.vehicleX) < 48)
       text("E / TRIANGLE", g.vehicleX - camera - 32, 155, 1, GOLD);
   }
@@ -449,15 +506,18 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     e.y = between(source.prevY, source.y, alpha);
     if ((e.dead && e.death <= 0) || !e.active || e.x < camera - 60 || e.x > camera + W + 60)
       continue;
-    int frame = e.state == 1 ? 1 : e.state == 2 ? 2 : int(time * 7 + e.origin) % 4;
-    int idx = e.kind * 4 + frame;
+    float deathT = e.dead ? 1.0f - std::clamp(e.death / .45f, 0.0f, 1.0f) : 0.0f;
+    int frame = e.dead ? 7
+                       : e.state == 1 ? 4
+                       : e.state == 2 ? 5 + int(time * 8 + e.origin) % 3
+                                      : int(time * 8 + e.origin) % 4;
+    int idx = e.kind * 8 + frame;
     float h = e.kind == 3   ? 31
               : e.kind == 4 ? 31
                             : 43,
           w = e.kind == 3   ? 40
               : e.kind == 4 ? 43
                             : 40;
-    float deathT = e.dead ? 1.0f - std::clamp(e.death / .45f, 0.0f, 1.0f) : 0.0f;
     float drawW = e.dead ? w * (1.0f + deathT * .16f) : w;
     float drawH = e.dead ? h * (1.0f - deathT * .14f) : h;
     float yy = e.y - drawH - (e.dead ? std::sin(deathT * 3.14159f) * 12.0f : 0.0f);
@@ -488,9 +548,11 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     if (p.vehicleHP) {
       // Keep the firing pose for the complete weapon cooldown, even if the
       // button is released on the same render frame as the shot.
-      int frame = (v.input.shoot || p.shot > 0) ? 8 : 6 + int(p.anim * 9) % 2;
+      int frame = (v.input.shoot || p.shot > 0)
+                      ? 4 + std::clamp(int((.12f - p.shot) * 28), 0, 3)
+                                                : int(p.anim * 9) % 4;
       float bob = std::sin(p.anim * 13) * (std::fabs(p.vx) > 1 ? 1.2f : .35f);
-      sprite(machines, frame, px - 38, playerY - 66 + bob, 76, 66, p.dir < 0);
+      sprite(vehicle, frame, px - 38, playerY - 66 + bob, 76, 66, p.dir < 0);
     } else {
       // Every normal player pose shares one 48x48 ground box. The stable
       // baseline prevents visual size pops when switching between aim, fire,
@@ -501,13 +563,15 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
                              : (std::fabs(p.vx) > 1 && p.grounded ? std::sin(p.anim * 20) * 1.1f
                                                                    : std::sin(p.anim * 4) * .35f);
       float y = playerY - h + bob;
+      const bool modernHero = hero.cols == 8 && hero.rows >= 8;
       static constexpr int idleFrames[] = {0, 1, 2, 3, 2, 1};
       int frame = 8 + idleFrames[int(p.anim * 5) % 6];
       double angle = p.hitFlash > 0 ? std::sin(time * 90) * 3
                                     : (p.recoil > 0 ? -p.dir * 2.0 : 0.0);
       if (g.status == Status::Dying) {
         float deathT = std::clamp(1.0f - g.deathTimer, 0.0f, 1.0f);
-        frame = 28 + std::min(3, int((1 - g.deathTimer) * 5));
+        frame = modernHero ? 48 + std::min(7, int(deathT * 8))
+                           : 28 + std::min(3, int((1 - g.deathTimer) * 5));
         w = playerW * (1.0f + deathT * .18f);
         h = playerH * (1.0f - deathT * .16f);
         y = playerY - h - std::sin(deathT * 3.14159f) * 9.0f;
@@ -515,16 +579,21 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       } else if (p.action > 0 && p.actionKind == 1) {
         int meleeFrame = std::min(4, int((.42f - p.action) * 12));
         if (meleeFrame < 4) {
-          // Anticipation, contact and follow-through use the four original
-          // wrench frames; the fifth phase is a readable recovery pose.
-          sprite(melee, meleeFrame, px - w / 2, y, w, h, p.dir < 0,
-                 meleeFrame == 1 ? -p.dir * 5.0 : meleeFrame == 2 ? p.dir * 4.0 : 0.0);
+          // The authored hero atlas has a complete eight-frame wrench swing;
+          // keep the original fallback for older asset packs.
+          if (modernHero)
+            sprite(hero, 40 + meleeFrame * 2, px - w / 2, y, w, h, p.dir < 0,
+                   meleeFrame == 1 ? -p.dir * 5.0 : meleeFrame == 2 ? p.dir * 4.0 : 0.0);
+          else
+            sprite(melee, meleeFrame, px - w / 2, y, w, h, p.dir < 0,
+                   meleeFrame == 1 ? -p.dir * 5.0 : meleeFrame == 2 ? p.dir * 4.0 : 0.0);
           frame = -1;
         } else {
           frame = 8 + int(p.anim * 5) % 4;
         }
       } else if (p.action > 0) {
-        frame = 24 + std::min(3, int((.45f - p.action) * 9));
+        frame = modernHero ? 32 + std::min(7, int((.45f - p.action) * 18))
+                           : 24 + std::min(3, int((.45f - p.action) * 9));
       } else if (v.input.up || (v.input.down && !p.grounded)) {
         int idx = v.input.up
                       ? (std::fabs(p.vx) > 1 ? 4 + int(p.anim * 12) % 4 : int(p.anim * 7) % 4)
@@ -535,6 +604,8 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         frame = 16 + (p.vy < -140 ? 1 : p.vy < 30 ? 2 : 3);
       } else if (p.crouch) {
         frame = 20 + (v.input.shoot ? 2 + int(p.anim * 10) % 2 : 1);
+      } else if (std::fabs(p.vx) > 1 && (v.input.shoot || p.shot > 0)) {
+        frame = modernHero ? 56 + int(p.stride * 8) % 8 : 12 + std::min(3, int(p.fireAge * 28));
       } else if (std::fabs(p.vx) > 1) {
         frame = int(p.stride * 8) % 8;
       } else if (v.input.shoot || p.shot > 0) {
