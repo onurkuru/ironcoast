@@ -55,8 +55,40 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 - `ctest --test-dir work/build-desktop --output-on-failure` passes all gameplay, geometry, boss, weapon-pool and long-simulation assertions.
 - Desktop and Vita targets compile successfully.
 - The packaged macOS app launches with the updated HUD and gameplay code.
-- The VPK contains the updated executable and all nine runtime assets.
+- The VPK contains the updated executable and the seven PNG runtime atlases.
 
 Physical Vita hardware was not used in this pass; testing remains on the desktop target as requested.
+
+## Boss motion regression — September 7, 2026
+
+### Root causes
+
+- Most bosses never changed their world X position. The dredger subtracted 35 units on one attack and the flying relay reassigned X after a volley; neither had continuous movement.
+- The renderer drew each boss as a single image with a two-pixel wobble. There were no independently moving feet, weapons or suspension.
+- Player-only interpolation left the camera and other moving objects on different presentation times. Integer rounding discarded part of the remaining smooth motion.
+- Firing and running poses were selected from a global clock, independent of the shot event or distance travelled.
+
+### Implemented behavior
+
+| Boss | Movement and articulated parts |
+| --- | --- |
+| Claw Crane | Accelerating walk, alternating feet, pivoted boom and swinging hook |
+| Ash Dredger | Tracks, drill vibration, telegraphed forward charge and braking |
+| Black Locomotive | Repositioning on tracks, lifted barrel, timed recoil on repeated salvos |
+| Forge Titan | Walking feet, hammer preparation, contact after 0.18 seconds, recovery |
+| Four Poles | Continuous horizontal/vertical flight, moving coil assemblies and thruster |
+| Iron Grid / Sarp | Alternating legs, independent gun recoil and warning markers |
+
+All bosses preserve a left escape corridor and expose the core during recovery. The second phase increases movement speed and reduces cycle downtime while retaining at least 0.72 seconds of attack warning. Entry, move, windup, attack, recovery and overload are explicit states. Death breaks the rig apart while the existing explosion sequence completes the mission.
+
+The renderer samples player, boss, camera, enemy, bullet and particle positions from the same fixed-step interval, including subpixel sprite placement. Pause draws the current state, and load/respawn synchronize snapshots to prevent interpolation across teleports. Running frames are distance-driven; firing frames are event-driven.
+
+### Validation and limits
+
+- 101,674 assertions pass, including the existing ten-minute simulation and six levels' completion checks.
+- Each of the six bosses was exercised for 30 seconds in each phase. Regression checks cover visible travel, arena bounds, no teleport frames, actual projectiles, preparation time, recovery vulnerability and moving weapon/leg poses.
+- A separate transition check prevents the hammer from snapping between its held windup and released swing.
+- Desktop and Vita builds succeed. The six-boss montage was captured from the real game renderer at 30 fps and inspected at preparation and repositioning points.
+- This is a code-driven articulated rig using the existing art. Dedicated additional hand-drawn animation frames, broad playtesting of difficulty and physical Vita frame-time/audio testing are still separate work.
 
 Reference: [SNK Metal Slug overview](https://www.snk-corp.co.jp/us/games/acaneogeo/metalslug/), [SNK Metal Slug series page](https://game.snk-corp.co.jp/official/metalslug_sp/english/index.html), and [RetroGameZone Metal Slug Sprite Database](https://retrogamezone.co.uk/metalslug/).

@@ -33,6 +33,10 @@ public:
   void wrapped(std::string, float, float, int, int, uint32_t);
   void sprite(const Atlas &, int, float, float, float, float, bool flip = false, double angle = 0,
               uint8_t alpha = 255);
+  void spritePart(const Atlas &, int, Rect, float, float, float, float,
+                  float angle = 0, float pivotX = .5f, float pivotY = .5f, uint8_t alpha = 255);
+  void ring(float, float, float, float, uint32_t);
+  void drawBoss(const Game &, float, float);
   void background(int, float, float);
   void drawGame(const Game &, const ViewState &);
   void render(const Game &, const ViewState &);

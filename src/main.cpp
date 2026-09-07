@@ -56,14 +56,20 @@ struct Buttons {
 static bool newly(bool now, bool prev) { return now && !prev; }
 int main(int argc, char **argv) {
   std::string assetPath, savePath, capture, recordDir, initialScreen;
-  int frameLimit = 0, stage = -1, showcase = 0;
-  bool demo = false, fast = false;
+  int frameLimit = 0, stage = -1, showcase = 0, recordEvery = 1, previewPhase = 1;
+  bool demo = false, fast = false, bossPreview = false;
   float beginX = 40;
   for (int i = 1; i < argc; i++) {
     std::string a = argv[i];
     auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
     if (a == "--record")
       recordDir = next();
+    else if (a == "--record-every")
+      recordEvery = std::max(1, std::stoi(next()));
+    else if (a == "--boss-preview")
+      bossPreview = true;
+    else if (a == "--preview-phase")
+      previewPhase = std::clamp(std::stoi(next()), 1, 2);
     else if (a == "--screen")
       initialScreen = next();
     else if (a == "--assets")
@@ -86,7 +92,8 @@ int main(int argc, char **argv) {
       beginX = std::stof(next());
     else if (a == "--help") {
       std::cout << "Iron Coast: Scrap Tide --stage 1..6 --frames N --capture frame.png --demo --fast "
-                   "--assets PATH --save PATH --showcase 1..3\n";
+                   "--assets PATH --save PATH --showcase 1..5 --boss-preview --preview-phase 1..2 "
+                   "--record DIR --record-every N\n";
       return 0;
     }
   }
@@ -151,6 +158,9 @@ int main(int argc, char **argv) {
   }
   SDL_RenderSetLogicalSize(renderer, 480, 272);
   SDL_RenderSetIntegerScale(renderer, SDL_TRUE);
+  SDL_RendererInfo rendererInfo{};
+  SDL_GetRendererInfo(renderer, &rendererInfo);
+  const bool hasVsync = rendererInfo.flags & SDL_RENDERER_PRESENTVSYNC;
   int exitCode = 0;
   try {
     Renderer graphics(renderer, assetPath);
@@ -199,6 +209,23 @@ int main(int argc, char **argv) {
         game.player.y = showcase == 5 ? 150 : 232;
       }
     }
+    if (bossPreview) {
+      int index = std::clamp(stage, 0, 5);
+      game.load(index, false, campaign()[index].width - 395);
+      game.boss.active = true;
+      game.camera = game.level().width - W;
+      game.enemies.clear();
+      game.props.clear();
+      game.player.inv = 0;
+      game.player.weapon = 1;
+      game.player.ammo = 999;
+      game.debugInvincible = true;
+      if (previewPhase == 2)
+        game.boss.hp = game.boss.maxhp * .4f;
+      view.screen = Screen::Play;
+      view.assist = true;
+    }
+    game.syncPresentation();
     if (initialScreen == "map")
       view.screen = Screen::Map;
     else if (initialScreen == "brief")
@@ -503,12 +530,14 @@ int main(int argc, char **argv) {
       }
       audio.settings(game.levelIndex, view.muted, view.screen == Screen::Pause,
                      game.boss.active && !game.boss.dead);
-      view.interpolation = float(std::clamp(accumulator / double(DT), 0.0, 1.0));
+      view.interpolation = fast || view.screen != Screen::Play || game.status == Status::GameOver
+                               ? 1.0f
+                               : float(std::clamp(accumulator / double(DT), 0.0, 1.0));
       graphics.render(game, view);
       frames++;
-      if (!recordDir.empty()) {
+      if (!recordDir.empty() && frames % recordEvery == 0) {
         char filename[48];
-        std::snprintf(filename, sizeof(filename), "/frame%05d.png", frames);
+        std::snprintf(filename, sizeof(filename), "/frame%05d.png", frames / recordEvery);
         graphics.screenshot(recordDir + filename);
       }
       if (!capture.empty() && frameLimit > 0 && frames >= frameLimit)
@@ -517,7 +546,9 @@ int main(int argc, char **argv) {
       previous = buttons;
       if (frameLimit > 0 && frames >= frameLimit)
         running = false;
-      if (!fast)
+      // Present-vsync already paces the accelerated renderer. Sleeping after
+      // every present can miss the next refresh on a busy desktop/Vita frame.
+      if (!fast && !hasVsync)
         SDL_Delay(1);
     }
     if (pad)

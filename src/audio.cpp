@@ -149,6 +149,14 @@ void Audio::play(Sound s) {
     v->volume = .08f;
     v->noiseMix = .58f;
     break;
+  case Sound::Stomp:
+    v->freq = 88;
+    v->slide = -230;
+    v->remaining = .19f;
+    v->wave = 2;
+    v->noiseMix = .18f;
+    v->volume = .22f;
+    break;
   }
   v->total = v->remaining;
   SDL_UnlockAudioDevice(device);

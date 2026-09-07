@@ -1,4 +1,5 @@
 #include "game.h"
+#include "animation.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -82,7 +83,7 @@ int main() {
       check(g.boss.pattern > 0, "boss executes attacks");
       (void)fired;
     }
-    g.boss.state = 2;
+    g.boss.state = BossState::Recover;
     g.damageBoss(10000);
     ticks(g, {}, 210);
     check(g.status == Status::Clear, "boss death leads to mission completion");
@@ -90,6 +91,90 @@ int main() {
               << " geometry, story, hazards, boss phases and completion\n";
   }
   check(names.size() == 6, "unique authored stages");
+  // Regression: bosses previously stayed fixed or teleported on attack. Verify
+  // actual arena movement, full combat cycles and telegraphs across both phases.
+  for (int index = 0; index < 6; index++) {
+    for (int phase = 1; phase <= 2; phase++) {
+      Game arena;
+      arena.load(index, false, levels[index].width - 395);
+      arena.enemies.clear();
+      arena.props.clear();
+      arena.items.clear();
+      arena.debugInvincible = true;
+      arena.boss.active = true;
+      if (phase == 2)
+        arena.boss.hp = arena.boss.maxhp * .4f;
+      float minX = arena.boss.x, maxX = minX, minY = arena.boss.y, maxY = minY;
+      int visited = 0, warnings = 0, shots = 0;
+      float warningAge = 0;
+      float minWeapon = 0, maxWeapon = 0, minStride = 0, maxStride = 0;
+      for (int tick = 0; tick < 1800; tick++) {
+        Boss previous = arena.boss;
+        if (previous.state == BossState::Windup)
+          warningAge += DT;
+        arena.update({});
+        const auto &b = arena.boss;
+        minX = std::min(minX, b.x);
+        maxX = std::max(maxX, b.x);
+        minY = std::min(minY, b.y);
+        maxY = std::max(maxY, b.y);
+        visited |= 1 << int(b.state);
+        check(std::fabs(b.x - previous.x) < 3.1f && std::fabs(b.y - previous.y) < 1,
+              "boss locomotion has no teleport frames");
+        check(b.x >= levels[index].width - 305 && b.x <= levels[index].width - 88,
+              "boss remains in arena with left escape corridor");
+        if (b.state == BossState::Attack && previous.state != BossState::Attack) {
+          check(previous.state == BossState::Windup && warningAge >= .7f,
+                "attack follows readable preparation window");
+          warningAge = 0;
+          warnings++;
+        }
+        if (b.volleys > previous.volleys) {
+          check(b.state == BossState::Attack, "volley occurs during the attack pose");
+          bool projectile = false;
+          for (auto &bullet : arena.bullets)
+            projectile |= bullet.alive && bullet.hostile;
+          check(projectile, "boss attack actually emits projectiles");
+          shots++;
+        }
+        auto pose = bossPose(b, index);
+        minWeapon = std::min(minWeapon, pose.weapon);
+        maxWeapon = std::max(maxWeapon, pose.weapon);
+        minStride = std::min(minStride, pose.stride);
+        maxStride = std::max(maxStride, pose.stride);
+        check(std::isfinite(pose.lift) && std::isfinite(pose.weapon), "boss pose stays finite");
+      }
+      check(maxX - minX > 85, "every boss visibly traverses the arena");
+      if (index == 4)
+        check(maxY - minY > 32, "flying boss traverses vertically as well");
+      for (auto state : {BossState::Move, BossState::Windup, BossState::Attack, BossState::Recover})
+        check(visited & (1 << int(state)), "boss completes every combat animation state");
+      check(warnings >= 3 && shots >= 3, "boss repeats complete attack cycles");
+      check(maxWeapon - minWeapon > 7, "weapon articulates through preparation and contact");
+      if (index == 0 || index == 3 || index == 5)
+        check(maxStride - minStride > 1.1f, "walking rigs alternate both feet");
+      arena.boss.state = BossState::Recover;
+      float hp = arena.boss.hp;
+      arena.damageBoss(1);
+      float openDamage = hp - arena.boss.hp;
+      arena.boss.state = BossState::Windup;
+      hp = arena.boss.hp;
+      arena.damageBoss(1);
+      check(openDamage > (hp - arena.boss.hp) * 2, "exposed core is more vulnerable");
+    }
+  }
+  check(between(100, 120, .5f) == 110, "presentation interpolates between fixed steps");
+  Boss poseTest;
+  poseTest.state = BossState::Windup;
+  poseTest.stateAge = poseTest.duration = .92f;
+  auto held = bossPose(poseTest, 3);
+  poseTest.state = BossState::Attack;
+  poseTest.stateAge = 0;
+  poseTest.duration = .82f;
+  auto release = bossPose(poseTest, 3);
+  check(std::fabs(held.weapon - release.weapon) < .01f &&
+            std::fabs(held.lift - release.lift) < .01f,
+        "hammer transitions from windup to swing without a pose pop");
   check(segmentRect(0, 5, 100, 5, {40, 0, 2, 10}), "swept bullet hits thin target");
   check(!segmentRect(0, 20, 100, 20, {40, 0, 2, 10}), "swept bullet misses outside target");
   Game g;

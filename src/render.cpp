@@ -1,4 +1,5 @@
 #include "render.h"
+#include "animation.h"
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
 #include "stb_image.h"
@@ -117,13 +118,12 @@ Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, boo
 }
 void Renderer::rect(float x, float y, float w, float h, uint32_t c) {
   SDL_SetRenderDrawColor(r, c >> 24, (c >> 16) & 255, (c >> 8) & 255, c & 255);
-  SDL_Rect b{int(std::round(x + offsetX)), int(std::round(y + offsetY)), int(std::ceil(w)),
-             int(std::ceil(h))};
-  SDL_RenderFillRect(r, &b);
+  SDL_FRect b{x + offsetX, y + offsetY, w, h};
+  SDL_RenderFillRectF(r, &b);
 }
 void Renderer::line(float x, float y, float xx, float yy, uint32_t c) {
   SDL_SetRenderDrawColor(r, c >> 24, (c >> 16) & 255, (c >> 8) & 255, c & 255);
-  SDL_RenderDrawLine(r, int(x + offsetX), int(y + offsetY), int(xx + offsetX), int(yy + offsetY));
+  SDL_RenderDrawLineF(r, x + offsetX, y + offsetY, xx + offsetX, yy + offsetY);
 }
 void Renderer::text(std::string s, float x, float y, int size, uint32_t color, bool shadow) {
   if (shadow)
@@ -167,11 +167,138 @@ void Renderer::sprite(const Atlas &a, int idx, float x, float y, float w, float 
                       double angle, uint8_t alpha) {
   idx = std::max(0, std::min(idx, int(a.cells.size() - 1)));
   SDL_Rect src = a.cells[idx];
-  SDL_FRect dest{std::round(x + offsetX), std::round(y + offsetY), w, h};
+  SDL_FRect dest{x + offsetX, y + offsetY, w, h};
   SDL_SetTextureAlphaMod(a.texture, alpha);
   SDL_RenderCopyExF(r, a.texture, &src, &dest, angle, nullptr,
                     flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
   SDL_SetTextureAlphaMod(a.texture, 255);
+}
+void Renderer::spritePart(const Atlas &a, int idx, Rect part, float x, float y, float w, float h,
+                          float angle, float pivotX, float pivotY, uint8_t alpha) {
+  const auto &cell = a.cells.at(idx);
+  int left = int(std::round(part.x * cell.w)), top = int(std::round(part.y * cell.h));
+  int right = int(std::round((part.x + part.w) * cell.w));
+  int bottom = int(std::round((part.y + part.h) * cell.h));
+  SDL_Rect src{cell.x + left, cell.y + top, right - left, bottom - top};
+  SDL_FRect dst{x + offsetX, y + offsetY, w, h};
+  SDL_FPoint pivot{w * pivotX, h * pivotY};
+  SDL_SetTextureAlphaMod(a.texture, alpha);
+  SDL_RenderCopyExF(r, a.texture, &src, &dst, angle, &pivot, SDL_FLIP_NONE);
+  SDL_SetTextureAlphaMod(a.texture, 255);
+}
+void Renderer::ring(float x, float y, float rx, float ry, uint32_t color) {
+  for (int i = 0; i < 24; i++) {
+    float a = i * 6.283185f / 24, b = (i + 1) * 6.283185f / 24;
+    line(x + std::cos(a) * rx, y + std::sin(a) * ry,
+         x + std::cos(b) * rx, y + std::sin(b) * ry, color);
+  }
+}
+void Renderer::drawBoss(const Game &g, float camera, float alpha) {
+  const auto &b = g.boss;
+  if (!b.active)
+    return;
+  const int k = g.level().bossKind;
+  const auto pose = bossPose(b, k, alpha);
+  float cx = between(b.prevX, b.x, alpha) - camera;
+  float cy = between(b.prevY, b.y, alpha);
+  // Stable foot anchors compensate for padding in the six authored cells.
+  static constexpr float basePadding[] = {6, 11, 11, 1.5f, 0, 1.5f};
+  float x = cx - 76, y = cy - 128 + basePadding[k];
+  float gait = pose.stride;
+  uint8_t opacity = b.dead ? uint8_t(std::clamp(b.death * 180, 0.0f, 255.0f)) : 255;
+  ring(cx, 231, k == 4 ? 42 : 64, 5, 0x06131A88);
+  if (b.state == BossState::Windup && !b.dead) {
+    float target = b.targetX - camera;
+    bool groundStrike = (k == 0 && b.pattern % 2) || k == 3 || (k == 5 && b.pattern % 2);
+    if (groundStrike) {
+      ring(target, 230, 24 + pose.charge * 18, 5, RED);
+      line(target, 221, target, 236, GOLD);
+      text("MOVE!", target - 14, 182, 1, GOLD);
+    } else if (k == 1 && b.pattern % 2) {
+      for (int j = 0; j < 7; j++)
+        text("<", cx - 68 - j * 16, 224, 1, RED);
+    }
+  }
+  if (b.hurt > 0)
+    SDL_SetTextureColorMod(machines.texture, 255, 180, 150);
+  // Render joints from the existing authored atlas. Parts share their source
+  // proportions and move about local pivots; no whole-sprite scale animation.
+  auto piece = [&](Rect source, float dx = 0, float dy = 0, float angle = 0,
+                   float pivotX = .5f, float pivotY = .5f) {
+    spritePart(machines, k, source, x + source.x * 152 + dx, y + source.y * 128 + dy,
+               source.w * 152, source.h * 128, angle, pivotX, pivotY, opacity);
+  };
+  float bodyY = pose.lift;
+  float debris = pose.collapse * 17;
+  if (k == 0 || k == 3 || k == 5) {
+    // Feet alternate their swing and planted phases; the upper hull rides the suspension.
+    piece({0, .68f, .5f, .32f}, gait * 4 - debris, -std::max(0.0f, gait) * 5 + debris,
+          gait * 8 - pose.collapse * 30, .65f, 0);
+    piece({.5f, .68f, .5f, .32f}, -gait * 4 + debris, -std::max(0.0f, -gait) * 5 + debris,
+          -gait * 8 + pose.collapse * 30, .35f, 0);
+    if (k == 0) {
+      piece({0, 0, .55f, .40f}, 0, bodyY, pose.weapon * .3f + pose.lean, .95f, .9f);
+      piece({.55f, 0, .45f, .40f}, pose.kick * 2, bodyY, pose.lean);
+      piece({0, .40f, .21f, .28f}, pose.weapon * .13f, bodyY - pose.charge * 12,
+            std::sin(b.age * 2.4f) * 6 + pose.weapon * .4f, .5f, 0);
+      piece({.21f, .40f, .79f, .29f}, pose.kick * 2, bodyY, pose.lean);
+    } else if (k == 3) {
+      piece({0, 0, 1, .38f}, 0, bodyY, pose.lean);
+      piece({.32f, .38f, .68f, .31f}, 0, bodyY, pose.lean);
+      piece({0, .38f, .32f, .30f}, -debris, bodyY - pose.charge * 6,
+            pose.weapon, .9f, .1f);
+    } else {
+      piece({0, 0, 1, .34f}, 0, bodyY, pose.lean);
+      piece({.4f, .34f, .6f, .35f}, 0, bodyY, pose.lean);
+      piece({0, .34f, .4f, .34f}, pose.kick * 8 - debris, bodyY,
+            pose.weapon * .35f, .95f, .5f);
+    }
+  } else if (k == 1 || k == 2) {
+    piece({0, .72f, 1, .20f}, 0, 0);
+    if (k == 2) {
+      piece({0, 0, 1, .46f}, pose.kick * 9, bodyY, pose.weapon * .45f, .72f, .85f);
+      piece({0, .46f, 1, .27f}, 0, bodyY * .4f);
+    } else {
+      piece({.37f, 0, .63f, .73f}, pose.kick * 2, bodyY);
+      piece({0, 0, .37f, .73f}, -pose.charge * 3 - debris, bodyY,
+            std::sin(b.age * (b.state == BossState::Attack ? 90 : 24)) * 2.5f, .9f, .7f);
+    }
+    if (!b.dead) {
+      float scroll = std::fmod(b.gait * 40, 12.0f);
+      for (int j = 0; j < 8; j++)
+        rect(x + 36 + j * 12 - scroll, cy - 5, 5, 2, 0xBF995AFF);
+    }
+  } else {
+    piece({.31f, 0, .38f, 1}, 0, bodyY, pose.lean);
+    piece({0, 0, .32f, 1}, -pose.charge * 4 - debris, bodyY + gait * 4,
+          -pose.charge * 8 - gait * 3, 1, .5f);
+    piece({.68f, 0, .32f, 1}, pose.charge * 4 + debris, bodyY - gait * 4,
+          pose.charge * 8 + gait * 3, 0, .5f);
+    if (!b.dead) {
+      float jet = 9 + std::sin(b.age * 43) * 4;
+      rect(cx - 4, cy - 7, 8, jet, 0x37CCE6AA);
+      rect(cx - 2, cy - 7, 4, jet * .7f, CREAM);
+    }
+  }
+  SDL_SetTextureColorMod(machines.texture, 255, 255, 255);
+  if (b.dead)
+    return;
+  if (pose.charge > 0) {
+    ring(cx, cy - 60 + bodyY, 15 + (1 - pose.charge) * 16, 12 + (1 - pose.charge) * 12,
+         k == 4 ? TEAL : GOLD);
+    text(b.state == BossState::Overload ? "OVERDRIVE" : "!", cx - 24, y - 9, 1, GOLD);
+  }
+  if (pose.core > 0) {
+    ring(cx, cy - 60 + bodyY, 10 + pose.core * 6, 10 + pose.core * 6, TEAL);
+    text("CORE OPEN", cx - 26, y - 9, 1, TEAL);
+  }
+  if (pose.kick > 0) {
+    float muzzleX = cx - 49, muzzleY = cy - 51 + bodyY;
+    rect(muzzleX - 13 * pose.kick, muzzleY - 2, 13 * pose.kick, 4, GOLD);
+    rect(muzzleX - 8 * pose.kick, muzzleY - 1, 8 * pose.kick, 2, CREAM);
+  }
+  if (b.impact > .3f)
+    ring(cx - 35, 231, (1 - b.impact) * 50 + 12, 3, 0xEAB66CAA);
 }
 void Renderer::background(int theme, float camera, float time) {
   float travel = camera * .16f + (theme == 2 ? time * 28 : 0);
@@ -228,14 +355,17 @@ void Renderer::background(int theme, float camera, float time) {
   }
 }
 void Renderer::drawGame(const Game &g, const ViewState &v) {
-  float sx = v.shake ? std::sin(g.time * 83) * g.shake : 0,
-        sy = v.shake ? std::cos(g.time * 73) * g.shake * .5f : 0;
+  const float alpha = std::clamp(v.interpolation, 0.0f, 1.0f);
+  const float camera = between(g.prevCamera, g.camera, alpha);
+  const float time = between(g.prevTime, g.time, alpha);
+  float sx = v.shake ? std::sin(time * 83) * g.shake : 0,
+        sy = v.shake ? std::cos(time * 73) * g.shake * .5f : 0;
   offsetX = sx;
   offsetY = sy;
-  background(g.levelIndex, g.camera, g.time);
+  background(g.levelIndex, camera, time);
   const auto &l = g.level();
   for (auto &p : l.platforms) {
-    float x = p.box.x - g.camera;
+    float x = p.box.x - camera;
     if (x + p.box.w < 0 || x > W)
       continue;
     int idx = l.theme;
@@ -248,7 +378,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       line(x, p.box.y + p.box.h, x + p.box.w, p.box.y + p.box.h, INK);
   }
   for (auto &h : l.hazards) {
-    float x = h.x - g.camera;
+    float x = h.x - camera;
     if (x + h.w < 0 || x > W)
       continue;
     bool active = g.hazardOn(h);
@@ -257,18 +387,18 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       if (h.kind == 0) {
         rect(x, h.y, h.w, h.h, 0x93DB5088);
         for (int j = 0; j < int(h.w); j += 9)
-          rect(x + j, h.y - 2 + std::sin(g.time * 8 + j) * 2, 3, 3, 0xC8EF75FF);
+          rect(x + j, h.y - 2 + std::sin(time * 8 + j) * 2, 3, 3, 0xC8EF75FF);
       } else if (h.kind == 1) {
         for (int j = 0; j < int(h.w); j += 4) {
-          float hh = h.h * (.6f + .4f * std::sin(g.time * 17 + j));
+          float hh = h.h * (.6f + .4f * std::sin(time * 17 + j));
           rect(x + j, h.y + h.h - hh, 3, hh, 0xFF8A39BB);
           rect(x + j + 1, h.y + h.h - hh * .7f, 1, hh * .7f, 0xFFEBA6FF);
         }
       } else {
         for (int j = 0; j < 5; j++) {
           float y = h.y + j * h.h / 5;
-          line(x + h.w / 2 + std::sin(g.time * 25 + j) * 6, y,
-               x + h.w / 2 + std::sin(g.time * 25 + j + 1) * 6, y + h.h / 5, TEAL);
+          line(x + h.w / 2 + std::sin(time * 25 + j) * 6, y,
+               x + h.w / 2 + std::sin(time * 25 + j + 1) * 6, y + h.h / 5, TEAL);
         }
       }
     } else {
@@ -277,26 +407,26 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     }
   }
   for (auto &p : g.props)
-    if (!p.dead && p.x > g.camera - 40 && p.x < g.camera + W + 40)
-      sprite(props, p.kind == 7 ? 6 : 7, p.x - g.camera - 14, p.y - 28, 28, 28);
+    if (!p.dead && p.x > camera - 40 && p.x < camera + W + 40)
+      sprite(props, p.kind == 7 ? 6 : 7, p.x - camera - 14, p.y - 28, 28, 28);
   for (float cp : l.checkpoints)
-    if (cp > g.camera - 25 && cp < g.camera + W + 25) {
-      sprite(props, 10, cp - g.camera - 9, 202, 18, 30);
+    if (cp > camera - 25 && cp < camera + W + 25) {
+      sprite(props, 10, cp - camera - 9, 202, 18, 30);
       if (cp <= g.checkpoint)
-        rect(cp - g.camera - 2, 204, 4, 3, TEAL);
+        rect(cp - camera - 2, 204, 4, 3, TEAL);
     }
   for (auto &i : g.items) {
-    if (i.x < g.camera - 40 || i.x > g.camera + W + 40)
+    if (i.x < camera - 40 || i.x > camera + W + 40)
       continue;
-    float x = i.x - g.camera;
+    float x = i.x - camera;
     if (i.kind == 0) {
       if (!i.used)
-        sprite(enemies, 20 + int(g.time * 2) % 2, x - 18, i.y - 27, 36, 43);
+        sprite(enemies, 20 + int(time * 2) % 2, x - 18, i.y - 27, 36, 43);
       else if (i.anim < 2)
         sprite(enemies, i.anim < .5f ? 22 : 23, x - 18 + i.anim * 40, i.y - 27, 36, 43, false, 0,
                uint8_t(255 * (1 - i.anim / 2)));
     } else if (!i.used) {
-      float y = i.y + std::sin(g.time * 4 + i.x) * 2;
+      float y = i.y + std::sin(time * 4 + i.x) * 2;
       sprite(props, i.kind == 4 ? 9 : 8, x - 11, y - 10, 22, 20);
       const char *label = i.kind == 1   ? "H"
                           : i.kind == 2 ? "S"
@@ -308,15 +438,18 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       text(label, x - 2, y - 5, 1, CREAM);
     }
   }
-  if (g.vehicleAvailable && g.vehicleX > g.camera - 80 && g.vehicleX < g.camera + W + 80) {
-    sprite(machines, 6, g.vehicleX - g.camera - 35, g.floorAt(g.vehicleX) - 62, 70, 62);
+  if (g.vehicleAvailable && g.vehicleX > camera - 80 && g.vehicleX < camera + W + 80) {
+    sprite(machines, 6, g.vehicleX - camera - 35, g.floorAt(g.vehicleX) - 62, 70, 62);
     if (std::fabs(g.player.x - g.vehicleX) < 48)
-      text("E / TRIANGLE", g.vehicleX - g.camera - 32, 155, 1, GOLD);
+      text("E / TRIANGLE", g.vehicleX - camera - 32, 155, 1, GOLD);
   }
-  for (auto &e : g.enemies) {
-    if ((e.dead && e.death <= 0) || !e.active || e.x < g.camera - 60 || e.x > g.camera + W + 60)
+  for (const auto &source : g.enemies) {
+    auto e = source;
+    e.x = between(source.prevX, source.x, alpha);
+    e.y = between(source.prevY, source.y, alpha);
+    if ((e.dead && e.death <= 0) || !e.active || e.x < camera - 60 || e.x > camera + W + 60)
       continue;
-    int frame = e.state == 1 ? 1 : e.state == 2 ? 2 : int(g.time * 7 + e.origin) % 4;
+    int frame = e.state == 1 ? 1 : e.state == 2 ? 2 : int(time * 7 + e.origin) % 4;
     int idx = e.kind * 4 + frame;
     float h = e.kind == 3   ? 31
               : e.kind == 4 ? 31
@@ -331,43 +464,24 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     double angle = e.dead ? deathT * 100 * e.dir : 0;
     uint8_t alpha = e.dead ? uint8_t(e.death / .45f * 255) : 255;
     if (!e.dead)
-      rect(e.x - g.camera - drawW * .34f, e.y - 2, drawW * .68f, 2, 0x08131A66);
+      rect(e.x - camera - drawW * .34f, e.y - 2, drawW * .68f, 2, 0x08131A66);
     else
-      rect(e.x - g.camera - drawW * .34f, e.y - 2, drawW * .68f, 2,
+      rect(e.x - camera - drawW * .34f, e.y - 2, drawW * .68f, 2,
            0x08131A66 | uint8_t((1.0f - deathT) * 80));
     if (e.hurt > 0)
       SDL_SetTextureColorMod(enemies.texture, 255, 170, 120);
-    sprite(enemies, idx, e.x - g.camera - drawW / 2, yy, drawW, drawH, e.dir > 0, angle, alpha);
+    sprite(enemies, idx, e.x - camera - drawW / 2, yy, drawW, drawH, e.dir > 0, angle, alpha);
     SDL_SetTextureColorMod(enemies.texture, 255, 255, 255);
     if (e.state == 1 && !e.dead) {
-      text("!", e.x - g.camera - 2, yy - 10, 1, GOLD);
+      text("!", e.x - camera - 2, yy - 10, 1, GOLD);
     }
   }
-  if (g.boss.active) {
-    auto &b = g.boss;
-    float wob = std::sin(b.age * 2) * 2;
-    uint8_t alpha = b.dead ? uint8_t(std::min(255.0f, std::max(0.0f, b.death) * 110)) : 255;
-    if (b.hurt > 0)
-      SDL_SetTextureColorMod(machines.texture, 255, 170, 140);
-    sprite(machines, l.bossKind, b.x - g.camera - 76, b.y - 128 + wob, 152, 128, false,
-           b.dead ? std::sin(b.age * 20) * 4 : std::sin(b.age * 2) * .5, alpha);
-    SDL_SetTextureColorMod(machines.texture, 255, 255, 255);
-    if (!b.dead && b.state == 1) {
-      text("!", b.x - g.camera - 4, b.y - 141, 2, GOLD);
-      if (b.pattern % 2 == 1 || l.bossKind == 3 || l.bossKind == 5) {
-        line(b.targetX - g.camera - 18, 230, b.targetX - g.camera + 18, 230, RED);
-        text("!", b.targetX - g.camera - 3, 218, 1, RED);
-      }
-    }
-    if (!b.dead && b.state == 2) {
-      rect(b.x - g.camera - 2, b.y - 61, 4, 4, TEAL);
-    }
-  }
-  const auto &p = g.player;
-  float alpha = std::clamp(v.interpolation, 0.0f, 1.0f);
+  drawBoss(g, camera, alpha);
+  auto p = g.player;
+  p.anim = std::max(0.0f, p.anim - DT * (1 - alpha));
   float playerX = p.prevX + (p.x - p.prevX) * alpha;
   float playerY = p.prevY + (p.y - p.prevY) * alpha;
-  float px = playerX - g.camera;
+  float px = playerX - camera;
   float playerShadowW = p.vehicleHP ? 38.0f : (p.grounded ? 22.0f : 14.0f);
   rect(px - playerShadowW / 2, playerY - 1, playerShadowW, 2, 0x06131A88);
   if (p.inv <= 0 || int(p.inv * 15) % 2 == 0) {
@@ -387,8 +501,9 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
                              : (std::fabs(p.vx) > 1 && p.grounded ? std::sin(p.anim * 20) * 1.1f
                                                                    : std::sin(p.anim * 4) * .35f);
       float y = playerY - h + bob;
-      int frame = 8 + int(p.anim * 5) % 4;
-      double angle = p.hitFlash > 0 ? std::sin(g.time * 90) * 3
+      static constexpr int idleFrames[] = {0, 1, 2, 3, 2, 1};
+      int frame = 8 + idleFrames[int(p.anim * 5) % 6];
+      double angle = p.hitFlash > 0 ? std::sin(time * 90) * 3
                                     : (p.recoil > 0 ? -p.dir * 2.0 : 0.0);
       if (g.status == Status::Dying) {
         float deathT = std::clamp(1.0f - g.deathTimer, 0.0f, 1.0f);
@@ -396,7 +511,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         w = playerW * (1.0f + deathT * .18f);
         h = playerH * (1.0f - deathT * .16f);
         y = playerY - h - std::sin(deathT * 3.14159f) * 9.0f;
-        angle = std::sin(g.time * 26) * 8;
+        angle = std::sin(time * 26) * 8;
       } else if (p.action > 0 && p.actionKind == 1) {
         int meleeFrame = std::min(4, int((.42f - p.action) * 12));
         if (meleeFrame < 4) {
@@ -421,9 +536,9 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       } else if (p.crouch) {
         frame = 20 + (v.input.shoot ? 2 + int(p.anim * 10) % 2 : 1);
       } else if (std::fabs(p.vx) > 1) {
-        frame = int(p.anim * 13) % 8;
+        frame = int(p.stride * 8) % 8;
       } else if (v.input.shoot || p.shot > 0) {
-        frame = 12 + int(p.anim * 16) % 4;
+        frame = 12 + std::min(3, int(p.fireAge * 28));
       }
       if (frame >= 0) {
         if (p.hitFlash > 0)
@@ -439,9 +554,12 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     }
   }
   // Cosmetic smoke is rendered before hostile projectiles so threats stay visible.
-  for (auto &part : g.particles)
-    if (part.life > 0 && part.x > g.camera - 100 && part.x < g.camera + W + 100) {
-      float x = part.x - g.camera, age = 1 - part.life / part.maxlife;
+  for (const auto &source : g.particles) {
+    auto part = source;
+    part.x = between(source.prevX, source.x, alpha);
+    part.y = between(source.prevY, source.y, alpha);
+    if (part.life > 0 && part.x > camera - 100 && part.x < camera + W + 100) {
+      float x = part.x - camera, age = 1 - part.life / part.maxlife;
       if (part.kind == 3) {
         int idx = 12 + std::min(3, int(age * 4));
         float s = part.size * (.55f + age * .6f);
@@ -459,9 +577,13 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
              : age < .65f ? GOLD
                           : 0xB97944CC);
     }
-  for (auto &b : g.bullets)
+  }
+  for (const auto &source : g.bullets) {
+    auto b = source;
+    b.x = between(source.px, source.x, alpha);
+    b.y = between(source.py, source.y, alpha);
     if (b.alive) {
-      float x = b.x - g.camera;
+      float x = b.x - camera;
       if (b.kind == 3) {
         rect(x - 3, b.y - 3, 6, 6, b.hostile ? RED : 0x9DB65AFF);
         rect(x - 1, b.y - 4, 2, 2, CREAM);
@@ -471,7 +593,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         rect(x - 1, b.y - 1, 2, 2, CREAM);
       } else if (b.kind == 7) {
         bool vertical = std::fabs(b.vy) > std::fabs(b.vx);
-        float len = 13 + std::sin(g.time * 45 + b.x * .03f) * 3;
+        float len = 13 + std::sin(time * 45 + b.x * .03f) * 3;
         rect(x - (vertical ? 2 : len / 2), b.y - (vertical ? len / 2 : 2), vertical ? 4 : len,
              vertical ? len : 4, 0xFF8B36FF);
         rect(x - (vertical ? 1 : len / 2), b.y - (vertical ? len / 2 : 1), vertical ? 2 : len,
@@ -491,6 +613,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         rect(x - 1, b.y - 1, 2, 2, GOLD);
       }
     }
+  }
   offsetX = offsetY = 0;
   rect(0, 0, 480, 27, 0x0B1828EC);
   rect(0, 26, 480, 1, 0xC39449FF);
@@ -527,7 +650,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     text(l.bossName, 103, 38, 1, CREAM);
     rect(103, 48, 274, 3, 0x633F3AFF);
     rect(103, 48, 274 * g.boss.hp / g.boss.maxhp, 3, g.boss.phase == 2 ? RED : GOLD);
-  } else if (g.time < 5) {
+  } else if (time < 5) {
     text(l.subtitle, 12, 35, 1, GOLD);
     text("MOVE: ARROWS  JUMP: Z  FIRE: X  GRENADE: C", 12, 249, 1, CREAM);
   } else if (g.player.x > l.width * .45f && g.player.x < l.width * .55f) {
@@ -632,7 +755,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     rect(0, 0, 480, 272, 0x071A27EB);
     text("MISSION COMPLETE", 35, 31, 3, GOLD);
     wrapped(g.level().ending, 35, 78, 1, 405, CREAM);
-    text("SKOR  " + std::to_string(g.score), 35, 128, 2, CREAM);
+    text("SCORE  " + std::to_string(g.score), 35, 128, 2, CREAM);
     text("RESCUED  " + std::to_string(g.rescued) + " / 3", 35, 153, 1, TEAL);
     text("ENEMIES  " + std::to_string(g.kills), 35, 172, 1, CREAM);
     text("ENTER / X  NEXT MISSION", 35, 228, 1, GOLD);
@@ -658,7 +781,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     std::vector<std::string> opts = {
         std::string("SOUND: ") + (v.muted ? "OFF" : "ON"),
         std::string("SCREEN SHAKE: ") + (v.shake ? "ON" : "OFF"),
-        std::string("MODE: ") + (v.assist ? "TRAINING / NO DAMAGE" : "ARCADE / ONE HIT"),
+        std::string("MODE: ") + (v.assist ? "TRAINING / NO DAMAGE" : "ARCADE / 3 HP"),
         std::string("FULLSCREEN: ") + (v.fullscreen ? "ON" : "OFF"), "BACK"};
     for (int i = 0; i < 5; i++)
       text((v.menu == i ? "> " : "  ") + opts[i], 30, 91 + i * 25, 1, i == v.menu ? GOLD : CREAM);

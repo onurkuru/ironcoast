@@ -54,6 +54,29 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./build/kiyi_hurdasi --assets ../ass
 
 `--stage 1..6`, `--demo`, `--showcase 1..3`, `--frames N`, `--capture path.png` and `--screen map|brief|controls` are development preview options.
 
+## Boss motion and animation pass
+
+All six bosses now move through the arena with acceleration and braking. Encounters follow entry, repositioning, preparation, attack and recovery states, with an overload transition below half health. The crane and walkers articulate their feet, the hammer has a timed backswing/contact/recovery, tracked machines roll and recoil, and the flying relay follows a continuous aerial path. The existing machine atlas is rendered as pivoted parts; this update does not add new hand-drawn sprite frames.
+
+Player, camera, enemies, bullets and particles now share interpolation between simulation ticks. Player running frames follow distance travelled, and firing frames restart on the actual shot. Mechanical footsteps and impacts play at animation events.
+
+To enter an interactive boss practice encounter without playing the whole mission:
+
+```sh
+../../work/build-desktop/kiyi_hurdasi --assets assets --boss-preview --stage 4
+```
+
+Use `--stage 1..6` to select a boss and `--preview-phase 2` for its second phase. Practice enables no-damage training mode and does not unlock campaign progress.
+
+The reproducible six-boss video uses the actual game renderer and requires FFmpeg:
+
+```sh
+python3 tools/capture_bosses.py --binary ../../work/build-desktop/kiyi_hurdasi \
+  --work-dir ../../work --output ../iron-coast-boss-motion.mp4
+```
+
+The comparison video is a silent 12-second, 30 fps recording of the 60 Hz simulation; it is not a hardware performance benchmark. Physical Vita performance remains unverified.
+
 ## Teknik notlar
 
 The game runs at a 480×272 logical resolution with nearest-neighbor pixel sampling and a 60 Hz simulation. Desktop uses SDL2; Vita uses the VitaSDK SDL2 port. Normal player poses share a 48×48 ground box, atlas cells retain a consistent authored scale, and the player is interpolated between fixed ticks for smoother motion. Backgrounds add a parallax silhouette layer, practical lights, haze and a light CRT pass. Music is generated in real time with per-stage motifs and a higher-intensity boss arrangement; 32 kHz sound effects use per-weapon noise balance and click-free envelopes. The visual designs are original and do not use existing commercial characters or vehicles.

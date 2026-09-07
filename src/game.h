@@ -59,11 +59,13 @@ enum class Sound {
   Rescue,
   Hurt,
   Boss,
-  Step
+  Step,
+  Stomp
 };
 struct Player {
   float x = 40, y = 232, vx = 0, vy = 0, shot = 0, inv = 0, action = 0, anim = 0;
   float prevX = 40, prevY = 232;
+  float stride = 0, fireAge = 1;
   float land = 0, recoil = 0, hitFlash = 0;
   int actionKind = 0;
   int dir = 1, weapon = 0, ammo = 0, grenades = 10, lives = 3, health = 3, maxHealth = 3,
@@ -74,6 +76,7 @@ struct Enemy {
   float x = 0, y = 0, baseY = 0, origin = 0, vy = 0, timer = 1, hurt = 0, death = 0;
   int kind = 0, hp = 1, maxhp = 1, dir = -1, state = 0;
   bool active = false, dead = false;
+  float prevX = 0, prevY = 0;
 };
 struct Bullet {
   float x = 0, y = 0, px = 0, py = 0, vx = 0, vy = 0, life = 0, r = 2, damage = 1;
@@ -84,6 +87,7 @@ struct Particle {
   float x = 0, y = 0, vx = 0, vy = 0, life = 0, maxlife = 0, size = 0;
   int kind = 0;
   uint32_t color = 0;
+  float prevX = 0, prevY = 0;
 };
 struct Item {
   float x, y;
@@ -96,9 +100,13 @@ struct Prop {
   int kind, hp;
   bool dead = false;
 };
+enum class BossState { Move, Windup, Recover, Attack, Enter, Overload };
 struct Boss {
   float x = 0, y = 232, hp = 0, maxhp = 0, timer = 1, age = 0, hurt = 0, death = 0, targetX = 0;
-  int phase = 1, state = 0, pattern = 0;
+  float prevX = 0, prevY = 232, vx = 0, vy = 0, moveX = 0, moveY = 232;
+  float stateAge = 0, duration = 1.25f, gait = 0, recoil = 0, impact = 0, shotTimer = 0;
+  int phase = 1, pattern = 0, volleys = 0;
+  BossState state = BossState::Enter;
   bool active = false, dead = false;
 };
 struct Game {
@@ -108,6 +116,7 @@ struct Game {
   int levelIndex = 0, score = 0, rescued = 0, totalRescued = 0, continues = 0, kills = 0;
   float time = 0, camera = 0, shake = 0, flash = 0, deathTimer = 0, clearTimer = 0, checkpoint = 40,
         vehicleX = 0;
+  float prevCamera = 0, prevTime = 0;
   bool vehicleAvailable = true, debugInvincible = false;
   uint32_t randomState = 1024;
   std::vector<Enemy> enemies;
@@ -132,6 +141,8 @@ struct Game {
   void damageEnemy(Enemy &, float amount, bool explosive = false, int approach = 0);
   void damageBoss(float amount);
   void updateBoss(float dt);
+  void fireBossVolley();
+  void syncPresentation();
   bool hazardOn(const Hazard &) const;
   float random();
 };

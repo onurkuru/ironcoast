@@ -1,4 +1,5 @@
 #include "game.h"
+#include "animation.h"
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -90,10 +91,33 @@ void Game::load(int index, bool keepScore, float startX) {
     else
       items.push_back({s.x, s.y, s.kind, s.x < startX - 50, 0});
   }
-  boss.x = level().width - 190;
+  boss.x = level().width - 90;
   boss.y = levelIndex == 4 ? 190 : 232;
+  boss.moveX = level().width - 195;
+  boss.moveY = levelIndex == 4 ? 169 : 232;
   boss.hp = boss.maxhp = 100 + levelIndex * 26;
-  boss.timer = 1.5f;
+  boss.timer = boss.duration = 1.5f;
+  syncPresentation();
+}
+void Game::syncPresentation() {
+  player.prevX = player.x;
+  player.prevY = player.y;
+  boss.prevX = boss.x;
+  boss.prevY = boss.y;
+  prevCamera = camera;
+  prevTime = time;
+  for (auto &e : enemies) {
+    e.prevX = e.x;
+    e.prevY = e.y;
+  }
+  for (auto &p : particles) {
+    p.prevX = p.x;
+    p.prevY = p.y;
+  }
+  for (auto &b : bullets) {
+    b.px = b.x;
+    b.py = b.y;
+  }
 }
 void Game::retry() {
   int c = continues + 1;
@@ -136,6 +160,8 @@ void Game::burst(float x, float y, int kind, int count, float power) {
           p.vx = p.vy = 0;
         }
         p.maxlife = p.life;
+        p.prevX = p.x;
+        p.prevY = p.y;
         break;
       }
 }
@@ -165,7 +191,7 @@ void Game::damageBoss(float amount) {
   if (!boss.active || boss.dead)
     return;
   // Armor reduces damage outside recovery, but the pistol always remains viable.
-  boss.hp -= amount * (boss.state == 2 ? 1.0f : .4f);
+  boss.hp -= amount * (boss.state == BossState::Recover ? 1.0f : .4f);
   boss.hurt = .08f;
   if (boss.hp <= 0) {
     boss.hp = 0;
@@ -236,16 +262,70 @@ void Game::hitPlayer() {
   player.vy = -125;
   shake = 3;
 }
+void Game::fireBossVolley() {
+  const int k = level().bossKind, phase = boss.phase, volley = boss.volleys++;
+  float ox = boss.x - 48, oy = boss.y - 51;
+  auto aimed = [&](float speed, float spread = 0) {
+    float a = std::atan2(player.y - 18 - oy, player.x - ox) + spread;
+    fire(ox, oy, std::cos(a) * speed, std::sin(a) * speed, 1, 4, true, 5);
+  };
+  if (k == 0) {
+    if (boss.pattern % 2 == 0) {
+      for (int i = 0; i < 3; i++)
+        aimed(105 + phase * 8, (i - 1) * .15f);
+    } else if (volley == 0) {
+      for (int i = 0; i < phase + 1; i++)
+        fire(boss.targetX - 20 + i * 40, 42, 0, 155, 1, 6, true, 3);
+    }
+  } else if (k == 1) {
+    if (boss.pattern % 2 == 0)
+      fire(ox, oy, -100 - volley * 24, -185, 1, 3, true, 1.2f + volley * .12f);
+    else if (volley == 0)
+      fire(ox, 216, -150, 0, 1, 4, true, 4);
+  } else if (k == 2) {
+    for (int i = 0; i < 3; i++)
+      aimed(126, (i - 1) * .16f + (volley % 2 ? .07f : -.07f));
+  } else if (k == 3) {
+    if (boss.pattern % 2 == 0 && volley == 0) {
+      for (int i = 0; i < phase + 2; i++)
+        fire(boss.targetX - 45 + i * 40, 40, 0, 175, 1, 6, true, 2);
+    } else if (boss.pattern % 2 == 1) {
+      fire(ox, 214 - volley * 12, -120, 0, 1, 4, true, 4);
+    }
+  } else if (k == 4) {
+    for (int i = 0; i < 8 + phase * 2; i++) {
+      float a = 6.283185f * i / (8 + phase * 2) + boss.pattern * .18f + volley * .22f;
+      fire(boss.x, boss.y - 50, std::cos(a) * 86, std::sin(a) * 86, 1, 5, true, 4);
+    }
+  } else {
+    for (int i = 0; i < 3; i++)
+      aimed(120, (i - 1) * .14f);
+    if (boss.pattern % 2 == 1 && volley == 0)
+      for (int i = 0; i < 3; i++)
+        fire(boss.targetX - 40 + i * 40, 24, 0, 160, 1, 6, true, 2);
+  }
+  boss.recoil = .18f;
+  burst(ox, oy, 2, 3);
+  shake = std::max(shake, 1.2f);
+  sounds.push_back(k == 4 ? Sound::Laser : Sound::Heavy);
+}
 void Game::updateBoss(float dt) {
   if (!boss.active)
     return;
+  const int k = level().bossKind;
   boss.age += dt;
+  boss.stateAge += dt;
   boss.hurt = std::max(0.0f, boss.hurt - dt);
+  boss.recoil = std::max(0.0f, boss.recoil - dt);
+  boss.impact = std::max(0.0f, boss.impact - dt * 4);
   if (boss.dead) {
+    boss.vx *= std::max(0.0f, 1 - dt * 8);
     boss.death -= dt;
     if (int(boss.death * 12) != int((boss.death + dt) * 12) && boss.death > 0) {
       burst(boss.x + (random() - .5f) * 100, boss.y - random() * 95, 3, 1, 45 + random() * 50);
       shake = 4;
+      if (int(boss.death * 12) % 4 == 0)
+        sounds.push_back(Sound::Blast);
     }
     if (boss.death <= 0 && status == Status::Play) {
       status = Status::Clear;
@@ -254,101 +334,118 @@ void Game::updateBoss(float dt) {
     }
     return;
   }
+  auto enter = [&](BossState state, float duration) {
+    boss.state = state;
+    boss.stateAge = 0;
+    boss.timer = boss.duration = duration;
+    boss.volleys = 0;
+    boss.shotTimer = 0;
+  };
   if (boss.hp < boss.maxhp * .5f && boss.phase == 1) {
     boss.phase = 2;
-    boss.timer = 1.4f;
-    boss.state = 0;
+    enter(BossState::Overload, 1.15f);
     flash = .12f;
-    shake = 5;
-    burst(boss.x, boss.y - 55, 3, 1, 85);
+    shake = 4;
+    burst(boss.x, boss.y - 55, 0, 18);
+    sounds.push_back(Sound::Boss);
     for (auto &b : bullets)
       if (b.hostile)
         b.alive = false;
   }
-  boss.timer -= dt;
-  if (levelIndex == 4)
-    boss.y = 184 + std::sin(boss.age * 1.2f) * 15;
+
+  // Six locomotion profiles. All movement is acceleration-limited; attacks
+  // never teleport the boss and each arena retains a safe corridor at left.
+  const float minX = level().width - 305, maxX = level().width - 88;
+  float targetX = boss.moveX, targetY = boss.moveY;
+  bool moving = boss.state == BossState::Move || boss.state == BossState::Enter;
+  float maxSpeed = k == 1 ? 72 : k == 2 ? 52 : k == 4 ? 90 : 62;
+  float acceleration = k == 4 ? 130 : 200;
+  if (boss.phase == 2)
+    maxSpeed *= 1.24f;
+  if (k == 4 && boss.state != BossState::Enter) {
+    targetX = level().width - 198 + std::sin(boss.age * .82f) * 82;
+    targetY = 174 + std::sin(boss.age * 1.64f) * 25;
+    moving = true;
+  }
+  bool charge = k == 1 && boss.pattern % 2 == 1 && boss.state == BossState::Attack;
+  if (charge) {
+    targetX = minX + 8;
+    maxSpeed = boss.phase == 2 ? 172 : 148;
+    acceleration = 360;
+    moving = true;
+  }
+  float desiredVX = moving ? clamp((targetX - boss.x) * 2.8f, -maxSpeed, maxSpeed) : 0;
+  boss.vx += clamp(desiredVX - boss.vx, -acceleration * dt, acceleration * dt);
+  float oldX = boss.x;
+  boss.x = clamp(boss.x + boss.vx * dt, minX, maxX);
+  boss.vx = (boss.x - oldX) / dt;
+  if (k == 4) {
+    float desiredVY = clamp((targetY - boss.y) * 2.5f, -48, 48);
+    boss.vy += clamp(desiredVY - boss.vy, -100 * dt, 100 * dt);
+    boss.y = clamp(boss.y + boss.vy * dt, 142, 205);
+  }
+  float previousGait = boss.gait;
+  boss.gait += std::fabs(boss.x - oldX) / 54.0f;
+  bool walker = k == 0 || k == 3 || k == 5;
+  if (walker && int(previousGait * 2) != int(boss.gait * 2)) {
+    burst(boss.x + (int(boss.gait * 2) % 2 ? 35 : -35), boss.y, 1, 3, .5f);
+    boss.impact = .22f;
+    sounds.push_back(Sound::Stomp);
+  }
+  if (k == 1 && std::fabs(boss.vx) > 20 &&
+      int(boss.age * 12) != int((boss.age - dt) * 12))
+    burst(boss.x + 42, boss.y - 3, 1, 1, .4f);
+  if (boss.state == BossState::Recover &&
+      int(boss.age * 8) != int((boss.age - dt) * 8))
+    burst(boss.x + 15, boss.y - 76, 1, 1, .45f);
+
+  if (boss.state == BossState::Attack) {
+    boss.shotTimer -= dt;
+    // Hammer/crane impacts occur at the visible contact pose, after windup.
+    if ((k == 0 || k == 3) && boss.stateAge >= .18f && boss.volleys == 0) {
+      boss.impact = 1;
+      shake = std::max(shake, 3.5f);
+      burst(boss.x - 48, 232, 0, 12);
+      burst(boss.x - 48, 231, 1, 6, .8f);
+      sounds.push_back(Sound::Stomp);
+    }
+    const float firstShot = (k == 0 || k == 3) ? .18f : .06f;
+    const bool singleImpact = ((k == 0 || k == 1) && boss.pattern % 2 == 1) ||
+                              (k == 3 && boss.pattern % 2 == 0);
+    const int maxVolleys = k == 4 ? 2 : singleImpact ? 1 : 2 + boss.phase;
+    if (boss.stateAge >= firstShot && boss.shotTimer <= 0 && boss.volleys < maxVolleys) {
+      fireBossVolley();
+      boss.shotTimer = k == 4 ? .43f : .22f;
+    }
+    if (charge && overlap(playerBox(), {boss.x - 67, boss.y - 29, 125, 29}))
+      hitPlayer();
+  }
+  boss.timer = std::max(0.0f, boss.duration - boss.stateAge);
   if (boss.timer > 0)
     return;
-  if (boss.state == 0) {
-    boss.state = 1;
-    boss.timer = .65f;
-    boss.targetX = player.x;
+  if (boss.state == BossState::Move || boss.state == BossState::Enter ||
+      boss.state == BossState::Overload) {
+    boss.targetX = clamp(player.x, level().width - W + 35, level().width - 100);
+    enter(BossState::Windup, boss.phase == 2 ? .72f : .92f);
     sounds.push_back(Sound::Boss);
-    return;
-  }
-  if (boss.state == 1) {
-    const int k = level().bossKind, phase = boss.phase;
-    float ox = boss.x - 48, oy = boss.y - 51;
-    auto aimed = [&](float speed, float spread = 0) {
-      float a = std::atan2(player.y - 18 - oy, player.x - ox) + spread;
-      fire(ox, oy, std::cos(a) * speed, std::sin(a) * speed, 1, 4, true, 5);
-    };
-    if (k == 0) {
-      if (boss.pattern % 2 == 0) {
-        for (int i = 0; i < 3 + phase; i++)
-          aimed(95, i * .13f - .2f);
-      } else {
-        for (int i = 0; i < phase + 1; i++)
-          fire(boss.targetX - 25 + i * 42, 42, 0, 150, 1, 6, true, 3);
-      }
-    }
-    if (k == 1) {
-      if (boss.pattern % 2 == 0)
-        for (int i = 0; i < 3 + phase; i++)
-          fire(ox, oy, -95 - i * 22, -170 - i * 12, 1, 3, true, 1.2f + i * .12f);
-      else {
-        boss.x -= 35;
-        for (int i = 0; i < phase + 1; i++)
-          fire(ox, 218, -125 - i * 22, 0, 1, 4, true, 4);
-      }
-    }
-    if (k == 2) {
-      for (int i = 0; i < 3 + phase; i++) {
-        float a = 3.14159f + (i - (2 + phase) * .5f) * .19f;
-        fire(ox, oy, std::cos(a) * 125, std::sin(a) * 125, 1, 4, true, 4);
-      }
-      if (phase == 2)
-        fire(player.x, 20, 0, 130, 1, 6, true, 3);
-    }
-    if (k == 3) {
-      if (boss.pattern % 2 == 0) {
-        for (int i = 0; i < phase + 2; i++)
-          fire(boss.targetX - 45 + i * 40, 40, 0, 175, 1, 6, true, 2);
-      } else
-        for (int i = 0; i < 4 + phase; i++)
-          fire(ox, 210 - i * 9, -110, 0, 1, 4, true, 5);
-    }
-    if (k == 4) {
-      for (int i = 0; i < 8 + phase * 2; i++) {
-        float a = 6.28318f * i / (8 + phase * 2) + boss.pattern * .18f;
-        fire(boss.x, boss.y - 50, std::cos(a) * 82, std::sin(a) * 82, 1, 5, true, 4);
-      }
-      boss.x = level().width - 180 + std::sin(boss.pattern * 2) * 45;
-    }
-    if (k == 5) {
-      for (int i = 0; i < phase + 3; i++)
-        aimed(112, i * .14f - .24f);
-      if (boss.pattern % 2 == 1)
-        for (int i = 0; i < 3; i++)
-          fire(boss.targetX - 40 + i * 40, 24, 0, 160, 1, 6, true, 2);
-    }
-    burst(ox, oy, 0, 12);
-    shake = 2;
-    boss.state = 2;
-    boss.timer = phase == 2 ? 1.15f : 1.7f;
+  } else if (boss.state == BossState::Windup) {
+    enter(BossState::Attack, k == 1 && boss.pattern % 2 ? .95f : .82f);
+  } else if (boss.state == BossState::Attack) {
+    enter(BossState::Recover, boss.phase == 2 ? 1.1f : 1.45f);
+  } else {
     boss.pattern++;
-    return;
+    // Alternating destinations avoid endless leftward drift and guarantee
+    // readable repositioning between attacks for every grounded boss.
+    boss.moveX = level().width - (boss.pattern % 2 ? 278 : 128);
+    boss.moveY = 174;
+    enter(BossState::Move, boss.phase == 2 ? 1.55f : 1.9f);
   }
-  boss.state = 0;
-  boss.timer = boss.phase == 2 ? .45f : .85f;
 }
 void Game::update(Input in, float dt) {
   sounds.clear();
   // Save the last fixed-step position so the renderer can interpolate between
   // 60 Hz simulation ticks when the desktop window is refreshed more often.
-  player.prevX = player.x;
-  player.prevY = player.y;
+  syncPresentation();
   time += dt;
   shake = std::max(0.0f, shake - dt * 8);
   flash = std::max(0.0f, flash - dt);
@@ -393,6 +490,7 @@ void Game::update(Input in, float dt) {
           if (b.hostile)
             b.alive = false;
         camera = clamp(checkpoint - 100, 0, level().width - W);
+        syncPresentation();
       }
     }
     return;
@@ -403,6 +501,7 @@ void Game::update(Input in, float dt) {
   player.land = std::max(0.0f, player.land - dt);
   player.recoil = std::max(0.0f, player.recoil - dt);
   player.hitFlash = std::max(0.0f, player.hitFlash - dt);
+  player.fireAge += dt;
   const bool wasGrounded = player.grounded;
   player.crouch = in.down && player.grounded && player.vehicleHP == 0;
   player.vx = player.crouch ? 0 : in.move * (player.vehicleHP ? 125.0f : 145.0f);
@@ -451,6 +550,8 @@ void Game::update(Input in, float dt) {
     burst(player.x, player.y, 1, 4, .45f);
   }
   player.x = clamp(player.x, 12, level().width - 18);
+  if (player.grounded)
+    player.stride += std::fabs(player.x - oldx) / 88.0f;
   if (player.y > H + 85) {
     player.inv = 0;
     if (debugInvincible) {
@@ -471,6 +572,8 @@ void Game::update(Input in, float dt) {
   if (boss.active) {
     player.x = std::max(player.x, level().width - W + 12);
     camera = level().width - W;
+    if (std::fabs(camera - prevCamera) > 32)
+      prevCamera = camera;
   } else {
     float target = clamp(player.x - 155, 0, level().width - W);
     camera += (target - camera) * std::min(1.0f, dt * 7);
@@ -508,6 +611,7 @@ void Game::update(Input in, float dt) {
           break;
         }
     if (!melee) {
+      player.fireAge = 0;
       int w = player.vehicleHP ? 1 : player.weapon;
       float vx = player.dir * 500.0f, vy = 0, ox = player.x + player.dir * 19,
             oy = player.y - (player.crouch ? 14 : 27);
