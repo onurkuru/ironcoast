@@ -67,6 +67,7 @@ Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, boo
   Atlas a;
   a.cols = cols;
   a.rows = rows;
+  a.trimmed = trim;
   int n;
   unsigned char *pixels = stbi_load((assets + "/" + name).c_str(), &a.width, &a.height, &n, 4);
   if (!pixels)
@@ -191,7 +192,13 @@ void Renderer::sprite(const Atlas &a, int idx, float x, float y, float w, float 
 void Renderer::groundedSprite(const Atlas &a, int idx, float x, float y, float w, float h,
                               bool flip, double angle, uint8_t alpha) {
   int safe = std::max(0, std::min(idx, int(a.cells.size() - 1)));
-  float shift = safe < int(a.baselines.size()) ? (1.0f - a.baselines[safe]) * h : 0.0f;
+  // Trimmed cells are already mapped from their visible bounding box to the
+  // complete destination box, so their visible bottom is exactly y + h.
+  // Applying the full-cell baseline a second time pushed run-fire and worker
+  // poses below the collision line. Only untrimmed atlases need the correction.
+  float shift = !a.trimmed && safe < int(a.baselines.size())
+                    ? (1.0f - a.baselines[safe]) * h
+                    : 0.0f;
   sprite(a, safe, x, y + shift, w, h, flip, angle, alpha);
 }
 void Renderer::spritePart(const Atlas &a, int idx, Rect part, float x, float y, float w, float h,
@@ -417,11 +424,6 @@ void Renderer::background(int theme, float camera, float time) {
     rect(x + 18, y + 15, 12, 20, theme == 1 ? 0x1B4B5128 : 0x22263228);
     rect(x + 48, y + 15, 24, 20, theme == 3 ? 0x6A2A2028 : 0x25323A28);
   }
-  // Slow second-depth silhouettes keep scrolling distinct from the far scenery.
-  for (int i = 0; i < 6; i++) {
-    float x = i * 121 - std::fmod(camera * .38f, 121.0f);
-    line(x, 0, x, 35 + std::sin(float(i)) * 12, 0x14263080);
-  }
   // Midground silhouettes give the painted panels a second depth layer. They
   // scroll slower than the gameplay plane, making camera motion feel richer
   // without changing collision geometry.
@@ -465,23 +467,18 @@ void Renderer::background(int theme, float camera, float time) {
   }
 }
 void Renderer::foregroundDepth(int theme, float camera, float time) {
-  // The foreground is deliberately sparse: the player and projectiles remain
-  // readable while close rails, cables and hanging hooks sweep past faster
-  // than the collision plane. All elements are existing authored prop art or
-  // simple silhouettes, so no extra runtime texture is required on Vita.
-  const float travel = camera * 1.12f - time * 8.0f;
-  for (int i = 0; i < 6; i++) {
-    float x = std::fmod(i * 124.0f - travel + 800.0f, 620.0f) - 90.0f;
-    float y = 246.0f + (i % 2) * 4.0f;
-    sprite(props, (theme * 2 + i) % 6, x, y, 102, 28, false, 0, 92);
-    rect(x, y, 102, 2, 0x08131AD0);
-  }
-  for (int i = 0; i < 5; i++) {
-    float x = std::fmod(i * 151.0f - camera * 1.28f + time * 10.0f + 640.0f, 620.0f) - 70.0f;
-    float sway = std::sin(time * 1.7f + i * 1.8f) * 12.0f;
-    line(x, 28, x + sway, 122 + (i % 2) * 22, 0x07131AA0);
-    line(x + 1, 28, x + sway + 1, 122 + (i % 2) * 22, 0xC3944960);
-    rect(x + sway - 3, 120 + (i % 2) * 22, 7, 5, 0x1D2B32BB);
+  // The near field is a quiet architectural silhouette along the floor. It
+  // moves a little faster than gameplay to sell depth without putting random
+  // ropes, hooks or props in front of the actors.
+  const float travel = camera * 1.12f - time * 3.0f;
+  uint32_t shadow = theme == 1 || theme == 4 ? 0x071C2538 : 0x120F1838;
+  for (int i = 0; i < 7; i++) {
+    float x = std::fmod(i * 118.0f - travel + 800.0f, 620.0f) - 90.0f;
+    float w = 64.0f + (i % 3) * 18.0f;
+    float h = 5.0f + (i % 2) * 4.0f;
+    rect(x, 267.0f - h, w, h, shadow);
+    rect(x + 8.0f, 267.0f - h - 2.0f, 2.0f, 2.0f,
+         theme == 1 ? 0x62C8BC42 : 0xD78D4842);
   }
 }
 void Renderer::lightingPass(const Game &g, float camera, float time, float alpha) {
@@ -501,12 +498,17 @@ void Renderer::lightingPass(const Game &g, float camera, float time, float alpha
     rect(0, 265 - i * 2, W, 2, 0x050B1200 | uint8_t(a * .8f));
   }
   auto glow = [&](float x, float y, float radius, uint32_t color) {
-    for (int i = 6; i >= 1; i--) {
-      float t = i / 6.0f;
-      uint8_t a = uint8_t((1.0f - t) * 28 + 5);
-      ring(x, y, radius * t, radius * .62f * t, (color & 0xFFFFFF00) | a);
+    // Filled, nested bands read as a soft point light at the game's native
+    // resolution. Outlines made the old glow look like a debug reticle.
+    for (int i = 7; i >= 1; i--) {
+      float t = i / 7.0f;
+      float halfW = radius * t;
+      float halfH = radius * .42f * t;
+      uint8_t a = uint8_t(4 + (1.0f - t) * 18);
+      rect(x - halfW, y - halfH, halfW * 2.0f, halfH * 2.0f,
+           (color & 0xFFFFFF00) | a);
     }
-    rect(x - 2, y - 2, 4, 4, (color & 0xFFFFFF00) | 148);
+    rect(x - 1.5f, y - 1.5f, 3, 3, (color & 0xFFFFFF00) | 164);
   };
   // Practical lamps repeat with the same period as the middle-distance tiles.
   for (int i = 0; i < 9; i++) {
@@ -697,7 +699,8 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
                                     : (p.recoil > 0 ? -p.dir * 2.0 : 0.0);
       if (g.status == Status::Dying) {
         float deathT = std::clamp(1.0f - g.deathTimer, 0.0f, 1.0f);
-        frame = modernHero ? 48 + std::min(7, int(deathT * 8))
+        static constexpr int deathFrames[] = {48, 49, 50, 51, 52, 53, 54, 54};
+        frame = modernHero ? deathFrames[std::min(7, int(deathT * 8))]
                            : 28 + std::min(3, int((1 - g.deathTimer) * 5));
         w = playerW * (1.0f + deathT * .18f);
         h = playerH * (1.0f - deathT * .16f);
@@ -746,9 +749,12 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
           frame = crouchIdleFrames[int(p.anim * 5) % 3];
         }
       } else if (std::fabs(p.vx) > 1 && (v.input.shoot || p.shot > 0)) {
-        frame = modernHero ? 56 + int(p.stride * 8) % 8 : 12 + std::min(3, int(p.fireAge * 28));
+        static constexpr int runFireFrames[] = {56, 57, 58, 59, 60, 61, 62, 62};
+        frame = modernHero ? runFireFrames[int(p.stride * 8) % 8]
+                           : 12 + std::min(3, int(p.fireAge * 28));
       } else if (std::fabs(p.vx) > 1) {
-        frame = int(p.stride * 8) % 8;
+        static constexpr int runFrames[] = {0, 1, 2, 3, 4, 5, 6, 6};
+        frame = modernHero ? runFrames[int(p.stride * 8) % 8] : int(p.stride * 8) % 8;
       } else if (v.input.shoot || p.shot > 0) {
         frame = 12 + std::min(3, int(p.fireAge * 28));
       }

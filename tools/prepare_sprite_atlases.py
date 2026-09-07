@@ -2,9 +2,9 @@
 """Normalize generated sprite sheets to stable atlas cells.
 
 The artwork is authored as pose boards. This tool only normalizes dimensions,
-keys the neutral checkerboard/paper or black backdrop, and assembles the six
-boss boards into one 4x24 atlas. It never downloads or copies commercial game
-artwork.
+keys the neutral checkerboard/paper or black backdrop, keeps each resize inside
+its source cell, and fills known seven-pose rows with a held final pose. It never
+downloads or copies commercial game artwork.
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ def key_backdrop(image: Image.Image, black: bool = False) -> Image.Image:
 
 
 def normalize(source: Path, target: Path, size: tuple[int, int], cols: int, rows: int,
-              black: bool = False) -> None:
+              black: bool = False, duplicate_rows: tuple[int, ...] = ()) -> None:
     source_image = Image.open(source).convert("RGBA")
     # Resize each authored cell independently. Resizing the complete board lets
     # Lanczos sample a neighboring pose, which produces stray limbs around a
@@ -50,6 +50,10 @@ def normalize(source: Path, target: Path, size: tuple[int, int], cols: int, rows
             cell = cell.resize((cell_w, cell_h), Image.Resampling.LANCZOS)
             cell = key_backdrop(cell, black=black)
             image.alpha_composite(cell, (col * cell_w, row * cell_h))
+    for row in duplicate_rows:
+        src = image.crop((6 * cell_w, row * cell_h, 7 * cell_w, (row + 1) * cell_h))
+        image.paste((0, 0, 0, 0), (7 * cell_w, row * cell_h, 8 * cell_w, (row + 1) * cell_h))
+        image.alpha_composite(src, (7 * cell_w, row * cell_h))
     target.parent.mkdir(parents=True, exist_ok=True)
     image.save(target, "PNG", optimize=True)
 
@@ -69,7 +73,8 @@ def main() -> None:
                         default=Path(__file__).resolve().parent / "sourceboards")
     args = parser.parse_args()
     assets = args.assets
-    normalize(args.source_dir / "hero-source.png", assets / "hero-v2.png", (768, 768), 8, 8)
+    normalize(args.source_dir / "hero-source.png", assets / "hero-v2.png", (768, 768), 8, 8,
+              duplicate_rows=(0, 6, 7))
     normalize(args.source_dir / "enemies-source.png", assets / "enemies-v2.png", (768, 576), 8, 6)
     normalize(args.source_dir / "vehicle-source.png", assets / "vehicle-v2.png", (768, 768), 4, 4,
               black=True)

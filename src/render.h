@@ -7,6 +7,7 @@ namespace kh {
 struct Atlas {
   SDL_Texture *texture = nullptr;
   int width = 0, height = 0, cols = 1, rows = 1;
+  bool trimmed = false;
   std::vector<SDL_Rect> cells;
   std::vector<float> baselines;
 };

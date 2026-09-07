@@ -50,53 +50,58 @@ void Audio::play(Sound s) {
   *v = {0, 300, 0, .22f, .1f, .1f, 0, .35f};
   switch (s) {
   case Sound::Shot:
-    v->freq = 700;
-    v->slide = -6000;
-    v->remaining = .055f;
-    v->wave = 2;
-    v->noiseMix = .28f;
+    v->freq = 760;
+    v->slide = -5200;
+    v->remaining = .075f;
+    v->wave = 3;
+    v->volume = .2f;
+    v->noiseMix = .2f;
     break;
   case Sound::Heavy:
-    v->freq = 330;
-    v->slide = -1800;
-    v->remaining = .07f;
-    v->wave = 2;
-    v->volume = .16f;
-    v->noiseMix = .22f;
+    v->freq = 250;
+    v->slide = -1250;
+    v->remaining = .11f;
+    v->wave = 3;
+    v->volume = .21f;
+    v->noiseMix = .26f;
     break;
   case Sound::Shotgun:
     v->freq = 180;
     v->remaining = .15f;
-    v->wave = 2;
+    v->wave = 3;
     v->volume = .3f;
-    v->noiseMix = .62f;
+    v->noiseMix = .56f;
     break;
   case Sound::Rocket:
     v->freq = 110;
     v->remaining = .25f;
     v->slide = 100;
-    v->wave = 2;
-    v->noiseMix = .42f;
+    v->wave = 3;
+    v->volume = .33f;
+    v->noiseMix = .36f;
     break;
   case Sound::Flame:
     v->freq = 95;
     v->slide = 340;
     v->remaining = .18f;
-    v->wave = 2;
-    v->volume = .22f;
-    v->noiseMix = .46f;
+    v->wave = 3;
+    v->volume = .24f;
+    v->noiseMix = .34f;
     break;
   case Sound::Laser:
     v->freq = 920;
     v->slide = -2400;
     v->remaining = .12f;
-    v->volume = .18f;
-    v->noiseMix = .025f;
+    v->wave = 3;
+    v->volume = .2f;
+    v->noiseMix = .015f;
     break;
   case Sound::Grenade:
     v->freq = 520;
     v->slide = -850;
     v->remaining = .13f;
+    v->wave = 3;
+    v->volume = .2f;
     break;
   case Sound::Blast:
     v->freq = 70;
@@ -108,7 +113,7 @@ void Audio::play(Sound s) {
     break;
   case Sound::Hit:
     v->freq = 250;
-    v->wave = 2;
+    v->wave = 3;
     v->remaining = .07f;
     v->noiseMix = .38f;
     break;
@@ -134,6 +139,7 @@ void Audio::play(Sound s) {
     v->freq = 280;
     v->slide = -650;
     v->remaining = .35f;
+    v->wave = 3;
     v->volume = .28f;
     break;
   case Sound::Boss:
@@ -145,9 +151,9 @@ void Audio::play(Sound s) {
   case Sound::Step:
     v->freq = 120;
     v->remaining = .025f;
-    v->wave = 2;
+    v->wave = 3;
     v->volume = .08f;
-    v->noiseMix = .58f;
+    v->noiseMix = .46f;
     break;
   case Sound::Stomp:
     v->freq = 88;
@@ -186,7 +192,14 @@ void Audio::mix(int16_t *out, int count) {
       int note = motifs[theme % 6][step];
       float transpose = boss ? 3.0f : 0.0f;
       float hz = 110 * std::pow(2.0f, (note + transpose) / 12.0f);
-      float lead = std::sin(6.283185f * hz * 2 * t) * std::exp(-f * 4) * (boss ? .045f : .036f);
+      float lead = (std::sin(6.283185f * hz * 2 * t) * .72f +
+                    std::sin(6.283185f * hz * 4 * t) * .18f +
+                    std::sin(6.283185f * hz * 1.005f * t) * .10f) *
+                   std::exp(-f * 3.2f) * (boss ? .052f : .042f);
+      int accentNote = motifs[theme % 6][(step + 5) % 16];
+      float accentHz = 220 * std::pow(2.0f, (accentNote + transpose) / 12.0f);
+      float accent = std::sin(6.283185f * accentHz * t) * std::exp(-f * 11.0f) *
+                     (step % 4 == 1 ? .018f : .010f);
       int chordNote = motifs[theme % 6][(step / 4) * 4];
       float rootHz = 55 * std::pow(2.0f, (chordNote + transpose) / 12.0f);
       float thirdHz = rootHz * (theme % 2 ? 1.1892f : 1.2599f);
@@ -195,8 +208,9 @@ void Audio::mix(int16_t *out, int count) {
       float pad = (std::sin(6.283185f * rootHz * t) * .014f +
                    std::sin(6.283185f * thirdHz * t) * .010f +
                    std::sin(6.283185f * fifthHz * t) * .008f) * padGate;
-      float bass = (2 / std::acos(-1.0f)) * std::asin(std::sin(6.283185f * rootHz * .5f * t)) *
-                   (boss ? .064f : .05f);
+      float bassPhase = std::fmod(rootHz * .5f * t, 1.0f);
+      float bassWave = 4.0f * std::fabs(bassPhase - .5f) - 1.0f;
+      float bass = bassWave * (boss ? .062f : .048f);
       float kick = step % 4 == 0
                        ? std::sin(6.283185f * (65 - 35 * f) * f * .14f) * std::exp(-f * 12) * .12f
                        : 0;
@@ -209,7 +223,7 @@ void Audio::mix(int16_t *out, int count) {
       float alarm = boss ? std::sin(6.283185f * (190 + 28 * std::sin(t * .8f)) * t) *
                                std::exp(-f * 3) * .012f
                          : 0;
-      sum = lead + pad + bass + kick + snare + hat + ghost + tom + alarm;
+      sum = lead + accent + pad + bass + kick + snare + hat + ghost + tom + alarm;
       sample++;
     }
     for (auto &v : voices)
@@ -219,6 +233,8 @@ void Audio::mix(int16_t *out, int count) {
         v.phase += v.freq * dt;
         v.phase -= std::floor(v.phase);
         float osc = v.wave == 2   ? n * v.noiseMix + std::sin(v.phase * 6.283185f) * (1.0f - v.noiseMix)
+                    : v.wave == 3 ? ((4.0f * std::fabs(v.phase - .5f) - 1.0f) * .72f +
+                                     std::sin(v.phase * 12.56637f) * .28f)
                     : v.wave == 1 ? (v.phase < .5f ? .6f : -.6f)
                                   : std::sin(v.phase * 6.283185f);
         // A short attack and release prevents zipper clicks while retaining

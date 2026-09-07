@@ -48,13 +48,18 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 ### Visual and audio polish
 
 - Added midground parallax silhouettes, practical lights, warm coastal haze and a restrained CRT scanline/vignette pass.
-- Added a four-rate 2.5D depth stack: the painted world scrolls slowly, middle silhouettes drift at 34%, gameplay remains at 100%, and a sparse authored-prop rail/cable foreground sweeps at 112–128%. The foreground is drawn after actors with low alpha so it gives camera movement depth without hiding targets or changing collision.
+- Added a four-rate 2.5D depth stack: the painted world scrolls slowly, middle silhouettes drift at 34%, gameplay remains at 100%, and a quiet floor-level near-field silhouette moves at 112%. The near field is drawn after actors with low alpha so it gives camera movement depth without putting arbitrary hanging geometry over the action.
 - Softened the light pass after visual inspection: volumetric shafts are now tapered alpha bands with an inner-to-outer fade instead of hard debug-like lines, while ambient grading and point lights stay subtle enough to preserve the painted art.
 - Fixed floating poses by measuring each atlas cell's visible alpha bottom at load time. Grounded sprites receive a per-frame baseline correction; airborne poses and intentional death arcs keep their original vertical composition.
-- Corrected semantic frame mapping: hero jump uses cells 17–21, crouch uses 16/24–30, melee uses all cells 40–47, and enemy attacks use cells 4–5 while death uses the authored collapse cells 6–7.
+- Corrected semantic frame mapping: hero jump uses cells 17–21, crouch uses 16/24–30, melee uses all cells 40–47, and enemy attacks use cells 4–5 while death uses the authored collapse cells 6–7. The hero's seven-pose run, death and run-fire strips now hold their last valid pose in the eighth timing slot instead of selecting the partial contact-sheet cell.
 - Added grounded actor shadows so jumps, drones and deaths read clearly against the painted backgrounds.
 - Expanded the procedural soundtrack with chord pads, bass movement, kick, snare, hi-hat and ghost rhythm layers. Boss encounters raise the tempo, transpose the motif and add tom/alarm accents.
-- Audio now runs at 32 kHz with per-effect noise balance and short attack/release envelopes: metallic shots stay punchy, laser stays tonal, and flame/blast effects retain controlled texture. Added dedicated Flame Shot and Laser sound signatures while preserving the existing weapon, rescue, hit, vehicle and boss cues.
+- Audio now runs at 32 kHz with triangle/sine timbres, per-effect noise balance and short attack/release envelopes: metallic shots have a defined transient, laser stays tonal, and flame/blast effects retain controlled texture. The music adds a shaped lead, accent plucks, triangle bass and a restrained boss layer while preserving the existing weapon, rescue, hit, vehicle and boss cues.
+
+### Replaced visual study
+
+- The developers describe Replaced as pixel art presented through a 2.5D camera, with dynamic lighting and shadows, volumetric fog, layered effects and carefully authored frame-by-frame animation. Those principles are documented in [Xbox Wire's combat/art direction notes](https://news.xbox.com/en-us/2026/04/14/replaced-combat/?ver=3.7.1) and the [Sad Cat Studios visual breakdown](https://store.epicgames.com/es-MX/news/the-inspirations-and-innovations-of-replaced).
+- Applied here as restrained equivalents: filled light falloff behind actors, warm/cool stage grades, layered haze and parallax silhouettes, plus contact shadows and fixed foot anchors. The near field stays at floor level so depth supports composition without arbitrary cables crossing the play space.
 
 ## Verification
 
