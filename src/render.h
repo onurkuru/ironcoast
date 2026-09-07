@@ -8,6 +8,7 @@ struct Atlas {
   SDL_Texture *texture = nullptr;
   int width = 0, height = 0, cols = 1, rows = 1;
   std::vector<SDL_Rect> cells;
+  std::vector<float> baselines;
 };
 enum class Screen { Title, Map, Brief, Play, Pause, Debrief, Ending, Options, Controls };
 struct ViewState {
@@ -34,6 +35,8 @@ public:
   void wrapped(std::string, float, float, int, int, uint32_t);
   void sprite(const Atlas &, int, float, float, float, float, bool flip = false, double angle = 0,
               uint8_t alpha = 255);
+  void groundedSprite(const Atlas &, int, float, float, float, float, bool flip = false,
+                      double angle = 0, uint8_t alpha = 255);
   void spritePart(const Atlas &, int, Rect, float, float, float, float,
                   float angle = 0, float pivotX = .5f, float pivotY = .5f, uint8_t alpha = 255);
   void ring(float, float, float, float, uint32_t);
