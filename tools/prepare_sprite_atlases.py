@@ -31,10 +31,25 @@ def key_backdrop(image: Image.Image, black: bool = False) -> Image.Image:
     return rgba
 
 
-def normalize(source: Path, target: Path, size: tuple[int, int], black: bool = False) -> None:
-    image = Image.open(source).convert("RGBA")
-    image = image.resize(size, Image.Resampling.LANCZOS)
-    image = key_backdrop(image, black=black)
+def normalize(source: Path, target: Path, size: tuple[int, int], cols: int, rows: int,
+              black: bool = False) -> None:
+    source_image = Image.open(source).convert("RGBA")
+    # Resize each authored cell independently. Resizing the complete board lets
+    # Lanczos sample a neighboring pose, which produces stray limbs around a
+    # character at runtime.
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    cell_w, cell_h = size[0] // cols, size[1] // rows
+    for row in range(rows):
+        for col in range(cols):
+            sx0 = col * source_image.width // cols
+            sx1 = (col + 1) * source_image.width // cols
+            sy0 = row * source_image.height // rows
+            sy1 = (row + 1) * source_image.height // rows
+            cell = source_image.crop((sx0, sy0, sx1, sy1))
+            cell = key_backdrop(cell, black=black)
+            cell = cell.resize((cell_w, cell_h), Image.Resampling.LANCZOS)
+            cell = key_backdrop(cell, black=black)
+            image.alpha_composite(cell, (col * cell_w, row * cell_h))
     target.parent.mkdir(parents=True, exist_ok=True)
     image.save(target, "PNG", optimize=True)
 
@@ -43,9 +58,8 @@ def prepare_bosses(source_dir: Path, target_dir: Path) -> None:
     board_size = (768, 768)  # 4x4 cells, 192px per authored pose
     for boss in range(6):
         source = source_dir / f"boss{boss}-source.png"
-        board = Image.open(source).convert("RGBA").resize(board_size, Image.Resampling.LANCZOS)
-        board = key_backdrop(board)
-        board.save(target_dir / f"boss{boss}-v2.png", "PNG", optimize=True)
+        target = target_dir / f"boss{boss}-v2.png"
+        normalize(source, target, board_size, 4, 4)
 
 
 def main() -> None:
@@ -55,9 +69,10 @@ def main() -> None:
                         default=Path(__file__).resolve().parent / "sourceboards")
     args = parser.parse_args()
     assets = args.assets
-    normalize(args.source_dir / "hero-source.png", assets / "hero-v2.png", (768, 768))
-    normalize(args.source_dir / "enemies-source.png", assets / "enemies-v2.png", (768, 576))
-    normalize(args.source_dir / "vehicle-source.png", assets / "vehicle-v2.png", (768, 768), black=True)
+    normalize(args.source_dir / "hero-source.png", assets / "hero-v2.png", (768, 768), 8, 8)
+    normalize(args.source_dir / "enemies-source.png", assets / "enemies-v2.png", (768, 576), 8, 6)
+    normalize(args.source_dir / "vehicle-source.png", assets / "vehicle-v2.png", (768, 768), 4, 4,
+              black=True)
     prepare_bosses(args.source_dir, assets)
 
 

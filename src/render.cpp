@@ -626,10 +626,15 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     if ((e.dead && e.death <= 0) || !e.active || e.x < camera - 60 || e.x > camera + W + 60)
       continue;
     float deathT = e.dead ? 1.0f - std::clamp(e.death / .45f, 0.0f, 1.0f) : 0.0f;
-    int frame = e.dead ? 7
-                       : e.state == 1 ? 4
-                       : e.state == 2 ? 5 + int(time * 8 + e.origin) % 3
-                                      : int(time * 8 + e.origin) % 4;
+    // The v2 enemy atlas uses four locomotion cells, two attack cells and two
+    // collapse cells per row. Keep attack on 4/5; cells 6/7 are the authored
+    // hit-to-ground transition and should never be shown during a live attack.
+    int frame = e.dead
+                    ? (e.kind == 5 ? std::min(1, int(deathT * 2))
+                                   : 6 + std::min(1, int(deathT * 2)))
+                    : e.state == 1 ? 4
+                    : e.state == 2 ? 4 + int(time * 8 + e.origin) % 2
+                                    : int(time * 8 + e.origin) % 4;
     int idx = e.kind * 8 + frame;
     float h = e.kind == 3   ? 31
               : e.kind == 4 ? 31
@@ -699,16 +704,18 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         y = playerY - h - std::sin(deathT * 3.14159f) * 9.0f;
         angle = std::sin(time * 26) * 8;
       } else if (p.action > 0 && p.actionKind == 1) {
-        int meleeFrame = std::min(4, int((.42f - p.action) * 12));
-        if (meleeFrame < 4) {
+        int meleeFrame = std::min(7, int((.42f - p.action) / .42f * 8.0f));
+        if (meleeFrame < 8) {
           // The authored hero atlas has a complete eight-frame wrench swing;
-          // keep the original fallback for older asset packs.
+          // sample every cell so the hit arc does not skip half its poses.
           if (modernHero)
-            groundedSprite(hero, 40 + meleeFrame * 2, px - w / 2, y, w, h, p.dir < 0,
-                   meleeFrame == 1 ? -p.dir * 5.0 : meleeFrame == 2 ? p.dir * 4.0 : 0.0);
+            groundedSprite(hero, 40 + meleeFrame, px - w / 2, y, w, h, p.dir < 0,
+                   meleeFrame == 2 || meleeFrame == 3 ? -p.dir * 5.0
+                   : meleeFrame == 4 || meleeFrame == 5 ? p.dir * 4.0 : 0.0);
           else
-            sprite(melee, meleeFrame, px - w / 2, y, w, h, p.dir < 0,
-                   meleeFrame == 1 ? -p.dir * 5.0 : meleeFrame == 2 ? p.dir * 4.0 : 0.0);
+            sprite(melee, std::min(3, meleeFrame / 2), px - w / 2, y, w, h, p.dir < 0,
+                   meleeFrame == 2 || meleeFrame == 3 ? -p.dir * 5.0
+                   : meleeFrame == 4 || meleeFrame == 5 ? p.dir * 4.0 : 0.0);
           frame = -1;
         } else {
           frame = 8 + int(p.anim * 5) % 4;
@@ -723,9 +730,21 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         sprite(aim, idx, px - w / 2, y, w, h, p.dir < 0);
         frame = -1;
       } else if (!p.grounded) {
-        frame = 16 + (p.vy < -140 ? 1 : p.vy < 30 ? 2 : 3);
+        // Row 2 is a mixed transition strip: cell 16 is a crouch settle and
+        // cells 17..21 are the airborne arc. Do not use the crouch cell as a
+        // jump frame; it makes the character appear to snap into the floor.
+        static constexpr int jumpFrames[] = {17, 18, 19, 20, 21};
+        int jumpPhase = p.vy < -180 ? 0 : p.vy < -55 ? 1 : p.vy < 90 ? 2 : 3;
+        frame = jumpFrames[std::clamp(jumpPhase, 0, 4)];
       } else if (p.crouch) {
-        frame = 20 + (v.input.shoot ? 2 + int(p.anim * 10) % 2 : 1);
+        // Row 2 cell 16 and row 3 cells 24..30 are the authored crouch set;
+        // row 2 cells 17..21 remain reserved for the jump arc.
+        if (v.input.shoot || p.shot > 0)
+          frame = 26 + int(p.anim * 12) % 5;
+        else {
+          static constexpr int crouchIdleFrames[] = {16, 24, 25};
+          frame = crouchIdleFrames[int(p.anim * 5) % 3];
+        }
       } else if (std::fabs(p.vx) > 1 && (v.input.shoot || p.shot > 0)) {
         frame = modernHero ? 56 + int(p.stride * 8) % 8 : 12 + std::min(3, int(p.fireAge * 28));
       } else if (std::fabs(p.vx) > 1) {

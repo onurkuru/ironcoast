@@ -56,8 +56,11 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./build/kiyi_hurdasi --assets ../ass
 
 ## Original sprite atlas pass
 
-The player uses `hero-v2.png` with eight authored rows: run, idle/fire, jump/crouch,
-grenade, melee, death and run-fire. `enemies-v2.png` contains eight frames for
+The player uses `hero-v2.png` with eight authored rows: run, idle/fire, a mixed
+jump transition strip, crouch-fire, grenade, melee, death and run-fire. The
+renderer maps the jump arc to cells 17–21, crouch idle to 16/24/25, crouch-fire
+to 26–30, and the full melee swing to 40–47 so mixed rows never select the wrong
+pose. `enemies-v2.png` contains eight frames for
 guards, grenadiers, shield troops, drones, turrets and rescued workers. `vehicle-v2.png`
 adds movement, firing, damage and collapse frames for the Scrap Walker. Each of the
 six missions has its own `boss0-v2.png` through `boss5-v2.png` 4×4 atlas so Vita never
@@ -90,4 +93,4 @@ The comparison video is a silent 12-second, 30 fps recording of the 60 Hz simula
 
 ## Teknik notlar
 
-The game runs at a 480×272 logical resolution with nearest-neighbor pixel sampling and a 60 Hz simulation. Desktop uses SDL2; Vita uses the VitaSDK SDL2 port. Normal player poses share a 48×48 ground box, atlas cells retain a consistent authored scale, visible sprite bottoms are measured at load time, and grounded frames receive a small baseline correction so feet stay on the same collision line. The player is interpolated between fixed ticks for smoother motion. Backgrounds use four depth rates: painted scenery at 16%, industrial middle silhouettes at 34%, the gameplay plane at 100%, and a sparse authored-prop foreground rail/cable pass at 112–128%. This creates a restrained 2.5D effect without changing collision geometry or adding a large texture. Practical lights, haze and a light CRT pass complete the scene. Music is generated in real time with per-stage motifs and a higher-intensity boss arrangement; 32 kHz sound effects use per-weapon noise balance and click-free envelopes. The visual designs are original and do not use existing commercial characters or vehicles.
+The game runs at a 480×272 logical resolution with nearest-neighbor pixel sampling and a 60 Hz simulation. Desktop uses SDL2; Vita uses the VitaSDK SDL2 port. Normal player poses share a 48×48 ground box, atlas cells retain a consistent authored scale, visible sprite bottoms are measured at load time, and grounded frames receive a small baseline correction so feet stay on the same collision line. The player is interpolated between fixed ticks for smoother motion. Backgrounds use four depth rates: painted scenery at 16%, industrial middle silhouettes at 34%, the gameplay plane at 100%, and a sparse authored-prop foreground rail/cable pass at 112–128%. This creates a restrained 2.5D effect without changing collision geometry or adding a large texture. The sprite preparation tool crops and rescales every authored atlas cell independently, preventing Lanczos sampling from pulling opaque pixels out of a neighboring frame. Practical lights, haze and a light CRT pass complete the scene. Music is generated in real time with per-stage motifs and a higher-intensity boss arrangement; 32 kHz sound effects use per-weapon noise balance and click-free envelopes. The visual designs are original and do not use existing commercial characters or vehicles.

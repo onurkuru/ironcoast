@@ -24,7 +24,7 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 
 - Added a continuous animation clock, landing timer, recoil timer and hit flash to the player state.
 - Normal player poses now share a stable 48×48 ground box. Aim, grenade, melee, jump and fire transitions keep the same baseline.
-- Authored atlas cells are now kept at their original grid bounds instead of being trimmed independently; the renderer interpolates the player between fixed 60 Hz simulation ticks for smoother camera motion.
+- The source boards are normalized cell-by-cell before runtime import, while each visible pose keeps a stable destination box. This prevents resampling from pulling pixels from a neighboring frame; the renderer interpolates the player between fixed 60 Hz simulation ticks for smoother camera motion.
 - Added walk bob, idle breathing, vehicle bob, muzzle flash and landing dust.
 - Extended melee and grenade pose timing so their frames are readable instead of being consumed in a few ticks.
 - Fire poses and muzzle flashes persist for the weapon cooldown, so releasing the button cannot cut the contact frame in half.
@@ -51,6 +51,7 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 - Added a four-rate 2.5D depth stack: the painted world scrolls slowly, middle silhouettes drift at 34%, gameplay remains at 100%, and a sparse authored-prop rail/cable foreground sweeps at 112–128%. The foreground is drawn after actors with low alpha so it gives camera movement depth without hiding targets or changing collision.
 - Softened the light pass after visual inspection: volumetric shafts are now tapered alpha bands with an inner-to-outer fade instead of hard debug-like lines, while ambient grading and point lights stay subtle enough to preserve the painted art.
 - Fixed floating poses by measuring each atlas cell's visible alpha bottom at load time. Grounded sprites receive a per-frame baseline correction; airborne poses and intentional death arcs keep their original vertical composition.
+- Corrected semantic frame mapping: hero jump uses cells 17–21, crouch uses 16/24–30, melee uses all cells 40–47, and enemy attacks use cells 4–5 while death uses the authored collapse cells 6–7.
 - Added grounded actor shadows so jumps, drones and deaths read clearly against the painted backgrounds.
 - Expanded the procedural soundtrack with chord pads, bass movement, kick, snare, hi-hat and ghost rhythm layers. Boss encounters raise the tempo, transpose the motif and add tom/alarm accents.
 - Audio now runs at 32 kHz with per-effect noise balance and short attack/release envelopes: metallic shots stay punchy, laser stays tonal, and flame/blast effects retain controlled texture. Added dedicated Flame Shot and Laser sound signatures while preserving the existing weapon, rescue, hit, vehicle and boss cues.
