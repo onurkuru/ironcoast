@@ -31,6 +31,58 @@ def key_backdrop(image: Image.Image, black: bool = False) -> Image.Image:
     return rgba
 
 
+def remove_boundary_bleed(image: Image.Image, min_area: int = 24) -> Image.Image:
+    """Drop disconnected pixels that leaked in from a neighboring pose cell.
+
+    The authored pose boards occasionally let a previous character cross a
+    cell boundary.  Cropping the board alone preserves those pixels, so the
+    next animation frame can appear as a second character trailing the hero.
+    Keep the largest connected silhouette and any interior effects, but remove
+    smaller components that touch a cell edge.  This is deliberately limited to
+    disconnected edge components: muzzle flashes, grenades and debris inside
+    the cell remain available to the renderer.
+    """
+    rgba = image.convert("RGBA")
+    width, height = rgba.size
+    px = rgba.load()
+    visited: set[tuple[int, int]] = set()
+    components: list[tuple[int, tuple[int, int, int, int], list[tuple[int, int]]]] = []
+    for y in range(height):
+        for x in range(width):
+            if (x, y) in visited or px[x, y][3] < 72:
+                continue
+            stack = [(x, y)]
+            visited.add((x, y))
+            points: list[tuple[int, int]] = []
+            left = right = x
+            top = bottom = y
+            while stack:
+                xx, yy = stack.pop()
+                points.append((xx, yy))
+                left, right = min(left, xx), max(right, xx)
+                top, bottom = min(top, yy), max(bottom, yy)
+                for nx in range(xx - 1, xx + 2):
+                    for ny in range(yy - 1, yy + 2):
+                        if not (0 <= nx < width and 0 <= ny < height):
+                            continue
+                        if (nx, ny) in visited or px[nx, ny][3] < 72:
+                            continue
+                        visited.add((nx, ny))
+                        stack.append((nx, ny))
+            if len(points) >= min_area:
+                components.append((len(points), (left, top, right, bottom), points))
+    if len(components) < 2:
+        return rgba
+    components.sort(key=lambda item: item[0], reverse=True)
+    for area, (left, top, right, bottom), points in components[1:]:
+        touches_edge = left == 0 or top == 0 or right == width - 1 or bottom == height - 1
+        if touches_edge and area < components[0][0]:
+            for xx, yy in points:
+                r, g, b, _ = px[xx, yy]
+                px[xx, yy] = (r, g, b, 0)
+    return rgba
+
+
 def normalize(source: Path, target: Path, size: tuple[int, int], cols: int, rows: int,
               black: bool = False, duplicate_rows: tuple[int, ...] = ()) -> None:
     source_image = Image.open(source).convert("RGBA")
@@ -47,8 +99,10 @@ def normalize(source: Path, target: Path, size: tuple[int, int], cols: int, rows
             sy1 = (row + 1) * source_image.height // rows
             cell = source_image.crop((sx0, sy0, sx1, sy1))
             cell = key_backdrop(cell, black=black)
+            cell = remove_boundary_bleed(cell)
             cell = cell.resize((cell_w, cell_h), Image.Resampling.LANCZOS)
             cell = key_backdrop(cell, black=black)
+            cell = remove_boundary_bleed(cell)
             image.alpha_composite(cell, (col * cell_w, row * cell_h))
     for row in duplicate_rows:
         src = image.crop((6 * cell_w, row * cell_h, 7 * cell_w, (row + 1) * cell_h))
