@@ -49,6 +49,7 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 
 - Added midground parallax silhouettes, practical lights, warm coastal haze and a restrained CRT scanline/vignette pass.
 - Added a four-rate 2.5D depth stack: the painted world scrolls slowly, middle silhouettes drift at 34%, gameplay remains at 100%, and a sparse authored-prop rail/cable foreground sweeps at 112–128%. The foreground is drawn after actors with low alpha so it gives camera movement depth without hiding targets or changing collision.
+- Softened the light pass after visual inspection: volumetric shafts are now tapered alpha bands with an inner-to-outer fade instead of hard debug-like lines, while ambient grading and point lights stay subtle enough to preserve the painted art.
 - Fixed floating poses by measuring each atlas cell's visible alpha bottom at load time. Grounded sprites receive a per-frame baseline correction; airborne poses and intentional death arcs keep their original vertical composition.
 - Added grounded actor shadows so jumps, drones and deaths read clearly against the painted backgrounds.
 - Expanded the procedural soundtrack with chord pads, bass movement, kick, snare, hi-hat and ghost rhythm layers. Boss encounters raise the tempo, transpose the motif and add tom/alarm accents.

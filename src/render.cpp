@@ -383,19 +383,25 @@ void Renderer::background(int theme, float camera, float time) {
   sprite(worlds, theme, -drift, 0, W, H, mirrored);
   sprite(worlds, theme, W - drift, 0, W, H, !mirrored);
   rect(0, 0, W, H, 0x0A182A28);
-  // Thin diagonal shafts and fog bands suggest volumetric light without a
-  // shader. The slow travel rate keeps them attached to the distant scene.
+  // Filled, tapered shafts suggest volumetric light without a shader. Layered
+  // alpha bands give a soft edge instead of the hard streaks of debug lines.
   uint32_t shaft = theme == 1   ? 0x72D7CE18
                    : theme == 4 ? 0x7BCDEB1C
                    : theme == 3 ? 0xF4785916
                    : theme == 5 ? 0xF48A4717
                                  : 0xF4C46A14;
-  for (int i = 0; i < 4; i++) {
+  for (int i = 0; i < 3; i++) {
     float x = std::fmod(i * 173.0f - camera * .12f + 560.0f, 620.0f) - 70.0f;
     float lean = 22.0f + (i % 3) * 14.0f;
-    for (int j = 0; j < 9; j++) {
-      float t = (j - 4) / 8.0f;
-      line(x + t * 28.0f, 34, x + lean + t * 118.0f, 203, shaft);
+    for (int layer = 5; layer >= 0; layer--) {
+      float t = layer / 5.0f;
+      uint8_t a = uint8_t((1.0f - t) * 12 + 3);
+      for (int y = 38; y < 204; y += 6) {
+        float progress = (y - 38) / 166.0f;
+        float left = x - 12.0f * t + progress * (lean - 24.0f) - layer * 1.5f;
+        float width = 5.0f + progress * (22.0f + layer * 2.0f);
+        rect(left, float(y), width, 6, (shaft & 0xFFFFFF00) | a);
+      }
     }
   }
   // A soft middle-distance silhouette pass moves at 34% of camera speed,
@@ -405,11 +411,11 @@ void Renderer::background(int theme, float camera, float time) {
   for (int i = 0; i < 6; i++) {
     float x = std::fmod(i * 137.0f - midTravel + 700.0f, 620.0f) - 80.0f;
     float y = 148.0f + (i % 3) * 13.0f;
-    uint32_t silhouette = theme == 1 || theme == 4 ? 0x102C3838 : 0x151C2738;
+    uint32_t silhouette = theme == 1 || theme == 4 ? 0x102C3828 : 0x151C2728;
     rect(x, y, 94, 43, silhouette);
-    rect(x + 7, y + 8, 80, 2, theme == 4 ? 0x5DBDD63A : 0xD28B4A32);
-    rect(x + 18, y + 15, 12, 20, theme == 1 ? 0x1B4B5140 : 0x22263240);
-    rect(x + 48, y + 15, 24, 20, theme == 3 ? 0x6A2A2038 : 0x25323A38);
+    rect(x + 7, y + 8, 80, 2, theme == 4 ? 0x5DBDD62A : 0xD28B4A22);
+    rect(x + 18, y + 15, 12, 20, theme == 1 ? 0x1B4B5128 : 0x22263228);
+    rect(x + 48, y + 15, 24, 20, theme == 3 ? 0x6A2A2028 : 0x25323A28);
   }
   // Slow second-depth silhouettes keep scrolling distinct from the far scenery.
   for (int i = 0; i < 6; i++) {
