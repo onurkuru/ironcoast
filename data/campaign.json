@@ -1,0 +1,2272 @@
+{
+  "title": "Iron Coast: Scrap Tide",
+  "version": 1,
+  "levels": [
+    {
+      "name": "RUSTED HARBOR",
+      "subtitle": "01 / SHIPYARD GATE",
+      "width": 3600,
+      "vehicleX": 2450,
+      "brief1": "DENIZ: Efe, I have your signal. The shipyard gates are locked. I am coming.",
+      "brief2": "MIRA: The Iron Grid hijacked every work machine. Rescue the workers and shut down the crane core.",
+      "radio": "EFE: Catch the train... Commands are coming from the northern foundry.",
+      "ending": "The crane is down. Efe is alive. Cross the marsh to reach the northern rail line.",
+      "bossName": "CLAW CRANE",
+      "theme": 0,
+      "bossKind": 0,
+      "platforms": [
+        {
+          "box": [
+            0,
+            232,
+            760,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            816,
+            232,
+            784,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1664,
+            232,
+            786,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            2506,
+            232,
+            1094,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            370,
+            188,
+            112,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            570,
+            148,
+            96,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1110,
+            190,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1280,
+            150,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1870,
+            184,
+            112,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2080,
+            144,
+            112,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2740,
+            184,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            530,
+            192,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1240,
+            194,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2040,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        }
+      ],
+      "spawns": [
+        {
+          "x": 320,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 550,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 690,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 1010,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 1190,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 1440,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 1530,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 1770,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 1960,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 2120,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 2350,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 2590,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 2730,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 2900,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 3040,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 1186.8,
+          "y": 190,
+          "kind": 0
+        },
+        {
+          "x": 2147.2,
+          "y": 144,
+          "kind": 0
+        },
+        {
+          "x": 1297.6,
+          "y": 194,
+          "kind": 0
+        }
+      ],
+      "items": [
+        {
+          "x": 225,
+          "y": 215,
+          "kind": 1
+        },
+        {
+          "x": 640,
+          "y": 133,
+          "kind": 0
+        },
+        {
+          "x": 1160,
+          "y": 173,
+          "kind": 2
+        },
+        {
+          "x": 1320,
+          "y": 135,
+          "kind": 0
+        },
+        {
+          "x": 1500,
+          "y": 215,
+          "kind": 6
+        },
+        {
+          "x": 1940,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 2130,
+          "y": 128,
+          "kind": 0
+        },
+        {
+          "x": 2680,
+          "y": 215,
+          "kind": 3
+        },
+        {
+          "x": 2860,
+          "y": 167,
+          "kind": 9
+        },
+        {
+          "x": 3010,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 420,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1090,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1810,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 2660,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 600,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 1400,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2020,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2920,
+          "y": 232,
+          "kind": 8
+        }
+      ],
+      "hazards": [],
+      "checkpoints": [
+        886.0,
+        1734.0,
+        2576.0
+      ]
+    },
+    {
+      "name": "TOXIC MARSH",
+      "subtitle": "02 / NORTH MARSH",
+      "width": 3840,
+      "vehicleX": 2570,
+      "brief1": "MIRA: The marsh pipes are poisoning the sea. Efe hid the train route here.",
+      "brief2": "DENIZ: I will get the workers out. Then we break the dredger pump.",
+      "radio": "EFE: The Grid is copying human voices. Captain Sarp is listening to nobody.",
+      "ending": "The poison pump is broken. The shipment code can stop the armored train.",
+      "bossName": "ASH DREDGER",
+      "theme": 1,
+      "bossKind": 1,
+      "platforms": [
+        {
+          "box": [
+            0,
+            232,
+            560,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            624,
+            232,
+            432,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1120,
+            232,
+            496,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1680,
+            232,
+            432,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            2176,
+            232,
+            544,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            2784,
+            232,
+            1056,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            360,
+            188,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            850,
+            184,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1180,
+            192,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1380,
+            148,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1820,
+            188,
+            112,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2270,
+            184,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2480,
+            144,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2950,
+            184,
+            112,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1340,
+            192,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2440,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        }
+      ],
+      "spawns": [
+        {
+          "x": 350,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 700,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 870,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 980,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 1260,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 1420,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 1570,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 1790,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 1960,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 2070,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 2310,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 2530,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 2660,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 2850,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 3020,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 3170,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 3270,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 436.8,
+          "y": 188,
+          "kind": 0
+        },
+        {
+          "x": 1466.4,
+          "y": 148,
+          "kind": 0
+        },
+        {
+          "x": 2556.8,
+          "y": 144,
+          "kind": 0
+        },
+        {
+          "x": 2497.6,
+          "y": 188,
+          "kind": 0
+        }
+      ],
+      "items": [
+        {
+          "x": 220,
+          "y": 215,
+          "kind": 2
+        },
+        {
+          "x": 900,
+          "y": 168,
+          "kind": 0
+        },
+        {
+          "x": 1460,
+          "y": 130,
+          "kind": 0
+        },
+        {
+          "x": 1600,
+          "y": 215,
+          "kind": 6
+        },
+        {
+          "x": 1790,
+          "y": 215,
+          "kind": 1
+        },
+        {
+          "x": 2040,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 2530,
+          "y": 128,
+          "kind": 0
+        },
+        {
+          "x": 2980,
+          "y": 215,
+          "kind": 3
+        },
+        {
+          "x": 3200,
+          "y": 215,
+          "kind": 9
+        },
+        {
+          "x": 3330,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 420,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1810,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 2660,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1400,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2020,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2920,
+          "y": 232,
+          "kind": 8
+        }
+      ],
+      "hazards": [
+        {
+          "x": 740,
+          "y": 225,
+          "w": 80,
+          "h": 8,
+          "period": 3.8,
+          "on": 1.4,
+          "offset": 0,
+          "kind": 0
+        },
+        {
+          "x": 1710,
+          "y": 225,
+          "w": 70,
+          "h": 8,
+          "period": 4.2,
+          "on": 1.4,
+          "offset": 1,
+          "kind": 0
+        },
+        {
+          "x": 2840,
+          "y": 225,
+          "w": 76,
+          "h": 8,
+          "period": 3.6,
+          "on": 1.1,
+          "offset": 2,
+          "kind": 0
+        }
+      ],
+      "checkpoints": [
+        694.0,
+        1190.0,
+        1750.0,
+        2246.0,
+        2854.0
+      ]
+    },
+    {
+      "name": "IRONLINE",
+      "subtitle": "03 / MOUNTAIN FREIGHT",
+      "width": 4000,
+      "vehicleX": 2720,
+      "brief1": "DENIZ: I am aboard the moving freight. Every car carries another weapon.",
+      "brief2": "MIRA: The locomotive cannon seals the pass. Watch the gaps and cut the brake line.",
+      "radio": "EFE: There are no soldiers in the cargo. It is a city worth of power cores.",
+      "ending": "The train is stopped. The stolen cores are headed for the foundry. The Iron Grid is building an army.",
+      "bossName": "BLACK LOCOMOTIVE",
+      "theme": 2,
+      "bossKind": 2,
+      "platforms": [
+        {
+          "box": [
+            0,
+            232,
+            496,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            544,
+            232,
+            464,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1064,
+            232,
+            488,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1608,
+            232,
+            488,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            2152,
+            232,
+            488,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            2696,
+            232,
+            464,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            3216,
+            232,
+            784,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            300,
+            188,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            720,
+            184,
+            160,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1260,
+            188,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1460,
+            148,
+            80,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1800,
+            184,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2330,
+            184,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2840,
+            184,
+            160,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            3070,
+            144,
+            112,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1420,
+            192,
+            80,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            3030,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        }
+      ],
+      "spawns": [
+        {
+          "x": 350,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 650,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 820,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 930,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 1200,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 1400,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 1640,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 1850,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 2020,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 2230,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 2400,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 2600,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 2840,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 3060,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 3290,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 3410,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 1346.4,
+          "y": 188,
+          "kind": 0
+        },
+        {
+          "x": 2416.4,
+          "y": 184,
+          "kind": 0
+        },
+        {
+          "x": 1468.0,
+          "y": 192,
+          "kind": 0
+        }
+      ],
+      "items": [
+        {
+          "x": 210,
+          "y": 215,
+          "kind": 1
+        },
+        {
+          "x": 780,
+          "y": 166,
+          "kind": 0
+        },
+        {
+          "x": 1310,
+          "y": 170,
+          "kind": 3
+        },
+        {
+          "x": 1500,
+          "y": 130,
+          "kind": 0
+        },
+        {
+          "x": 1740,
+          "y": 215,
+          "kind": 6
+        },
+        {
+          "x": 1900,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 2390,
+          "y": 168,
+          "kind": 2
+        },
+        {
+          "x": 3090,
+          "y": 128,
+          "kind": 0
+        },
+        {
+          "x": 3200,
+          "y": 215,
+          "kind": 9
+        },
+        {
+          "x": 3380,
+          "y": 215,
+          "kind": 3
+        },
+        {
+          "x": 420,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1090,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1810,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 600,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 1400,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2020,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2920,
+          "y": 232,
+          "kind": 8
+        }
+      ],
+      "hazards": [],
+      "checkpoints": [
+        614.0,
+        1134.0,
+        1678.0,
+        2222.0,
+        2766.0,
+        3286.0
+      ]
+    },
+    {
+      "name": "EMBER FOUNDRY",
+      "subtitle": "04 / UNDER THE MOUNTAIN",
+      "width": 3680,
+      "vehicleX": 2430,
+      "brief1": "MIRA: The plant is critical. The presses are still running. Wait for the safe rhythm.",
+      "brief2": "DENIZ: Efe sabotaged the cores. The Grid trapped him below the tower. I will cool the furnace first.",
+      "radio": "SARP: One city can be spent for a coast. Deniz, turn back.",
+      "ending": "The giant furnace is cold. Sarp will launch from the storm tower. Efe is being held there.",
+      "bossName": "FORGE TITAN",
+      "theme": 3,
+      "bossKind": 3,
+      "platforms": [
+        {
+          "box": [
+            0,
+            232,
+            720,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            776,
+            232,
+            736,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1568,
+            232,
+            736,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            2360,
+            232,
+            1320,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            430,
+            188,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1010,
+            190,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1230,
+            144,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1760,
+            190,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1950,
+            146,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2590,
+            184,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2820,
+            144,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1190,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1910,
+            190,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2780,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        }
+      ],
+      "spawns": [
+        {
+          "x": 310,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 570,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 670,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 900,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 1120,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 1380,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 1650,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 1850,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 2070,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 2200,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 2450,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 2700,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 2980,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 3110,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 1306.8,
+          "y": 144,
+          "kind": 0
+        },
+        {
+          "x": 2676.4,
+          "y": 184,
+          "kind": 0
+        },
+        {
+          "x": 1967.6,
+          "y": 190,
+          "kind": 0
+        }
+      ],
+      "items": [
+        {
+          "x": 220,
+          "y": 215,
+          "kind": 3
+        },
+        {
+          "x": 485,
+          "y": 171,
+          "kind": 0
+        },
+        {
+          "x": 1060,
+          "y": 173,
+          "kind": 1
+        },
+        {
+          "x": 1290,
+          "y": 127,
+          "kind": 0
+        },
+        {
+          "x": 1700,
+          "y": 215,
+          "kind": 6
+        },
+        {
+          "x": 1820,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 2010,
+          "y": 130,
+          "kind": 2
+        },
+        {
+          "x": 2870,
+          "y": 128,
+          "kind": 0
+        },
+        {
+          "x": 3030,
+          "y": 215,
+          "kind": 9
+        },
+        {
+          "x": 3140,
+          "y": 215,
+          "kind": 3
+        },
+        {
+          "x": 420,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1090,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1810,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 2660,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 600,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 1400,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2020,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2920,
+          "y": 232,
+          "kind": 8
+        }
+      ],
+      "hazards": [
+        {
+          "x": 810,
+          "y": 184,
+          "w": 22,
+          "h": 48,
+          "period": 3.4,
+          "on": 1.1,
+          "offset": 0,
+          "kind": 1
+        },
+        {
+          "x": 1480,
+          "y": 188,
+          "w": 22,
+          "h": 44,
+          "period": 3.8,
+          "on": 1.2,
+          "offset": 1,
+          "kind": 1
+        },
+        {
+          "x": 2310,
+          "y": 180,
+          "w": 22,
+          "h": 52,
+          "period": 4.0,
+          "on": 1.4,
+          "offset": 0,
+          "kind": 1
+        },
+        {
+          "x": 2770,
+          "y": 188,
+          "w": 22,
+          "h": 44,
+          "period": 3.4,
+          "on": 1.0,
+          "offset": 1.5,
+          "kind": 1
+        }
+      ],
+      "checkpoints": [
+        846.0,
+        1638.0,
+        2430.0
+      ]
+    },
+    {
+      "name": "STORM RELAY",
+      "subtitle": "05 / LAST RELAY",
+      "width": 3840,
+      "vehicleX": 2510,
+      "brief1": "EFE: Deniz! The relay can hear me. Cross the lightning and open the three tower caps.",
+      "brief2": "MIRA: Cut the signal to the sea net and the command platform will be exposed.",
+      "radio": "EFE: I am free. But Sarp took the backup command core to sea!",
+      "ending": "The tower is silent and Efe is safe. The final platform lights burn beyond the storm.",
+      "bossName": "FOUR POLES",
+      "theme": 4,
+      "bossKind": 4,
+      "platforms": [
+        {
+          "box": [
+            0,
+            232,
+            624,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            680,
+            232,
+            552,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1296,
+            232,
+            608,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1968,
+            232,
+            608,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            2640,
+            232,
+            1200,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            340,
+            188,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            900,
+            190,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1130,
+            144,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1430,
+            190,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1650,
+            144,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2090,
+            190,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2310,
+            144,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2840,
+            188,
+            160,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            3070,
+            144,
+            112,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1090,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1610,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2270,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            3030,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        }
+      ],
+      "spawns": [
+        {
+          "x": 350,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 530,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 800,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 1040,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 1200,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 1450,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 1700,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 1800,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 2050,
+          "y": 232,
+          "kind": 0
+        },
+        {
+          "x": 2240,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 2450,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 2770,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 2990,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 3210,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 3310,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 976.8,
+          "y": 190,
+          "kind": 0
+        },
+        {
+          "x": 1736.4,
+          "y": 144,
+          "kind": 0
+        },
+        {
+          "x": 2936.0,
+          "y": 188,
+          "kind": 0
+        },
+        {
+          "x": 1667.6,
+          "y": 188,
+          "kind": 0
+        }
+      ],
+      "items": [
+        {
+          "x": 220,
+          "y": 215,
+          "kind": 1
+        },
+        {
+          "x": 960,
+          "y": 173,
+          "kind": 0
+        },
+        {
+          "x": 1190,
+          "y": 128,
+          "kind": 0
+        },
+        {
+          "x": 1490,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 1730,
+          "y": 128,
+          "kind": 3
+        },
+        {
+          "x": 2000,
+          "y": 215,
+          "kind": 6
+        },
+        {
+          "x": 2150,
+          "y": 215,
+          "kind": 2
+        },
+        {
+          "x": 3110,
+          "y": 128,
+          "kind": 0
+        },
+        {
+          "x": 3200,
+          "y": 215,
+          "kind": 9
+        },
+        {
+          "x": 3340,
+          "y": 215,
+          "kind": 3
+        },
+        {
+          "x": 420,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1090,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1810,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 2660,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 600,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 1400,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2020,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2920,
+          "y": 232,
+          "kind": 8
+        }
+      ],
+      "hazards": [
+        {
+          "x": 740,
+          "y": 184,
+          "w": 18,
+          "h": 48,
+          "period": 3.4,
+          "on": 1,
+          "offset": 0,
+          "kind": 2
+        },
+        {
+          "x": 1350,
+          "y": 184,
+          "w": 18,
+          "h": 48,
+          "period": 3.4,
+          "on": 1,
+          "offset": 1,
+          "kind": 2
+        },
+        {
+          "x": 2010,
+          "y": 184,
+          "w": 18,
+          "h": 48,
+          "period": 3.4,
+          "on": 1,
+          "offset": 2,
+          "kind": 2
+        },
+        {
+          "x": 2900,
+          "y": 144,
+          "w": 18,
+          "h": 44,
+          "period": 3.4,
+          "on": 0.8,
+          "offset": 0,
+          "kind": 2
+        }
+      ],
+      "checkpoints": [
+        750.0,
+        1366.0,
+        2038.0,
+        2710.0
+      ]
+    },
+    {
+      "name": "FINAL WAVE",
+      "subtitle": "06 / COMMAND PLATFORM",
+      "width": 4200,
+      "vehicleX": 2790,
+      "brief1": "EFE: The Iron Grid core is in Captain Sarp armor. Fire when it opens.",
+      "brief2": "DENIZ: The whole coast can hear us. We get the workers out, then end this war.",
+      "radio": "MIRA: Haziriz. Evac ships are ready. There is no retreat now.",
+      "ending": "The Iron Grid is silent. The coast belongs to its people again. Deniz and Efe sail home.",
+      "bossName": "IRON GRID / SARP",
+      "theme": 5,
+      "bossKind": 5,
+      "platforms": [
+        {
+          "box": [
+            0,
+            232,
+            704,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            760,
+            232,
+            712,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            1528,
+            232,
+            712,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            2296,
+            232,
+            744,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            3096,
+            232,
+            1104,
+            40
+          ],
+          "oneWay": false
+        },
+        {
+          "box": [
+            390,
+            188,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            960,
+            190,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1180,
+            146,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1650,
+            184,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1860,
+            140,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2450,
+            184,
+            144,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2980,
+            144,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            3290,
+            184,
+            128,
+            12
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1140,
+            190,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            1820,
+            184,
+            96,
+            10
+          ],
+          "oneWay": true
+        },
+        {
+          "box": [
+            2940,
+            188,
+            96,
+            10
+          ],
+          "oneWay": true
+        }
+      ],
+      "spawns": [
+        {
+          "x": 320,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 560,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 670,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 910,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 1090,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 1330,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 1580,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 1780,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 2040,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 2180,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 2420,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 2620,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 2840,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 3010,
+          "y": 140,
+          "kind": 3
+        },
+        {
+          "x": 3190,
+          "y": 232,
+          "kind": 2
+        },
+        {
+          "x": 3410,
+          "y": 232,
+          "kind": 4
+        },
+        {
+          "x": 3560,
+          "y": 232,
+          "kind": 1
+        },
+        {
+          "x": 1046.4,
+          "y": 190,
+          "kind": 0
+        },
+        {
+          "x": 1936.8,
+          "y": 140,
+          "kind": 0
+        },
+        {
+          "x": 3366.8,
+          "y": 184,
+          "kind": 0
+        },
+        {
+          "x": 2997.6,
+          "y": 188,
+          "kind": 0
+        }
+      ],
+      "items": [
+        {
+          "x": 210,
+          "y": 215,
+          "kind": 3
+        },
+        {
+          "x": 470,
+          "y": 172,
+          "kind": 0
+        },
+        {
+          "x": 1010,
+          "y": 174,
+          "kind": 1
+        },
+        {
+          "x": 1230,
+          "y": 130,
+          "kind": 0
+        },
+        {
+          "x": 1700,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 1920,
+          "y": 124,
+          "kind": 2
+        },
+        {
+          "x": 2300,
+          "y": 215,
+          "kind": 6
+        },
+        {
+          "x": 2500,
+          "y": 168,
+          "kind": 3
+        },
+        {
+          "x": 3050,
+          "y": 128,
+          "kind": 0
+        },
+        {
+          "x": 3400,
+          "y": 215,
+          "kind": 9
+        },
+        {
+          "x": 3510,
+          "y": 215,
+          "kind": 3
+        },
+        {
+          "x": 3610,
+          "y": 215,
+          "kind": 4
+        },
+        {
+          "x": 420,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1090,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 1810,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 2660,
+          "y": 232,
+          "kind": 7
+        },
+        {
+          "x": 600,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 1400,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2020,
+          "y": 232,
+          "kind": 8
+        },
+        {
+          "x": 2920,
+          "y": 232,
+          "kind": 8
+        }
+      ],
+      "hazards": [
+        {
+          "x": 790,
+          "y": 196,
+          "w": 22,
+          "h": 36,
+          "period": 4,
+          "on": 1.2,
+          "offset": 0,
+          "kind": 1
+        },
+        {
+          "x": 2110,
+          "y": 190,
+          "w": 18,
+          "h": 42,
+          "period": 3.8,
+          "on": 1.2,
+          "offset": 1,
+          "kind": 2
+        },
+        {
+          "x": 3230,
+          "y": 190,
+          "w": 22,
+          "h": 42,
+          "period": 4,
+          "on": 1.2,
+          "offset": 1,
+          "kind": 1
+        }
+      ],
+      "checkpoints": [
+        830.0,
+        1598.0,
+        2366.0,
+        3166.0
+      ]
+    }
+  ]
+}

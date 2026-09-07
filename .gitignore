@@ -1,0 +1,16 @@
+# Local build and packaging output
+build/
+cmake-build-*/
+*.vpk
+*.app/
+
+# Runtime saves and generated captures
+save.dat
+*.dat
+capture.png
+*.png.tmp
+
+# Platform/editor noise
+.DS_Store
+.idea/
+.vscode/
