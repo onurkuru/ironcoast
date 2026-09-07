@@ -56,7 +56,7 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./build/kiyi_hurdasi --assets ../ass
 
 ## Original sprite atlas pass
 
-Version 0.2 uses explicit full-pose rectangles in `tools/sourceboards/hero-frames.json` and `enemies-frames.json`. The original boards are irregularly spaced; dividing them into equal cells cut off limbs and introduced neighboring poses. Both actors now use one scale per atlas, transparent gutters and a shared foot anchor.
+Version 0.2.1 uses explicit full-pose rectangles in `tools/sourceboards/hero-frames.json` and `enemies-frames.json`, plus guarded 4×4 packing for the vehicle and six bosses. The original boards are irregularly spaced; dividing them into equal cells cut off limbs and introduced neighboring poses. All actor atlases now use a stable authored scale, transparent gutters and a measured foot anchor.
 
 The player uses `hero-v2.png` with eight authored rows: run, idle/fire, a mixed
 jump transition strip, crouch-fire, grenade, melee, death and run-fire. The
@@ -66,7 +66,9 @@ pose. `enemies-v2.png` contains eight frames for
 guards, grenadiers, shield troops, drones, turrets and rescued workers. `vehicle-v2.png`
 adds movement, firing, damage and collapse frames for the Scrap Walker. Each of the
 six missions has its own `boss0-v2.png` through `boss5-v2.png` 4×4 atlas so Vita never
-needs to upload an oversized texture. `tools/prepare_sprite_atlases.py` documents the
+needs to upload an oversized texture. Vehicle and boss cells have a five-pixel
+transparent border to prevent cross-pose filtering; worker rescue uses dedicated
+gesture/run cells. `tools/prepare_sprite_atlases.py` documents the
 normalization and backdrop-keying step; the `tools/sourceboards/` files are only source
 boards and are not loaded by the game.
 
@@ -98,7 +100,7 @@ The comparison video is a silent 12-second, 30 fps recording of the 60 Hz simula
 The game runs at a 480×272 logical resolution with nearest-neighbor pixel sampling and a 60 Hz simulation. Desktop uses SDL2; Vita uses the VitaSDK SDL2 port. Normal player poses share a 48×48 ground box, atlas cells retain a consistent authored scale, visible sprite bottoms are measured at load time, and grounded frames receive a small baseline correction so feet stay on the same collision line. Trimmed actor atlases skip that second correction because their visible bounds already fill the destination box. The player is interpolated between fixed ticks for smoother motion. Each of the six missions now has a continuous cinematic panorama, spanning the level without mirrored landmarks. Haze travels at 24%, industrial middle silhouettes at 48%, the gameplay plane at 100%, and a floor-level near-field silhouette at 112%. This creates a restrained 2.5D effect without hanging geometry crossing the actors or adding a large texture. The sprite preparation tool packs complete hero and infantry poses from explicit source bounds; seven-pose rows hold their final valid pose. World-anchored practical lights illuminate actors and cast soft contact shadows. Reflected light stays clipped to platform surfaces. Background/foreground detail is subdued and CRT scanlines are removed. Only the active environment texture is resident, and the light pass reuses a 64×64 alpha texture. Music is generated in real time with per-stage motifs and a higher-intensity boss arrangement; 32 kHz sound effects use per-weapon noise balance and click-free envelopes. The visual designs are original and do not use existing commercial characters or vehicles.
 
 
-## Cinematic art direction (0.2)
+## Cinematic art direction (0.2.1)
 
 See [ART_DIRECTION.md](ART_DIRECTION.md) for the six palettes, asset provenance, renderer design and validation. The original environment PNGs are in `assets/*-night.png`; exact built-in image generation prompts are in `tools/sourceboards/environment-prompts.json`.
 

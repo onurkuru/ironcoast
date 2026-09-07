@@ -232,10 +232,14 @@ void Game::hitPlayer() {
   if (player.vehicleHP > 0) {
     player.vehicleHP--;
     player.inv = 1.1f;
+    player.hitFlash = .16f;
     shake = 4;
     burst(player.x, player.y - 20, 0, 20);
     sounds.push_back(Sound::Hurt);
     if (player.vehicleHP == 0) {
+      player.vehicleDeath = .48f;
+      player.vehicleDeathX = player.x;
+      player.vehicleDeathY = player.y;
       explosion(player.x, player.y - 20, 42, 5);
       player.vy = -220;
       vehicleAvailable = false;
@@ -486,6 +490,7 @@ void Game::update(Input in, float dt) {
         player.weapon = player.ammo = 0;
         player.grenades = 10;
         player.vehicleHP = 0;
+        player.vehicleDeath = 0;
         for (auto &b : bullets)
           if (b.hostile)
             b.alive = false;
@@ -501,6 +506,7 @@ void Game::update(Input in, float dt) {
   player.land = std::max(0.0f, player.land - dt);
   player.recoil = std::max(0.0f, player.recoil - dt);
   player.hitFlash = std::max(0.0f, player.hitFlash - dt);
+  player.vehicleDeath = std::max(0.0f, player.vehicleDeath - dt);
   player.fireAge += dt;
   const bool wasGrounded = player.grounded;
   player.crouch = in.down && player.grounded && player.vehicleHP == 0;

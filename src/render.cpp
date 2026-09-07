@@ -282,11 +282,17 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
       phase = b.duration > 0 ? std::clamp(b.stateAge / b.duration, 0.0f, 1.0f) : 0;
     } else {
       group = 0;
-      phase = std::fmod(b.age * (k == 4 ? 3.0f : 5.0f), 1.0f);
+      // Grounded locomotion follows travelled distance, so a boss that is
+      // waiting does not skate through a full walk cycle.  The flyer keeps a
+      // separate hover clock because it can move without touching ground.
+      phase = k == 4 ? std::fmod(b.age * 3.0f, 1.0f)
+                     : std::fmod(std::max(0.0f, b.gait), 1.0f);
     }
     int poseFrame = std::min(3, std::max(0, int(phase * 4.0f)));
     int frame = group * 4 + poseFrame;
-    float bob = b.dead ? -phase * 7.0f : std::sin(b.age * 5.0f) * (group == 0 ? 1.2f : .35f);
+    // Never bob a grounded destination quad: even a one-pixel downward bob
+    // puts the feet below the collision plane and reads as a mapping error.
+    float bob = b.dead ? -phase * 7.0f : (k == 4 ? std::sin(b.age * 5.0f) * .7f : 0.0f);
     float drawW = k == 4 ? 142.0f : 152.0f;
     float drawH = k == 4 ? 118.0f : 128.0f;
     float drawY = cy - drawH + (k == 4 ? 7.0f : 0.0f) + bob;
@@ -309,7 +315,7 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
       text("CORE OPEN", cx - 26, drawY - 9, 1, TEAL);
     }
     if (pose.kick > 0) {
-      float muzzleX = cx - 49, muzzleY = cy - 51 + pose.lift;
+      float muzzleX = cx - 48, muzzleY = cy - 51 + pose.lift;
       rect(muzzleX - 13 * pose.kick, muzzleY - 2, 13 * pose.kick, 4, GOLD);
       rect(muzzleX - 8 * pose.kick, muzzleY - 1, 8 * pose.kick, 2, CREAM);
     }
@@ -391,7 +397,7 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
     text("CORE OPEN", cx - 26, y - 9, 1, TEAL);
   }
   if (pose.kick > 0) {
-    float muzzleX = cx - 49, muzzleY = cy - 51 + bodyY;
+    float muzzleX = cx - 48, muzzleY = cy - 51 + bodyY;
     rect(muzzleX - 13 * pose.kick, muzzleY - 2, 13 * pose.kick, 4, GOLD);
     rect(muzzleX - 8 * pose.kick, muzzleY - 1, 8 * pose.kick, 2, CREAM);
   }
@@ -406,7 +412,8 @@ void Renderer::softLight(float x, float y, float rx, float ry, uint32_t color,
   SDL_FRect dest{x - rx + offsetX, y - ry + offsetY, rx * 2, ry * 2};
   SDL_RenderCopyF(r, lightMask, nullptr, &dest);
 }
-void Renderer::collectLights(const Game &g, float camera, float time, float alpha) {
+void Renderer::collectLights(const Game &g, const Input &input, float camera, float time,
+                             float alpha) {
   sceneTheme = g.levelIndex;
   lights.clear();
   // Fixtures are anchored to world coordinates, including their light/shadow.
@@ -427,14 +434,32 @@ void Renderer::collectLights(const Game &g, float camera, float time, float alph
   if (g.player.recoil > 0 && g.status == Status::Play) {
     float x = between(g.player.prevX, g.player.x, alpha) - camera;
     float y = between(g.player.prevY, g.player.y, alpha);
-    lights.push_back({x + g.player.dir * 24, y - 27, y, 60,
+    Player presentation = g.player;
+    presentation.x = x + camera;
+    presentation.y = y;
+    auto muzzle = muzzlePoint(presentation, input);
+    lights.push_back({muzzle.x - camera, muzzle.y, y, 60,
                       std::min(1.0f, g.player.recoil * 14),
                       g.player.weapon == 5 ? 0x75E7EE00u : 0xFFD59700u, false});
   }
-  if (g.boss.active && !g.boss.dead)
+  if (g.player.vehicleDeath > 0) {
+    float fade = std::clamp(g.player.vehicleDeath / .48f, 0.0f, 1.0f);
+    lights.push_back({g.player.vehicleDeathX - camera, g.player.vehicleDeathY - 28,
+                      g.player.vehicleDeathY, 78, fade,
+                      0xF08A4600u, false});
+  }
+  if (g.boss.active && !g.boss.dead) {
+    const int kind = g.level().bossKind;
+    const auto pose = bossPose(g.boss, kind, alpha);
+    // Core and muzzle lighting are driven by the same pose values used by
+    // drawBoss; a closed core no longer emits a constant detached glow.
+    float pulse = std::max(pose.core, pose.charge * .8f);
+    float strength = .18f + pulse * .62f + std::min(1.0f, g.boss.recoil * 3.5f) * .25f;
+    uint32_t color = pose.core > .05f || sceneTheme == 4 ? 0x6EDAE900u : 0xEB845600u;
     lights.push_back({between(g.boss.prevX, g.boss.x, alpha) - camera,
-                      between(g.boss.prevY, g.boss.y, alpha) - 56, g.boss.y, 94, .6f,
-                      sceneTheme == 4 ? 0x6EDAE900u : 0xEB845600u, false});
+                      between(g.boss.prevY, g.boss.y, alpha) - 56, g.boss.y, 94, strength,
+                      color, false});
+  }
 }
 void Renderer::actorLight(const Atlas &atlas, float x, float y, bool hurt) {
   float red = 183, green = 202, blue = 215;
@@ -583,7 +608,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         sy = v.shake ? std::cos(time * 73) * g.shake * .5f : 0;
   offsetX = sx;
   offsetY = sy;
-  collectLights(g, camera, time, alpha);
+  collectLights(g, v.input, camera, time, alpha);
   background(g.levelIndex, camera, time);
   lightingPass(g, camera, time, alpha);
   const auto &l = g.level();
@@ -651,11 +676,17 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       continue;
     float x = i.x - camera;
     if (i.kind == 0) {
+      // Worker frames occupy the last eight enemy cells: idle 40/41, rescue
+      // gesture 42/43, then the short escape run 44..47.  The old mapping
+      // jumped from a kneel directly into a standing frame, which looked like
+      // a second sprite entering from behind the worker.
+      actorLight(enemies, x, i.y - 21, false);
       if (!i.used)
         groundedSprite(enemies, 40 + int(time * 2) % 2, x - 18, i.y - 27, 36, 43);
       else if (i.anim < 2)
-        groundedSprite(enemies, 40 + (i.anim < .5f ? 2 : 3), x - 18 + i.anim * 40, i.y - 27, 36, 43, false, 0,
+        groundedSprite(enemies, 42 + (i.anim < .5f ? 0 : 1), x - 18 + i.anim * 40, i.y - 27, 36, 43, false, 0,
                uint8_t(255 * (1 - i.anim / 2)));
+      SDL_SetTextureColorMod(enemies.texture, 255, 255, 255);
     } else if (!i.used) {
       float y = i.y + std::sin(time * 4 + i.x) * 2;
       sprite(props, i.kind == 4 ? 9 : 8, x - 11, y - 10, 22, 20);
@@ -702,9 +733,11 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     uint8_t alpha = e.dead ? uint8_t(e.death / .45f * 255) : 255;
     if (!e.dead)
       contactShadow(e.x - camera, e.y, g.floorAt(e.x, e.y - 2), drawW * .34f);
-    else
+    else {
+      uint8_t shadowAlpha = uint8_t(std::clamp((1.0f - deathT) * 80.0f, 0.0f, 80.0f));
       rect(e.x - camera - drawW * .34f, e.y - 2, drawW * .68f, 2,
-           0x08131A66 | uint8_t((1.0f - deathT) * 80));
+           0x08131A00u | shadowAlpha);
+    }
     actorLight(enemies, e.x - camera, e.y - drawH * .5f, e.hurt > 0);
     if (!e.dead && e.kind != 3)
       groundedSprite(enemies, idx, e.x - camera - drawW / 2, yy, drawW, drawH, e.dir > 0, angle, alpha);
@@ -720,7 +753,20 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
   p.anim = std::max(0.0f, p.anim - DT * (1 - alpha));
   float playerX = p.prevX + (p.x - p.prevX) * alpha;
   float playerY = p.prevY + (p.y - p.prevY) * alpha;
+  // Use interpolated coordinates for every presentation anchor, including
+  // flashes. This keeps a 120 Hz desktop render from showing the effect one
+  // fixed-step behind the sprite.
+  p.x = playerX;
+  p.y = playerY;
   float px = playerX - camera;
+  if (p.vehicleDeath > 0) {
+    float fade = std::clamp(p.vehicleDeath / .48f, 0.0f, 1.0f);
+    int frame = 12 + std::min(3, int((.48f - p.vehicleDeath) * 9.0f));
+    actorLight(vehicle, p.vehicleDeathX - camera, p.vehicleDeathY - 28, false);
+    groundedSprite(vehicle, frame, p.vehicleDeathX - camera - 38,
+                   p.vehicleDeathY - 66, 76, 66, false, 0,
+                   uint8_t(fade * 255.0f));
+  }
   float playerShadowW = p.vehicleHP ? 38.0f : (p.grounded ? 22.0f : 14.0f);
   contactShadow(px, playerY, g.floorAt(playerX, playerY - 2), playerShadowW * .65f);
   for (const auto *atlas : {&hero, &aim, &melee, &vehicle})
@@ -731,9 +777,11 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       // button is released on the same render frame as the shot.
       int frame = (v.input.shoot || p.shot > 0)
                       ? 4 + std::clamp(int((.12f - p.shot) * 28), 0, 3)
-                                                : int(p.anim * 9) % 4;
-      float bob = std::sin(p.anim * 13) * (std::fabs(p.vx) > 1 ? 1.2f : .35f);
-      groundedSprite(vehicle, frame, px - 38, playerY - 66 + bob, 76, 66, p.dir < 0);
+                      : p.hitFlash > 0 ? 8 + std::clamp(int((.16f - p.hitFlash) * 25), 0, 3)
+                                       : int(p.anim * 9) % 4;
+      // Vehicle frames already include suspension motion. Moving the whole
+      // destination quad made the wheels dip through the platform.
+      groundedSprite(vehicle, frame, px - 38, playerY - 66, 76, 66, p.dir < 0);
     } else {
       // Every normal player pose shares one 48x48 ground box. The stable
       // baseline prevents visual size pops when switching between aim, fire,
@@ -746,27 +794,26 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       const bool modernHero = hero.cols == 8 && hero.rows >= 8;
       static constexpr int idleFrames[] = {0, 1, 2, 3, 2, 1};
       int frame = 8 + idleFrames[int(p.anim * 5) % 6];
-      double angle = p.hitFlash > 0 && !p.grounded ? std::sin(time * 90) * 3 : 0;
+      // Rotating the complete 48px cell also rotates the feet and exposes the
+      // transparent corner; impact motion is represented by the authored hurt
+      // pose and the physics arc instead.
+      double angle = 0;
       if (g.status == Status::Dying) {
         float deathT = std::clamp(1.0f - g.deathTimer, 0.0f, 1.0f);
         static constexpr int deathFrames[] = {48, 49, 50, 51, 52, 53, 54, 54};
         frame = modernHero ? deathFrames[std::min(7, int(deathT * 8))]
                            : 28 + std::min(3, int((1 - g.deathTimer) * 5));
         y = playerY - h - std::sin(deathT * 3.14159f) * 9.0f;
-        angle = std::sin(time * 26) * 8;
+        angle = 0;
       } else if (p.action > 0 && p.actionKind == 1) {
         int meleeFrame = std::min(7, int((.42f - p.action) / .42f * 8.0f));
         if (meleeFrame < 8) {
           // The authored hero atlas has a complete eight-frame wrench swing;
           // sample every cell so the hit arc does not skip half its poses.
           if (modernHero)
-            groundedSprite(hero, 40 + meleeFrame, px - w / 2, y, w, h, p.dir < 0,
-                   meleeFrame == 2 || meleeFrame == 3 ? -p.dir * 5.0
-                   : meleeFrame == 4 || meleeFrame == 5 ? p.dir * 4.0 : 0.0);
+            groundedSprite(hero, 40 + meleeFrame, px - w / 2, y, w, h, p.dir < 0);
           else
-            sprite(melee, std::min(3, meleeFrame / 2), px - w / 2, y, w, h, p.dir < 0,
-                   meleeFrame == 2 || meleeFrame == 3 ? -p.dir * 5.0
-                   : meleeFrame == 4 || meleeFrame == 5 ? p.dir * 4.0 : 0.0);
+            groundedSprite(melee, std::min(3, meleeFrame / 2), px - w / 2, y, w, h, p.dir < 0);
           frame = -1;
         } else {
           frame = 8 + int(p.anim * 5) % 4;
@@ -788,7 +835,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         // cells 17..21 are the airborne arc. Do not use the crouch cell as a
         // jump frame; it makes the character appear to snap into the floor.
         static constexpr int jumpFrames[] = {17, 18, 19, 20, 21};
-        int jumpPhase = p.vy < -180 ? 0 : p.vy < -55 ? 1 : p.vy < 90 ? 2 : 3;
+        int jumpPhase = p.vy < -180 ? 0 : p.vy < -55 ? 1 : p.vy < 30 ? 2 : p.vy < 150 ? 3 : 4;
         frame = jumpFrames[std::clamp(jumpPhase, 0, 4)];
       } else if (p.crouch) {
         // Row 2 cell 16 and row 3 cells 24..30 are the authored crouch set;
@@ -817,9 +864,15 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         SDL_SetTextureColorMod(hero.texture, 255, 255, 255);
       }
       if (p.recoil > 0 && (v.input.shoot || p.shot > 0) && p.action <= 0) {
-        float fx = px + p.dir * 24, fy = playerY - 27;
-        rect(fx - 3, fy - 2, 7, 4, CREAM);
-        rect(fx + p.dir * 3 - 2, fy - 1, 4, 2, GOLD);
+        auto muzzle = muzzlePoint(p, v.input);
+        float fx = muzzle.x - camera, fy = muzzle.y;
+        if (muzzle.vertical) {
+          rect(fx - 2, fy - 4, 4, 8, CREAM);
+          rect(fx - 1, fy + (v.input.down ? 3 : -7), 2, 4, GOLD);
+        } else {
+          rect(fx - 3, fy - 2, 7, 4, CREAM);
+          rect(fx + p.dir * 3 - 2, fy - 1, 4, 2, GOLD);
+        }
       }
     }
   }

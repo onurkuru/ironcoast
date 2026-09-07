@@ -70,6 +70,91 @@ int main(int argc, char **argv) {
     renderer.render(original, view);
     if (pixels() != baseline)
       throw std::runtime_error("Stage switch retained a color, light, or texture state");
+
+    // Exercise every presentation family that can expose an atlas mapping
+    // regression: directional aim, airborne/down aim, vehicle damage, worker
+    // rescue, enemy hurt/death and every boss state. The assertions compare
+    // complete frames so a state that silently falls back to the previous
+    // pose cannot pass unnoticed.
+    Game actors = original;
+    actors.time = 9;
+    actors.player.grounded = true;
+    actors.player.anim = .23f;
+    actors.player.stride = .41f;
+    actors.player.weapon = 2;
+    view.input = Input{};
+    renderer.render(actors, view);
+    auto idle = pixels();
+    view.input.up = true;
+    view.input.shoot = true;
+    actors.player.recoil = .12f;
+    renderer.render(actors, view);
+    auto aim = pixels();
+    if (aim == idle)
+      throw std::runtime_error("Upward firing pose did not change the frame");
+    view.input = Input{};
+    view.input.down = true;
+    actors.player.grounded = false;
+    actors.player.vy = 180;
+    renderer.render(actors, view);
+    if (pixels() == aim)
+      throw std::runtime_error("Downward airborne pose did not change the frame");
+    actors.player.grounded = true;
+    actors.player.vehicleHP = 2;
+    actors.player.hitFlash = .1f;
+    view.input = Input{};
+    renderer.render(actors, view);
+    if (pixels() == idle)
+      throw std::runtime_error("Vehicle damage pose did not change the frame");
+    actors.player.vehicleHP = 0;
+    actors.player.vehicleDeath = .3f;
+    actors.player.vehicleDeathX = actors.player.x;
+    actors.player.vehicleDeathY = actors.player.y;
+    renderer.render(actors, view);
+    if (pixels() == idle)
+      throw std::runtime_error("Vehicle destruction strip was not rendered");
+
+    for (int stage = 0; stage < 6; ++stage) {
+      Game bossScene;
+      bossScene.load(stage, false, 120);
+      bossScene.time = 8;
+      bossScene.player.inv = 0;
+      bossScene.boss.active = true;
+      bossScene.camera = bossScene.level().width - W;
+      bossScene.boss.x = bossScene.level().width - 150;
+      bossScene.boss.y = stage == 4 ? 174 : 232;
+      bossScene.boss.state = BossState::Move;
+      bossScene.boss.stateAge = .18f;
+      bossScene.boss.duration = 1.2f;
+      bossScene.boss.gait = .35f;
+      bossScene.syncPresentation();
+      renderer.render(bossScene, view);
+      auto move = pixels();
+      bossScene.boss.state = BossState::Windup;
+      bossScene.boss.stateAge = .38f;
+      bossScene.boss.duration = .92f;
+      renderer.render(bossScene, view);
+      auto windup = pixels();
+      bossScene.boss.state = BossState::Attack;
+      bossScene.boss.stateAge = .31f;
+      bossScene.boss.duration = .82f;
+      bossScene.boss.recoil = .12f;
+      renderer.render(bossScene, view);
+      auto attack = pixels();
+      bossScene.boss.state = BossState::Recover;
+      bossScene.boss.stateAge = .4f;
+      bossScene.boss.duration = 1.45f;
+      renderer.render(bossScene, view);
+      auto recover = pixels();
+      if (move == windup || windup == attack || attack == recover)
+        throw std::runtime_error("Boss animation state reused an identical pose");
+      bossScene.boss.dead = true;
+      bossScene.boss.death = 1.7f;
+      renderer.render(bossScene, view);
+      if (pixels() == recover)
+        throw std::runtime_error("Boss destruction pose was not rendered");
+    }
+    view.input = Input{};
     std::cout << "Six scenes, player movement, frame clearing and stage return passed\n";
   } catch (const std::exception &error) {
     std::cerr << error.what() << '\n';

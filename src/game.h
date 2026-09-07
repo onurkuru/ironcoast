@@ -67,6 +67,7 @@ struct Player {
   float prevX = 40, prevY = 232;
   float stride = 0, fireAge = 1;
   float land = 0, recoil = 0, hitFlash = 0;
+  float vehicleDeath = 0, vehicleDeathX = 0, vehicleDeathY = 232;
   int actionKind = 0;
   int dir = 1, weapon = 0, ammo = 0, grenades = 10, lives = 3, health = 3, maxHealth = 3,
       vehicleHP = 0;

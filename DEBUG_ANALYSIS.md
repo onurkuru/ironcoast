@@ -25,12 +25,14 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 - Added a continuous animation clock, landing timer, recoil timer and hit flash to the player state.
 - Normal player poses now share a stable 48×48 ground box. Aim, grenade, melee, jump and fire transitions keep the same baseline.
 - The source boards are normalized cell-by-cell before runtime import, while each visible pose keeps a stable destination box. This prevents resampling from pulling pixels from a neighboring frame; the renderer interpolates the player between fixed 60 Hz simulation ticks for smoother camera motion.
-- Added walk bob, idle breathing, vehicle bob, muzzle flash and landing dust.
+- Added walk bob, idle breathing, muzzle flash and landing dust. Grounded
+  vehicle suspension remains inside its authored frames; the destination quad
+  no longer bobs through the platform.
 - Extended melee and grenade pose timing so their frames are readable instead of being consumed in a few ticks.
 - Fire poses and muzzle flashes persist for the weapon cooldown, so releasing the button cannot cut the contact frame in half.
 - Replaced the player, infantry and Scrap Walker presentation with original v2 pose boards. The player now has eight rows and distance-driven run/run-fire frames; enemies use six eight-frame rows and retain a readable procedural death arc.
-- Added six separate 4×4 boss atlases with locomotion, attack, recovery and destruction rows. The renderer selects a pose from the explicit boss state and uses one texture per boss to stay within Vita texture limits.
-- Enemy deaths now use a short upward arc, rotation, scale change, fade and ground shadow. Player deaths use the four death frames with a squash, arc and rotation. Boss deaths keep their multi-burst explosion sequence.
+- Added six separate 4×4 boss atlases with locomotion, attack, recovery and destruction rows. Every boss and vehicle source cell is packed into a transparent five-pixel gutter; the renderer selects a pose from the explicit boss state and uses one texture per boss to stay within Vita texture limits.
+- Enemy deaths use a short upward arc, authored collapse frames, fade and ground shadow. Player deaths use the authored death strip with a squash and arc. Whole-sprite rotation was removed from grounded melee, impact and death quads so transparent corners cannot expose the floor or change the foot line. Boss deaths keep their multi-burst explosion sequence.
 
 ### Weapons
 
@@ -50,7 +52,8 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 - Added midground parallax silhouettes, practical lights, warm coastal haze and a restrained CRT scanline/vignette pass.
 - Added a four-rate 2.5D depth stack: the painted world scrolls slowly, middle silhouettes drift at 34%, gameplay remains at 100%, and a quiet floor-level near-field silhouette moves at 112%. The near field is drawn after actors with low alpha so it gives camera movement depth without putting arbitrary hanging geometry over the action.
 - Softened the light pass after visual inspection: volumetric shafts are now tapered alpha bands with an inner-to-outer fade instead of hard debug-like lines, while ambient grading and point lights stay subtle enough to preserve the painted art.
-- Fixed floating poses by measuring each atlas cell's visible alpha bottom at load time. Grounded sprites receive a per-frame baseline correction; airborne poses and intentional death arcs keep their original vertical composition.
+- Fixed floating poses by measuring each atlas cell's visible alpha bottom at load time. Grounded sprites receive a per-frame baseline correction; airborne poses and intentional death arcs keep their original vertical composition. Worker idle/rescue/run cells, vehicle damage cells and the jump apex are mapped to their authored strips.
+- Unified the gameplay muzzle origin with the renderer's flash and light anchors for horizontal, up and down fire. Boss core light strength now follows charge/recovery/recoil pose values instead of glowing constantly.
 - Corrected semantic frame mapping: hero jump uses cells 17–21, crouch uses 16/24–30, melee uses all cells 40–47, and enemy attacks use cells 4–5 while death uses the authored collapse cells 6–7. The hero's seven-pose run, death and run-fire strips now hold their last valid pose in the eighth timing slot instead of selecting the partial contact-sheet cell.
 - Added grounded actor shadows so jumps, drones and deaths read clearly against the painted backgrounds.
 - Expanded the procedural soundtrack with chord pads, bass movement, kick, snare, hi-hat and ghost rhythm layers. Boss encounters raise the tempo, transpose the motif and add tom/alarm accents.

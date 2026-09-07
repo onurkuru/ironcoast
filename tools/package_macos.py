@@ -14,7 +14,7 @@ shutil.copy2(sdl,contents/'Frameworks/libSDL2-2.0.0.dylib')
 shutil.copy2('/opt/homebrew/opt/sdl2/LICENSE.txt',contents/'Resources/SDL2-LICENSE.txt')
 subprocess.run(['install_name_tool','-change',sdl,'@executable_path/../Frameworks/libSDL2-2.0.0.dylib',str(exe)],check=True)
 subprocess.run(['install_name_tool','-id','@executable_path/../Frameworks/libSDL2-2.0.0.dylib',str(contents/'Frameworks/libSDL2-2.0.0.dylib')],check=True)
-info={'CFBundleName':'Iron Coast: Scrap Tide','CFBundleDisplayName':'Iron Coast: Scrap Tide','CFBundleIdentifier':'games.kiyihurdasi.desktop','CFBundleVersion':'0.2.0','CFBundleShortVersionString':'0.2.0','CFBundleExecutable':'kiyi_hurdasi','CFBundlePackageType':'APPL','NSHighResolutionCapable':True,'NSSupportsAutomaticGraphicsSwitching':True}
+info={'CFBundleName':'Iron Coast: Scrap Tide','CFBundleDisplayName':'Iron Coast: Scrap Tide','CFBundleIdentifier':'games.kiyihurdasi.desktop','CFBundleVersion':'0.2.1','CFBundleShortVersionString':'0.2.1','CFBundleExecutable':'kiyi_hurdasi','CFBundlePackageType':'APPL','NSHighResolutionCapable':True,'NSSupportsAutomaticGraphicsSwitching':True}
 (contents/'Info.plist').write_bytes(plistlib.dumps(info))
 subprocess.run(['codesign','--force','--deep','--sign','-',str(app)],check=True)
 print(app)

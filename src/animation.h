@@ -14,6 +14,25 @@ inline float ease(float t) {
 struct BossPose {
   float lift = 0, lean = 0, stride = 0, weapon = 0, kick = 0, charge = 0, core = 0, collapse = 0;
 };
+struct MuzzlePoint {
+  float x = 0, y = 0;
+  bool vertical = false;
+};
+
+// Keep the muzzle flash, local light and projectile origin on one authored
+// anchor.  Previously the renderer used a hard-coded horizontal offset while
+// gameplay fired from a different point, which made a flash appear beside an
+// up/down pose and made the light detach from the weapon.
+inline MuzzlePoint muzzlePoint(const Player &p, const Input &input) {
+  if (p.vehicleHP)
+    return {p.x + p.dir * 31.0f, p.y - 36.0f, false};
+  if (input.up)
+    return {p.x + p.dir * 4.0f, p.y - 44.0f, true};
+  if (input.down && !p.grounded)
+    return {p.x, p.y + 2.0f, true};
+  return {p.x + p.dir * 19.0f, p.y - (p.crouch ? 14.0f : 27.0f), false};
+}
+
 // Animation is derived from combat time, never from the render frame counter.
 // This same pose drives all pieces of the rig at any display refresh rate.
 inline BossPose bossPose(const Boss &b, int kind, float alpha = 1) {

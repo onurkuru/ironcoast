@@ -36,7 +36,7 @@ class Renderer {
   float offsetX = 0, offsetY = 0;
   Atlas load(const std::string &, int, int, bool trim = false, bool paperKey = false);
   void softLight(float, float, float, float, uint32_t, uint8_t, bool additive = true);
-  void collectLights(const Game &, float, float, float);
+  void collectLights(const Game &, const Input &, float, float, float);
   void surfaceLights(const Game &, float);
   void actorLight(const Atlas &, float, float, bool hurt = false);
   void contactShadow(float, float, float, float);

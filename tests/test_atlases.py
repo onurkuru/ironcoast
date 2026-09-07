@@ -9,7 +9,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
-from prepare_sprite_atlases import prepare_mapped
+from prepare_sprite_atlases import prepare_bosses, prepare_mapped, normalize
 
 
 class HeroAtlasTests(unittest.TestCase):
@@ -45,6 +45,37 @@ class HeroAtlasTests(unittest.TestCase):
             for actor in ["hero", "enemies"]:
                 prepare_mapped(ROOT / "tools/sourceboards", Path(directory), actor)
                 with Image.open(Path(directory) / f"{actor}-v2.png") as regenerated:
+                    with Image.open(ROOT / f"assets/{actor}-v2.png") as checked_in:
+                        self.assertEqual(regenerated.tobytes(), checked_in.tobytes())
+
+    def test_vehicle_and_boss_cells_have_no_cross_pose_alpha(self):
+        # These boards are uniform 4x4 references. Their first revision put
+        # claws, wheels and muzzle flashes on the cell edge; the packed gutter
+        # is a hard regression check against texture filtering or neighbour
+        # pose fragments appearing during animation.
+        for actor in ["vehicle"] + [f"boss{i}" for i in range(6)]:
+            atlas = Image.open(ROOT / f"assets/{actor}-v2.png").convert("RGBA")
+            self.assertEqual(atlas.size, (768, 768))
+            for frame in range(16):
+                col, row = frame % 4, frame // 4
+                mask = atlas.crop((col * 192, row * 192, (col + 1) * 192,
+                                   (row + 1) * 192)).getchannel("A")
+                box = mask.getbbox()
+                with self.subTest(actor=actor, frame=frame):
+                    self.assertIsNotNone(box)
+                    self.assertGreaterEqual(box[0], 5)
+                    self.assertGreaterEqual(box[1], 5)
+                    self.assertLessEqual(box[2], 187)
+                    self.assertLessEqual(box[3], 187)
+
+    def test_checked_in_vehicle_and_boss_atlases_are_reproducible(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory)
+            normalize(ROOT / "tools/sourceboards/vehicle-source.png", target / "vehicle-v2.png",
+                      (768, 768), 4, 4, black=True, pad=5)
+            prepare_bosses(ROOT / "tools/sourceboards", target)
+            for actor in ["vehicle"] + [f"boss{i}" for i in range(6)]:
+                with Image.open(target / f"{actor}-v2.png") as regenerated:
                     with Image.open(ROOT / f"assets/{actor}-v2.png") as checked_in:
                         self.assertEqual(regenerated.tobytes(), checked_in.tobytes())
 

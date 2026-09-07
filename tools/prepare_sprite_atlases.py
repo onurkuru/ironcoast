@@ -85,13 +85,15 @@ def remove_boundary_bleed(image: Image.Image, min_area: int = 24) -> Image.Image
 
 
 def normalize(source: Path, target: Path, size: tuple[int, int], cols: int, rows: int,
-              black: bool = False, duplicate_rows: tuple[int, ...] = ()) -> None:
+              black: bool = False, duplicate_rows: tuple[int, ...] = (), pad: int = 0) -> None:
     source_image = Image.open(source).convert("RGBA")
     # Resize each authored cell independently. Resizing the complete board lets
     # Lanczos sample a neighboring pose, which produces stray limbs around a
     # character at runtime.
     image = Image.new("RGBA", size, (0, 0, 0, 0))
     cell_w, cell_h = size[0] // cols, size[1] // rows
+    if pad * 2 >= cell_w or pad * 2 >= cell_h:
+        raise ValueError("atlas padding leaves no room for a pose")
     for row in range(rows):
         for col in range(cols):
             sx0 = col * source_image.width // cols
@@ -101,10 +103,15 @@ def normalize(source: Path, target: Path, size: tuple[int, int], cols: int, rows
             cell = source_image.crop((sx0, sy0, sx1, sy1))
             cell = key_backdrop(cell, black=black)
             cell = remove_boundary_bleed(cell)
-            cell = cell.resize((cell_w, cell_h), Image.Resampling.LANCZOS)
+            # Keep a transparent gutter around every authored pose. Some
+            # boards place a claw, wheel or muzzle on a source-cell edge;
+            # this inset makes cross-cell filtering impossible while keeping
+            # the complete pose in the destination cell.
+            inner = (cell_w - pad * 2, cell_h - pad * 2)
+            cell = cell.resize(inner, Image.Resampling.LANCZOS)
             cell = key_backdrop(cell, black=black)
             cell = remove_boundary_bleed(cell)
-            image.alpha_composite(cell, (col * cell_w, row * cell_h))
+            image.alpha_composite(cell, (col * cell_w + pad, row * cell_h + pad))
     for row in duplicate_rows:
         src = image.crop((6 * cell_w, row * cell_h, 7 * cell_w, (row + 1) * cell_h))
         image.paste((0, 0, 0, 0), (7 * cell_w, row * cell_h, 8 * cell_w, (row + 1) * cell_h))
@@ -118,7 +125,7 @@ def prepare_bosses(source_dir: Path, target_dir: Path) -> None:
     for boss in range(6):
         source = source_dir / f"boss{boss}-source.png"
         target = target_dir / f"boss{boss}-v2.png"
-        normalize(source, target, board_size, 4, 4)
+        normalize(source, target, board_size, 4, 4, pad=5)
 
 
 def prepare_hero(source_dir: Path, target_dir: Path) -> None:
@@ -161,7 +168,7 @@ def main() -> None:
     prepare_hero(args.source_dir, assets)
     prepare_mapped(args.source_dir, assets, "enemies")
     normalize(args.source_dir / "vehicle-source.png", assets / "vehicle-v2.png", (768, 768), 4, 4,
-              black=True)
+              black=True, pad=5)
     prepare_bosses(args.source_dir, assets)
 
 
