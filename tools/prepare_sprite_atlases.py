@@ -40,7 +40,7 @@ def normalize(source: Path, target: Path, size: tuple[int, int], black: bool = F
 
 
 def prepare_bosses(source_dir: Path, target_dir: Path) -> None:
-    board_size = (1536, 1536)  # 4x4 cells, 384px per authored pose
+    board_size = (768, 768)  # 4x4 cells, 192px per authored pose
     for boss in range(6):
         source = source_dir / f"boss{boss}-source.png"
         board = Image.open(source).convert("RGBA").resize(board_size, Image.Resampling.LANCZOS)
@@ -55,9 +55,9 @@ def main() -> None:
                         default=Path(__file__).resolve().parent / "sourceboards")
     args = parser.parse_args()
     assets = args.assets
-    normalize(args.source_dir / "hero-source.png", assets / "hero-v2.png", (1536, 1536))
-    normalize(args.source_dir / "enemies-source.png", assets / "enemies-v2.png", (1536, 1152))
-    normalize(args.source_dir / "vehicle-source.png", assets / "vehicle-v2.png", (1536, 1536), black=True)
+    normalize(args.source_dir / "hero-source.png", assets / "hero-v2.png", (768, 768))
+    normalize(args.source_dir / "enemies-source.png", assets / "enemies-v2.png", (768, 576))
+    normalize(args.source_dir / "vehicle-source.png", assets / "vehicle-v2.png", (768, 768), black=True)
     prepare_bosses(args.source_dir, assets)
 
 
