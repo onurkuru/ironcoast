@@ -38,6 +38,7 @@ public:
                   float angle = 0, float pivotX = .5f, float pivotY = .5f, uint8_t alpha = 255);
   void ring(float, float, float, float, uint32_t);
   void drawBoss(const Game &, float, float);
+  void foregroundDepth(int, float, float);
   void background(int, float, float);
   void drawGame(const Game &, const ViewState &);
   void render(const Game &, const ViewState &);

@@ -364,6 +364,16 @@ void Renderer::background(int theme, float camera, float time) {
   sprite(worlds, theme, -drift, 0, W, H, mirrored);
   sprite(worlds, theme, W - drift, 0, W, H, !mirrored);
   rect(0, 0, W, H, 0x0A182A28);
+  // Reuse the authored industrial tile atlas as a soft middle-distance pass.
+  // These panels move at 34% of camera speed, between the painted world and
+  // the gameplay plane, giving the large background shapes a measurable depth.
+  float midTravel = camera * .34f - time * (theme == 2 ? 5.0f : 2.0f);
+  for (int i = 0; i < 6; i++) {
+    float x = std::fmod(i * 137.0f - midTravel + 700.0f, 620.0f) - 80.0f;
+    float y = 148.0f + (i % 3) * 13.0f;
+    sprite(props, (theme + i) % 6, x, y, 94, 43, false, 0, 34);
+    rect(x + 7, y + 39, 80, 2, theme == 4 ? 0x5DBDD655 : 0xD28B4A44);
+  }
   // Slow second-depth silhouettes keep scrolling distinct from the far scenery.
   for (int i = 0; i < 6; i++) {
     float x = i * 121 - std::fmod(camera * .38f, 121.0f);
@@ -409,6 +419,26 @@ void Renderer::background(int theme, float camera, float time) {
     // high-contrast silhouettes used for gameplay readability.
     for (int i = 0; i < 4; i++)
       rect(0, 142 + i * 17, W, 2, 0xD07A3510);
+  }
+}
+void Renderer::foregroundDepth(int theme, float camera, float time) {
+  // The foreground is deliberately sparse: the player and projectiles remain
+  // readable while close rails, cables and hanging hooks sweep past faster
+  // than the collision plane. All elements are existing authored prop art or
+  // simple silhouettes, so no extra runtime texture is required on Vita.
+  const float travel = camera * 1.12f - time * 8.0f;
+  for (int i = 0; i < 6; i++) {
+    float x = std::fmod(i * 124.0f - travel + 800.0f, 620.0f) - 90.0f;
+    float y = 246.0f + (i % 2) * 4.0f;
+    sprite(props, (theme * 2 + i) % 6, x, y, 102, 28, false, 0, 92);
+    rect(x, y, 102, 2, 0x08131AD0);
+  }
+  for (int i = 0; i < 5; i++) {
+    float x = std::fmod(i * 151.0f - camera * 1.28f + time * 10.0f + 640.0f, 620.0f) - 70.0f;
+    float sway = std::sin(time * 1.7f + i * 1.8f) * 12.0f;
+    line(x, 28, x + sway, 122 + (i % 2) * 22, 0x07131AA0);
+    line(x + 1, 28, x + sway + 1, 122 + (i % 2) * 22, 0xC3944960);
+    rect(x + sway - 3, 120 + (i % 2) * 22, 7, 5, 0x1D2B32BB);
   }
 }
 void Renderer::drawGame(const Game &g, const ViewState &v) {
@@ -685,6 +715,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       }
     }
   }
+  foregroundDepth(g.levelIndex, camera, time);
   offsetX = offsetY = 0;
   rect(0, 0, 480, 27, 0x0B1828EC);
   rect(0, 26, 480, 1, 0xC39449FF);
