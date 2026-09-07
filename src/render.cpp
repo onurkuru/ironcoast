@@ -48,7 +48,6 @@ Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move
   // an outstretched arm occupy a different visual scale from its idle pose.
   hero = load("hero-v2.png", 8, 8, false, true);
   enemies = load("enemies-v2.png", 8, 6, false, true);
-  worlds = load("worlds.png", 2, 3);
   machines = load("machines.png", 3, 3, false);
   vehicle = load("vehicle-v2.png", 4, 4, false);
   for (int i = 0; i < 6; i++)
@@ -56,12 +55,29 @@ Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move
   props = load("props.png", 4, 4, false);
   aim = load("aim.png", 4, 3, false, true);
   melee = load("melee.png", 2, 2, false, true);
+  // One small radial alpha mask is reused for lamps, fog and contact shadows.
+  // No full-screen render targets or per-frame texture uploads are required.
+  SDL_Surface *mask = SDL_CreateRGBSurfaceWithFormat(0, 64, 64, 32, SDL_PIXELFORMAT_RGBA32);
+  if (!mask)
+    throw std::runtime_error(SDL_GetError());
+  for (int y = 0; y < 64; ++y)
+    for (int x = 0; x < 64; ++x) {
+      float dx = (x - 31.5f) / 31.5f, dy = (y - 31.5f) / 31.5f;
+      float falloff = std::max(0.0f, 1.0f - dx * dx - dy * dy);
+      auto *row = reinterpret_cast<Uint32 *>(static_cast<Uint8 *>(mask->pixels) + y * mask->pitch);
+      row[x] = SDL_MapRGBA(mask->format, 255, 255, 255, Uint8(falloff * falloff * 255));
+    }
+  lightMask = SDL_CreateTextureFromSurface(r, mask);
+  SDL_FreeSurface(mask);
+  if (!lightMask)
+    throw std::runtime_error(SDL_GetError());
 }
 Renderer::~Renderer() {
-  for (auto *a : {&hero, &enemies, &worlds, &machines, &props, &aim, &melee, &vehicle})
+  for (auto *a : {&hero, &enemies, &scenery, &machines, &props, &aim, &melee, &vehicle})
     SDL_DestroyTexture(a->texture);
   for (auto &a : bosses)
     SDL_DestroyTexture(a.texture);
+  SDL_DestroyTexture(lightMask);
 }
 Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, bool paperKey) {
   Atlas a;
@@ -234,7 +250,7 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
   float x = cx - 76, y = cy - 128 + basePadding[k];
   float gait = pose.stride;
   uint8_t opacity = b.dead ? uint8_t(std::clamp(b.death * 180, 0.0f, 255.0f)) : 255;
-  ring(cx, 231, k == 4 ? 42 : 64, 5, 0x06131A88);
+  contactShadow(cx, cy, g.floorAt(b.x, cy - 2), k == 4 ? 42 : 64);
   if (b.state == BossState::Windup && !b.dead) {
     float target = b.targetX - camera;
     bool groundStrike = (k == 0 && b.pattern % 2) || k == 3 || (k == 5 && b.pattern % 2);
@@ -274,8 +290,7 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
     float drawW = k == 4 ? 142.0f : 152.0f;
     float drawH = k == 4 ? 118.0f : 128.0f;
     float drawY = cy - drawH + (k == 4 ? 7.0f : 0.0f) + bob;
-    SDL_SetTextureColorMod(bossAtlas.texture, b.hurt > 0 ? 255 : 255, b.hurt > 0 ? 175 : 255,
-                           b.hurt > 0 ? 145 : 255);
+    actorLight(bossAtlas, cx, cy - 56, b.hurt > 0);
     if (!b.dead && k != 4)
       groundedSprite(bossAtlas, frame, cx - drawW / 2, drawY, drawW, drawH, false, 0, opacity);
     else
@@ -383,154 +398,183 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
   if (b.impact > .3f)
     ring(cx - 35, 231, (1 - b.impact) * 50 + 12, 3, 0xEAB66CAA);
 }
+void Renderer::softLight(float x, float y, float rx, float ry, uint32_t color,
+                         uint8_t opacity, bool additive) {
+  SDL_SetTextureBlendMode(lightMask, additive ? SDL_BLENDMODE_ADD : SDL_BLENDMODE_BLEND);
+  SDL_SetTextureColorMod(lightMask, color >> 24, (color >> 16) & 255, (color >> 8) & 255);
+  SDL_SetTextureAlphaMod(lightMask, opacity);
+  SDL_FRect dest{x - rx + offsetX, y - ry + offsetY, rx * 2, ry * 2};
+  SDL_RenderCopyF(r, lightMask, nullptr, &dest);
+}
+void Renderer::collectLights(const Game &g, float camera, float time, float alpha) {
+  sceneTheme = g.levelIndex;
+  lights.clear();
+  // Fixtures are anchored to world coordinates, including their light/shadow.
+  // Only a few can be visible at once; there is no screen-space drifting light.
+  int first = std::max(0, int((camera - 160) / 360));
+  for (int i = first; i < first + 4; ++i) {
+    float wx = 180 + i * 360.0f;
+    if (wx > g.level().width - 75)
+      continue;
+    float ground = g.floorAt(wx, 200);
+    if (ground > H || wx - camera > W + 120 || wx - camera < -120)
+      continue;
+    bool cool = sceneTheme == 4 || (i + sceneTheme) % 3 == 1;
+    uint32_t color = cool ? 0x72CFDF00 : sceneTheme == 1 ? 0xC6D99900 : 0xFFC07C00;
+    float strength = .94f + .025f * std::sin(time * 1.7f + i);
+    lights.push_back({wx - camera, ground - 76, ground, 102, strength, color, true});
+  }
+  if (g.player.recoil > 0 && g.status == Status::Play) {
+    float x = between(g.player.prevX, g.player.x, alpha) - camera;
+    float y = between(g.player.prevY, g.player.y, alpha);
+    lights.push_back({x + g.player.dir * 24, y - 27, y, 60,
+                      std::min(1.0f, g.player.recoil * 14),
+                      g.player.weapon == 5 ? 0x75E7EE00u : 0xFFD59700u, false});
+  }
+  if (g.boss.active && !g.boss.dead)
+    lights.push_back({between(g.boss.prevX, g.boss.x, alpha) - camera,
+                      between(g.boss.prevY, g.boss.y, alpha) - 56, g.boss.y, 94, .6f,
+                      sceneTheme == 4 ? 0x6EDAE900u : 0xEB845600u, false});
+}
+void Renderer::actorLight(const Atlas &atlas, float x, float y, bool hurt) {
+  float red = 183, green = 202, blue = 215;
+  for (const auto &light : lights) {
+    float dx = (x - light.x) / light.radius;
+    float dy = (y - light.y) / (light.radius * 1.2f);
+    float amount = std::max(0.0f, 1 - dx * dx - dy * dy) * light.strength;
+    red += amount * ((light.color >> 24) / 255.0f) * 88;
+    green += amount * (((light.color >> 16) & 255) / 255.0f) * 66;
+    blue += amount * (((light.color >> 8) & 255) / 255.0f) * 43;
+  }
+  SDL_SetTextureColorMod(atlas.texture, hurt ? 255 : Uint8(std::min(red, 255.0f)),
+                         hurt ? 172 : Uint8(std::min(green, 255.0f)),
+                         hurt ? 142 : Uint8(std::min(blue, 255.0f)));
+}
+void Renderer::contactShadow(float x, float feet, float ground, float width) {
+  if (ground > H || ground < feet - 3)
+    return;
+  float height = std::max(0.0f, ground - feet);
+  float strength = std::max(.12f, 1 - height / 140);
+  softLight(x, ground + 1, width * (.65f + .35f * strength), 2.2f,
+            0x02060A00, Uint8(190 * strength), false);
+  // A restrained cast shadow extends away from the closest practical lamp.
+  for (const auto &light : lights)
+    if (light.fixture && std::fabs(light.x - x) < 95 && height < 5) {
+      float extension = std::clamp((x - light.x) * .16f, -13.0f, 13.0f);
+      softLight(x + extension, ground + 2, width + std::fabs(extension), 2.5f,
+                0x02060A00, 55, false);
+      break;
+    }
+}
 void Renderer::background(int theme, float camera, float time) {
-  float travel = camera * .16f + (theme == 2 ? time * 28 : 0);
-  float drift = std::fmod(travel, W);
-  bool mirrored = int(travel / W) % 2;
-  sprite(worlds, theme, -drift, 0, W, H, mirrored);
-  sprite(worlds, theme, W - drift, 0, W, H, !mirrored);
-  rect(0, 0, W, H, 0x0A182A28);
-  // Filled, tapered shafts suggest volumetric light without a shader. Layered
-  // alpha bands give a soft edge instead of the hard streaks of debug lines.
-  uint32_t shaft = theme == 1   ? 0x72D7CE18
-                   : theme == 4 ? 0x7BCDEB1C
-                   : theme == 3 ? 0xF4785916
-                   : theme == 5 ? 0xF48A4717
-                                 : 0xF4C46A14;
-  for (int i = 0; i < 3; i++) {
-    float x = std::fmod(i * 173.0f - camera * .12f + 560.0f, 620.0f) - 70.0f;
-    float lean = 22.0f + (i % 3) * 14.0f;
-    for (int layer = 5; layer >= 0; layer--) {
-      float t = layer / 5.0f;
-      uint8_t a = uint8_t((1.0f - t) * 12 + 3);
-      for (int y = 38; y < 204; y += 6) {
-        float progress = (y - 38) / 166.0f;
-        float left = x - 12.0f * t + progress * (lean - 24.0f) - layer * 1.5f;
-        float width = 5.0f + progress * (22.0f + layer * 2.0f);
-        rect(left, float(y), width, 6, (shaft & 0xFFFFFF00) | a);
+  static constexpr const char *plates[] = {"harbor-night.png", "marsh-night.png",
+      "ironline-night.png", "foundry-night.png", "relay-night.png", "command-night.png"};
+  theme = std::clamp(theme, 0, 5);
+  if (sceneryTheme != theme) {
+    // Keep only the active scene texture resident, especially on Vita.
+    SDL_DestroyTexture(scenery.texture);
+    scenery = Atlas{};
+    scenery = load(plates[theme], 1, 1);
+    sceneryTheme = theme;
+  }
+  // Each continuous panorama spans its mission without mirroring landmarks.
+  float width = H * float(scenery.width) / scenery.height;
+  float progress = std::clamp(camera / (campaign()[theme].width - W), 0.0f, 1.0f);
+  sprite(scenery, 0, -(width - W) * progress, 0, width, H);
+  // Far harbor haze separates distant architecture from the playable lane.
+  for (int i = 0; i < 3; ++i) {
+    float x = i * 270.0f - std::fmod(camera * .24f + time * 2, 270.0f);
+    softLight(x, 180 + i * 7, 205, 24, theme == 3 ? 0x926F6500 : 0x5E9DAD00, 18);
+  }
+  // Dock-side architecture at a distinct depth. Discrete walls have no
+  // autonomous travel: the only motion here is camera parallax.
+  int first = int(camera * .48f / 164) - 1;
+  for (int i = first; i < first + 5; ++i) {
+    float x = i * 164.0f - camera * .48f;
+    float height = 18 + (std::abs(i) % 3) * 7;
+    rect(x, 232 - height, 74, height, 0x07131CB8);
+    line(x, 232 - height, x + 74, 232 - height, 0x33505A6A);
+    for (int j = 0; j < 5; ++j)
+      line(x + 7 + j * 14, 235 - height, x + 7 + j * 14, 229, 0x33434E48);
+    rect(x + 96, 224, 44, 8, 0x07131C9A);
+  }
+  if (theme == 4 || theme == 5)
+    for (int i = 0; i < 46; ++i) {
+      float x = std::fmod(i * 71.37f - time * 58 + 40000, 500.0f);
+      float y = std::fmod(i * 43.13f + time * 140, 280.0f);
+      line(x, y, x - 2, y + 6, 0x87CCDC35);
+    }
+  if (theme == 3)
+    for (int i = 0; i < 15; ++i) {
+      float x = std::fmod(i * 53.1f + time * 9, 480.0f);
+      float y = 272 - std::fmod(i * 19.7f + time * 22, 260.0f);
+      rect(x, y, 1, 1, 0xFCAA5980);
+    }
+}
+void Renderer::foregroundDepth(int, float camera, float) {
+  // Near-field dock fascia is safely below the actor feet at every camera x.
+  int first = int(camera * 1.12f / 118) - 1;
+  for (int i = first; i < first + 6; ++i) {
+    float x = i * 118.0f - camera * 1.12f;
+    rect(x, 259, 86, 10, 0x040B12B0);
+    line(x + 2, 259, x + 83, 259, 0x4D70703A);
+    rect(x + 6, 262, 2, 2, 0x47585965);
+  }
+}
+void Renderer::lightingPass(const Game &, float, float, float) {
+  for (const auto &light : lights) {
+    softLight(light.x, light.y + 16, light.radius, light.radius * .85f,
+              light.color, Uint8(34 * light.strength));
+    if (!light.fixture)
+      continue;
+    // Visible grounded lamp: the cone, glow and reflected pool share its root.
+    rect(light.x + 6, light.y - 8, 2, light.floor - light.y + 8, 0x080F17FF);
+    line(light.x + 7, light.y - 8, light.x + 7, light.floor, 0x36515F9A);
+    rect(light.x - 8, light.y - 6, 17, 5, 0x08121AFF);
+    rect(light.x - 5, light.y - 1, 10, 1, light.color | 220);
+    softLight(light.x, light.y, 17, 8, light.color, 110);
+    // Analytic cone with smooth edges, low alpha, and a real source.
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_ADD);
+    for (int y = int(light.y + 2); y < int(light.floor); y += 2) {
+      float t = (y - light.y) / (light.floor - light.y);
+      float width = 4 + t * 35;
+      for (int band = 0; band < 3; ++band) {
+        float half = width * (1 - band * .22f);
+        rect(light.x - half, float(y), half * 2, 2,
+             light.color | Uint8((1 - t * .55f) * (band == 0 ? 3 : 2) * light.strength));
       }
     }
-  }
-  // A soft middle-distance silhouette pass moves at 34% of camera speed,
-  // between the painted world and the gameplay plane. It stays geometric and
-  // low contrast so the authored background remains the visual anchor.
-  float midTravel = camera * .34f - time * (theme == 2 ? 5.0f : 2.0f);
-  for (int i = 0; i < 6; i++) {
-    float x = std::fmod(i * 137.0f - midTravel + 700.0f, 620.0f) - 80.0f;
-    float y = 148.0f + (i % 3) * 13.0f;
-    uint32_t silhouette = theme == 1 || theme == 4 ? 0x102C3828 : 0x151C2728;
-    rect(x, y, 94, 43, silhouette);
-    rect(x + 7, y + 8, 80, 2, theme == 4 ? 0x5DBDD62A : 0xD28B4A22);
-    rect(x + 18, y + 15, 12, 20, theme == 1 ? 0x1B4B5128 : 0x22263228);
-    rect(x + 48, y + 15, 24, 20, theme == 3 ? 0x6A2A2028 : 0x25323A28);
-  }
-  // Midground silhouettes give the painted panels a second depth layer. They
-  // scroll slower than the gameplay plane, making camera motion feel richer
-  // without changing collision geometry.
-  for (int i = 0; i < 11; i++) {
-    float x = std::fmod(i * 92.0f - camera * .62f + 960.0f, 560.0f) - 40.0f;
-    float h = 10.0f + std::fmod(i * 17.0f, 25.0f);
-    rect(x, 211 - h, 24 + (i % 3) * 9, h, theme == 1 ? 0x132D36A0 : 0x101E2FA0);
-    if (i % 2 == 0)
-      rect(x + 5, 211 - h - 6, 2, 6, 0x172A35A0);
-  }
-  // Small practical lights make the coast feel occupied instead of frozen.
-  for (int i = 0; i < 9; i++) {
-    float x = std::fmod(i * 67.0f - camera * .78f + 700.0f, 540.0f) - 20.0f;
-    bool lit = (int(time * 2.0f) + i + theme) % 4 != 0;
-    if (lit)
-      rect(x, 202 + (i % 3) * 3, 2, 2, theme == 1 ? 0xB6E56A99 : 0xF4B64A99);
-  }
-  if (theme == 1) {
-    for (int i = 0; i < 5; i++)
-      rect(std::fmod(i * 117 + time * 7, 600.0f) - 60, 175 + i * 9, 150, 3, 0x6CBAA516);
-  }
-  if (theme == 4 || theme == 5) {
-    for (int i = 0; i < 75; i++) {
-      float x = std::fmod(i * 71.37f - time * 90 + 40000, 500.0f),
-            y = std::fmod(i * 43.13f + time * 175, 280.0f);
-      line(x, y, x - 3, y + 9, 0x87CCDC5A);
-    }
-  }
-  if (theme == 3) {
-    for (int i = 0; i < 20; i++) {
-      float x = std::fmod(i * 53.1f + time * 9, 480.0f),
-            y = 272 - std::fmod(i * 19.7f + time * 22, 260.0f);
-      rect(x, y, 1, 2, 0xFCAA5977);
-    }
-  }
-  if (theme == 0 || theme == 5) {
-    // Warm coastal haze catches the sunset palette while preserving the
-    // high-contrast silhouettes used for gameplay readability.
-    for (int i = 0; i < 4; i++)
-      rect(0, 142 + i * 17, W, 2, 0xD07A3510);
+    SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
+    rect(light.x + 3, light.floor - 3, 8, 3, 0x09151EFF);
   }
 }
-void Renderer::foregroundDepth(int theme, float camera, float time) {
-  // The near field is a quiet architectural silhouette along the floor. It
-  // moves a little faster than gameplay to sell depth without putting random
-  // ropes, hooks or props in front of the actors.
-  const float travel = camera * 1.12f - time * 3.0f;
-  uint32_t shadow = theme == 1 || theme == 4 ? 0x071C2538 : 0x120F1838;
-  for (int i = 0; i < 7; i++) {
-    float x = std::fmod(i * 118.0f - travel + 800.0f, 620.0f) - 90.0f;
-    float w = 64.0f + (i % 3) * 18.0f;
-    float h = 5.0f + (i % 2) * 4.0f;
-    rect(x, 267.0f - h, w, h, shadow);
-    rect(x + 8.0f, 267.0f - h - 2.0f, 2.0f, 2.0f,
-         theme == 1 ? 0x62C8BC42 : 0xD78D4842);
-  }
-}
-void Renderer::lightingPass(const Game &g, float camera, float time, float alpha) {
-  const int theme = g.levelIndex;
-  uint32_t wash = theme == 1   ? 0x12343B12
-                  : theme == 4 ? 0x0E243516
-                  : theme == 3 ? 0x3A171412
-                  : theme == 5 ? 0x32171914
-                                : 0x2B211512;
-  // A restrained ambient grade leaves the authored backgrounds moody while
-  // keeping HUD and gameplay sprites at their original contrast.
-  rect(0, 27, W, 242, wash);
-  for (int i = 0; i < 7; i++) {
-    uint8_t a = uint8_t(8 + i * 4);
-    rect(0, 27, 7 + i * 3, 242, 0x050B1200 | a);
-    rect(W - 7 - i * 3, 27, 7 + i * 3, 242, 0x050B1200 | a);
-    rect(0, 265 - i * 2, W, 2, 0x050B1200 | uint8_t(a * .8f));
-  }
-  auto glow = [&](float x, float y, float radius, uint32_t color) {
-    // Filled, nested bands read as a soft point light at the game's native
-    // resolution. Outlines made the old glow look like a debug reticle.
-    for (int i = 7; i >= 1; i--) {
-      float t = i / 7.0f;
-      float halfW = radius * t;
-      float halfH = radius * .42f * t;
-      uint8_t a = uint8_t(4 + (1.0f - t) * 18);
-      rect(x - halfW, y - halfH, halfW * 2.0f, halfH * 2.0f,
-           (color & 0xFFFFFF00) | a);
-    }
-    rect(x - 1.5f, y - 1.5f, 3, 3, (color & 0xFFFFFF00) | 164);
-  };
-  // Practical lamps repeat with the same period as the middle-distance tiles.
-  for (int i = 0; i < 9; i++) {
-    float x = std::fmod(i * 67.0f - camera * .78f + 700.0f, 540.0f) - 20.0f;
-    bool lit = (int(time * 2.0f) + i + theme) % 4 != 0;
-    if (lit) {
-      uint32_t point = theme == 1 || theme == 4 ? 0x82DCC700 : 0xF4A34A00;
-      glow(x + 1, 204 + (i % 3) * 3, theme == 4 ? 8.0f : 6.0f, point);
+void Renderer::surfaceLights(const Game &g, float camera) {
+  for (const auto &platform : g.level().platforms) {
+    const auto &box = platform.box;
+    if (box.x + box.w < camera || box.x > camera + W)
+      continue;
+    for (const auto &light : lights) {
+      if (light.y > box.y || box.y - light.y > 140)
+        continue;
+      float start = std::max(box.x - camera, light.x - 62);
+      float end = std::min(box.x + box.w - camera, light.x + 62);
+      if (start >= end)
+        continue;
+      // Horizontal broken highlights stay clipped to solid ground, never gaps.
+      SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_ADD);
+      for (int row = 0; row < std::min(9, int(box.h)); ++row) {
+        float reach = (end - start) * (.32f + .045f * ((row * 7) % 9));
+        float center = (start + end) * .5f + std::sin(row * 4.1f) * 5;
+        float left = std::max(start, center - reach * .5f);
+        float right = std::min(end, center + reach * .5f);
+        rect(left, box.y + row, right - left, 1,
+             light.color | Uint8((row == 0 ? 68 : 27 - row * 2) * light.strength));
+      }
+      SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
     }
   }
-  float px = between(g.player.prevX, g.player.x, alpha) - camera;
-  if (g.player.recoil > 0 && g.status == Status::Play)
-    glow(px + g.player.dir * (g.player.vehicleHP ? 31.0f : 24.0f),
-         between(g.player.prevY, g.player.y, alpha) - (g.player.vehicleHP ? 36.0f : 27.0f),
-         g.player.vehicleHP ? 12.0f : 7.0f, g.player.weapon == 5 ? 0x63D8E500 : 0xF4B64A00);
-  if (g.boss.active && !g.boss.dead) {
-    float bx = between(g.boss.prevX, g.boss.x, alpha) - camera;
-    float by = between(g.boss.prevY, g.boss.y, alpha) - 60.0f;
-    glow(bx, by, g.level().bossKind == 4 ? 19.0f : 13.0f,
-         g.level().bossKind == 4 ? 0x55DCE400 : 0xF4A34A00);
-  }
 }
+
 void Renderer::drawGame(const Game &g, const ViewState &v) {
   const float alpha = std::clamp(v.interpolation, 0.0f, 1.0f);
   const float camera = between(g.prevCamera, g.camera, alpha);
@@ -539,6 +583,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         sy = v.shake ? std::cos(time * 73) * g.shake * .5f : 0;
   offsetX = sx;
   offsetY = sy;
+  collectLights(g, camera, time, alpha);
   background(g.levelIndex, camera, time);
   lightingPass(g, camera, time, alpha);
   const auto &l = g.level();
@@ -547,14 +592,22 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     if (x + p.box.w < 0 || x > W)
       continue;
     int idx = l.theme;
+    SDL_SetTextureColorMod(props.texture, 107, 140, 160);
     for (float t = 0; t < p.box.w; t += 32) {
       float size = std::min(32.0f, p.box.w - t);
       sprite(props, idx, x + t, p.box.y, size, p.box.h);
     }
-    line(x, p.box.y, x + p.box.w, p.box.y, 0xDEC494FF);
+    SDL_SetTextureColorMod(props.texture, 255, 255, 255);
+    rect(x, p.box.y, p.box.w, p.box.h, 0x0A17263E);
+    rect(x, p.box.y, p.box.w, std::min(p.box.h, 10.0f), 0x142531EC);
+    line(x, p.box.y, x + p.box.w, p.box.y, 0x799BA4FF);
+    line(x, p.box.y + 3, x + p.box.w, p.box.y + 3, 0x3A555FC0);
+    for (float joint = 32; joint < p.box.w; joint += 64)
+      line(x + joint, p.box.y + 1, x + joint - 2, p.box.y + 8, 0x0A141D98);
     if (p.oneWay)
       line(x, p.box.y + p.box.h, x + p.box.w, p.box.y + p.box.h, INK);
   }
+  surfaceLights(g, camera);
   for (auto &h : l.hazards) {
     float x = h.x - camera;
     if (x + h.w < 0 || x > W)
@@ -628,14 +681,13 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     if ((e.dead && e.death <= 0) || !e.active || e.x < camera - 60 || e.x > camera + W + 60)
       continue;
     float deathT = e.dead ? 1.0f - std::clamp(e.death / .45f, 0.0f, 1.0f) : 0.0f;
-    // The v2 enemy atlas uses four locomotion cells, two attack cells and two
-    // collapse cells per row. Keep attack on 4/5; cells 6/7 are the authored
-    // hit-to-ground transition and should never be shown during a live attack.
+    // Full source poses: walk 0..3, attack 4, hurt 5, collapse 6/7.
     int frame = e.dead
                     ? (e.kind == 5 ? std::min(1, int(deathT * 2))
                                    : 6 + std::min(1, int(deathT * 2)))
-                    : e.state == 1 ? 4
-                    : e.state == 2 ? 4 + int(time * 8 + e.origin) % 2
+                    : e.hurt > 0 ? 5
+                    : e.state == 1 ? 3
+                    : e.state == 2 ? 4
                                     : int(time * 8 + e.origin) % 4;
     int idx = e.kind * 8 + frame;
     float h = e.kind == 3   ? 31
@@ -644,18 +696,16 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
           w = e.kind == 3   ? 40
               : e.kind == 4 ? 43
                             : 40;
-    float drawW = e.dead ? w * (1.0f + deathT * .16f) : w;
-    float drawH = e.dead ? h * (1.0f - deathT * .14f) : h;
+    float drawW = w, drawH = h;
     float yy = e.y - drawH - (e.dead ? std::sin(deathT * 3.14159f) * 12.0f : 0.0f);
-    double angle = e.dead ? deathT * 100 * e.dir : 0;
+    double angle = 0;
     uint8_t alpha = e.dead ? uint8_t(e.death / .45f * 255) : 255;
     if (!e.dead)
-      rect(e.x - camera - drawW * .34f, e.y - 2, drawW * .68f, 2, 0x08131A66);
+      contactShadow(e.x - camera, e.y, g.floorAt(e.x, e.y - 2), drawW * .34f);
     else
       rect(e.x - camera - drawW * .34f, e.y - 2, drawW * .68f, 2,
            0x08131A66 | uint8_t((1.0f - deathT) * 80));
-    if (e.hurt > 0)
-      SDL_SetTextureColorMod(enemies.texture, 255, 170, 120);
+    actorLight(enemies, e.x - camera, e.y - drawH * .5f, e.hurt > 0);
     if (!e.dead && e.kind != 3)
       groundedSprite(enemies, idx, e.x - camera - drawW / 2, yy, drawW, drawH, e.dir > 0, angle, alpha);
     else
@@ -672,8 +722,10 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
   float playerY = p.prevY + (p.y - p.prevY) * alpha;
   float px = playerX - camera;
   float playerShadowW = p.vehicleHP ? 38.0f : (p.grounded ? 22.0f : 14.0f);
-  rect(px - playerShadowW / 2, playerY - 1, playerShadowW, 2, 0x06131A88);
-  if (p.inv <= 0 || int(p.inv * 15) % 2 == 0) {
+  contactShadow(px, playerY, g.floorAt(playerX, playerY - 2), playerShadowW * .65f);
+  for (const auto *atlas : {&hero, &aim, &melee, &vehicle})
+    actorLight(*atlas, px, playerY - 24, p.hitFlash > 0);
+  if (g.debugInvincible || p.inv <= 0 || int(p.inv * 15) % 2 == 0) {
     if (p.vehicleHP) {
       // Keep the firing pose for the complete weapon cooldown, even if the
       // button is released on the same render frame as the shot.
@@ -688,22 +740,18 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       // grenade, melee and jump poses.
       constexpr float playerW = 48.0f, playerH = 48.0f;
       float w = playerW, h = playerH;
-      float bob = p.land > 0 ? std::sin((p.land / .16f) * 3.14159f) * 1.5f
-                             : (std::fabs(p.vx) > 1 && p.grounded ? std::sin(p.anim * 20) * 1.1f
-                                                                   : std::sin(p.anim * 4) * .35f);
-      float y = playerY - h + bob;
+      // Authored poses provide the body motion. Moving the entire grounded
+      // quad down for breathing/landing buries the feet below the floor.
+      float y = playerY - h;
       const bool modernHero = hero.cols == 8 && hero.rows >= 8;
       static constexpr int idleFrames[] = {0, 1, 2, 3, 2, 1};
       int frame = 8 + idleFrames[int(p.anim * 5) % 6];
-      double angle = p.hitFlash > 0 ? std::sin(time * 90) * 3
-                                    : (p.recoil > 0 ? -p.dir * 2.0 : 0.0);
+      double angle = p.hitFlash > 0 && !p.grounded ? std::sin(time * 90) * 3 : 0;
       if (g.status == Status::Dying) {
         float deathT = std::clamp(1.0f - g.deathTimer, 0.0f, 1.0f);
         static constexpr int deathFrames[] = {48, 49, 50, 51, 52, 53, 54, 54};
         frame = modernHero ? deathFrames[std::min(7, int(deathT * 8))]
                            : 28 + std::min(3, int((1 - g.deathTimer) * 5));
-        w = playerW * (1.0f + deathT * .18f);
-        h = playerH * (1.0f - deathT * .16f);
         y = playerY - h - std::sin(deathT * 3.14159f) * 9.0f;
         angle = std::sin(time * 26) * 8;
       } else if (p.action > 0 && p.actionKind == 1) {
@@ -730,7 +778,10 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         int idx = v.input.up
                       ? (std::fabs(p.vx) > 1 ? 4 + int(p.anim * 12) % 4 : int(p.anim * 7) % 4)
                       : 8 + int(p.anim * 9) % 4;
-        sprite(aim, idx, px - w / 2, y, w, h, p.dir < 0);
+        if (p.grounded)
+          groundedSprite(aim, idx, px - w / 2, y, w, h, p.dir < 0);
+        else
+          sprite(aim, idx, px - w / 2, y, w, h, p.dir < 0);
         frame = -1;
       } else if (!p.grounded) {
         // Row 2 is a mixed transition strip: cell 16 is a crouch settle and
@@ -759,8 +810,6 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         frame = 12 + std::min(3, int(p.fireAge * 28));
       }
       if (frame >= 0) {
-        if (p.hitFlash > 0)
-          SDL_SetTextureColorMod(hero.texture, 255, 190, 155);
         if (p.grounded)
           groundedSprite(hero, frame, px - w / 2, y, w, h, p.dir < 0, angle);
         else
@@ -774,6 +823,8 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       }
     }
   }
+  for (const auto *atlas : {&hero, &aim, &melee, &vehicle})
+    SDL_SetTextureColorMod(atlas->texture, 255, 255, 255);
   // Cosmetic smoke is rendered before hostile projectiles so threats stay visible.
   for (const auto &source : g.particles) {
     auto part = source;
@@ -1025,10 +1076,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     text("ENTER / O / ESC  BACK", 25, 244, 1, TEAL);
   }
   if (v.screen == Screen::Play || v.screen == Screen::Pause) {
-    // A restrained CRT pass keeps the pixel art cohesive at the 2x desktop
-    // scale and is cheap enough for the Vita renderer.
-    for (int y = 29; y < 269; y += 4)
-      rect(0, y, 480, 1, 0x07131E18);
+    // Keep small character details clear; only the frame edges are shaded.
     for (int i = 0; i < 8; i++) {
       uint32_t shade = 0x020A1014 | uint32_t((18 - i * 2) & 255);
       rect(0, 27 + i, 480, 1, shade);

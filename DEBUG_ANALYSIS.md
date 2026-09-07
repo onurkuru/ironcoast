@@ -58,6 +58,8 @@ The RetroGameZone Metal Slug Sprite Database is useful as a frame-by-frame refer
 
 ### Replaced visual study
 
+Update 0.2: See `ART_DIRECTION.md` for the implemented six-scene cinematic art pass and the corrected full-pose import. Earlier uniform-cell cleanup notes below describe intermediate attempts; explicit source rectangles now supersede that approach for hero and enemy/worker atlases. New render regressions exercise frame clearing and scene return using the real SDL drawing code without opening a window.
+
 - The developers describe Replaced as pixel art presented through a 2.5D camera, with dynamic lighting and shadows, volumetric fog, layered effects and carefully authored frame-by-frame animation. Those principles are documented in [Xbox Wire's combat/art direction notes](https://news.xbox.com/en-us/2026/04/14/replaced-combat/?ver=3.7.1) and the [Sad Cat Studios visual breakdown](https://store.epicgames.com/es-MX/news/the-inspirations-and-innovations-of-replaced).
 - Applied here as restrained equivalents: filled light falloff behind actors, warm/cool stage grades, layered haze and parallax silhouettes, plus contact shadows and fixed foot anchors. The near field stays at floor level so depth supports composition without arbitrary cables crossing the play space.
 

@@ -9,6 +9,7 @@ downloads or copies commercial game artwork.
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 
 from PIL import Image
@@ -120,6 +121,36 @@ def prepare_bosses(source_dir: Path, target_dir: Path) -> None:
         normalize(source, target, board_size, 4, 4)
 
 
+def prepare_hero(source_dir: Path, target_dir: Path) -> None:
+    prepare_mapped(source_dir, target_dir, "hero")
+
+
+def prepare_mapped(source_dir: Path, target_dir: Path, actor: str) -> None:
+    """Pack complete irregular source poses at a single scale and foot anchor.
+
+    Edge cleanup of uniform cells cannot recover a head/foot already cropped
+    away. Source rectangles are measured from the full board before packing.
+    """
+    manifest = json.loads((source_dir / f"{actor}-frames.json").read_text())
+    source = key_backdrop(Image.open(source_dir / f"{actor}-source.png"))
+    if list(source.size) != manifest["source_size"]:
+        raise ValueError(f"{actor} source dimensions changed; review the explicit pose map")
+    size = manifest["cell_size"]
+    atlas = Image.new("RGBA", (size * 8, size * len(manifest["rows"])))
+    for row_index, poses in enumerate(manifest["rows"]):
+        for col in range(8):
+            pose = source.crop(tuple(poses[min(col, len(poses) - 1)]))
+            width = round(pose.width * manifest["scale"])
+            height = round(pose.height * manifest["scale"])
+            if width > size - 4 or height > manifest["baseline"] - 2:
+                raise ValueError(f"{actor} pose {row_index}:{col} exceeds its padded cell")
+            pose = pose.resize((width, height), Image.Resampling.LANCZOS)
+            atlas.alpha_composite(pose, (col * size + (size - width) // 2,
+                                        row_index * size + manifest["baseline"] - height))
+    target_dir.mkdir(parents=True, exist_ok=True)
+    atlas.save(target_dir / f"{actor}-v2.png", optimize=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--assets", type=Path, default=Path(__file__).resolve().parents[1] / "assets")
@@ -127,9 +158,8 @@ def main() -> None:
                         default=Path(__file__).resolve().parent / "sourceboards")
     args = parser.parse_args()
     assets = args.assets
-    normalize(args.source_dir / "hero-source.png", assets / "hero-v2.png", (768, 768), 8, 8,
-              duplicate_rows=(0, 6, 7))
-    normalize(args.source_dir / "enemies-source.png", assets / "enemies-v2.png", (768, 576), 8, 6)
+    prepare_hero(args.source_dir, assets)
+    prepare_mapped(args.source_dir, assets, "enemies")
     normalize(args.source_dir / "vehicle-source.png", assets / "vehicle-v2.png", (768, 768), 4, 4,
               black=True)
     prepare_bosses(args.source_dir, assets)

@@ -56,6 +56,8 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./build/kiyi_hurdasi --assets ../ass
 
 ## Original sprite atlas pass
 
+Version 0.2 uses explicit full-pose rectangles in `tools/sourceboards/hero-frames.json` and `enemies-frames.json`. The original boards are irregularly spaced; dividing them into equal cells cut off limbs and introduced neighboring poses. Both actors now use one scale per atlas, transparent gutters and a shared foot anchor.
+
 The player uses `hero-v2.png` with eight authored rows: run, idle/fire, a mixed
 jump transition strip, crouch-fire, grenade, melee, death and run-fire. The
 renderer maps the jump arc to cells 17–21, crouch idle to 16/24/25, crouch-fire
@@ -93,4 +95,18 @@ The comparison video is a silent 12-second, 30 fps recording of the 60 Hz simula
 
 ## Teknik notlar
 
-The game runs at a 480×272 logical resolution with nearest-neighbor pixel sampling and a 60 Hz simulation. Desktop uses SDL2; Vita uses the VitaSDK SDL2 port. Normal player poses share a 48×48 ground box, atlas cells retain a consistent authored scale, visible sprite bottoms are measured at load time, and grounded frames receive a small baseline correction so feet stay on the same collision line. Trimmed actor atlases skip that second correction because their visible bounds already fill the destination box. The player is interpolated between fixed ticks for smoother motion. Backgrounds use four depth rates: painted scenery at 16%, industrial middle silhouettes at 34%, the gameplay plane at 100%, and a quiet floor-level near-field silhouette at 112%. This creates a restrained 2.5D effect without hanging geometry crossing the actors or adding a large texture. The sprite preparation tool crops and rescales every authored atlas cell independently and holds the seven-pose run/death strips on their last valid frame, preventing Lanczos sampling or an empty contact-sheet slot from pulling opaque pixels into animation. Practical lights, haze and a light CRT pass complete the scene. Music is generated in real time with per-stage motifs and a higher-intensity boss arrangement; 32 kHz sound effects use per-weapon noise balance and click-free envelopes. The visual designs are original and do not use existing commercial characters or vehicles.
+The game runs at a 480×272 logical resolution with nearest-neighbor pixel sampling and a 60 Hz simulation. Desktop uses SDL2; Vita uses the VitaSDK SDL2 port. Normal player poses share a 48×48 ground box, atlas cells retain a consistent authored scale, visible sprite bottoms are measured at load time, and grounded frames receive a small baseline correction so feet stay on the same collision line. Trimmed actor atlases skip that second correction because their visible bounds already fill the destination box. The player is interpolated between fixed ticks for smoother motion. Each of the six missions now has a continuous cinematic panorama, spanning the level without mirrored landmarks. Haze travels at 24%, industrial middle silhouettes at 48%, the gameplay plane at 100%, and a floor-level near-field silhouette at 112%. This creates a restrained 2.5D effect without hanging geometry crossing the actors or adding a large texture. The sprite preparation tool packs complete hero and infantry poses from explicit source bounds; seven-pose rows hold their final valid pose. World-anchored practical lights illuminate actors and cast soft contact shadows. Reflected light stays clipped to platform surfaces. Background/foreground detail is subdued and CRT scanlines are removed. Only the active environment texture is resident, and the light pass reuses a 64×64 alpha texture. Music is generated in real time with per-stage motifs and a higher-intensity boss arrangement; 32 kHz sound effects use per-weapon noise balance and click-free envelopes. The visual designs are original and do not use existing commercial characters or vehicles.
+
+
+## Cinematic art direction (0.2)
+
+See [ART_DIRECTION.md](ART_DIRECTION.md) for the six palettes, asset provenance, renderer design and validation. The original environment PNGs are in `assets/*-night.png`; exact built-in image generation prompts are in `tools/sourceboards/environment-prompts.json`.
+
+Run visual regressions without opening a desktop window:
+
+```sh
+ctest --test-dir ../../work/build-desktop --output-on-failure
+python3 tests/test_atlases.py
+# Optional: capture all six scenes into an existing output directory.
+../../work/build-desktop/kh_render_tests assets ../../work/art-review
+```

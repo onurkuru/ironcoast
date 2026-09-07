@@ -22,10 +22,24 @@ struct ViewState {
 class Renderer {
   SDL_Renderer *r;
   std::string assets;
-  Atlas hero, enemies, worlds, machines, props, aim, melee, vehicle;
+  Atlas hero, enemies, scenery, machines, props, aim, melee, vehicle;
+  int sceneryTheme = -1;
   std::array<Atlas, 6> bosses;
+  struct LocalLight {
+    float x, y, floor, radius, strength;
+    uint32_t color;
+    bool fixture;
+  };
+  std::vector<LocalLight> lights;
+  SDL_Texture *lightMask = nullptr;
+  int sceneTheme = 0;
   float offsetX = 0, offsetY = 0;
   Atlas load(const std::string &, int, int, bool trim = false, bool paperKey = false);
+  void softLight(float, float, float, float, uint32_t, uint8_t, bool additive = true);
+  void collectLights(const Game &, float, float, float);
+  void surfaceLights(const Game &, float);
+  void actorLight(const Atlas &, float, float, bool hurt = false);
+  void contactShadow(float, float, float, float);
 
 public:
   explicit Renderer(SDL_Renderer *, std::string);
