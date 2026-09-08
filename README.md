@@ -12,9 +12,9 @@ An original single-player run-and-gun homebrew for **PlayStation Vita**. Fight a
 
 ## Release
 
-**v0.2.4 · PS Vita homebrew preview · Title ID `KHYI00001` · Vita app version `00.24`**
+**v0.2.5 · PS Vita homebrew preview · Title ID `KHYI00001` · Vita app version `00.25`**
 
-Download **`Iron-Coast-PSVita-v0.2.4.vpk`** from **Releases → Assets**. Everything needed is inside: executable, game assets, bubble icon, loading image and LiveArea. No separate asset download or commercial game data is required.
+Download **`Iron-Coast-PSVita-v0.2.5.vpk`** from **Releases → Assets**. Everything needed is inside: executable, game assets, bubble icon, loading image and LiveArea. No separate asset download or commercial game data is required.
 
 Only PS Vita game packages are distributed here. The source includes host-side development and test support, but there is no desktop game release.
 
@@ -80,7 +80,7 @@ This guide starts with an existing homebrew setup. For an unmodified console, co
 
 ### Download and transfer
 
-1. Open [Releases](https://github.com/onurkuru/ironcoast/releases/latest). Download **`Iron-Coast-PSVita-v0.2.4.vpk`** under Assets. GitHub's “Source code” archives are for developers, not installation.
+1. Open [Releases](https://github.com/onurkuru/ironcoast/releases/latest). Download **`Iron-Coast-PSVita-v0.2.5.vpk`** under Assets. GitHub's “Source code” archives are for developers, not installation.
 2. Optionally download `SHA256SUMS.txt` and compare the VPK's SHA-256 hash with the published value.
 3. Open VitaShell. Press **START**, set the **SELECT button** action to **USB**, and choose the USB storage device that corresponds to your active `ux0:` storage.
 4. Connect a data-capable USB cable and press **SELECT** to begin transfer. On the mounted storage, create a `VPK` folder if needed and copy the file into it. It will appear as `ux0:VPK/` on the Vita.
@@ -131,7 +131,9 @@ Hold **Up + Square** to shoot upward. Use **Down + Square while airborne** to sh
 
 ## Development status
 
-The current six-mission campaign and boss improvements are included. The building-led redesign in [LEVEL_DESIGN_RESEARCH.md](LEVEL_DESIGN_RESEARCH.md) is **planned work, not part of v0.2.4**. Promotional art does not represent new playable buildings or the in-game boss scale.
+v0.2.5 fixes rescue progress after death/Continue and adds full-campaign, restart, randomized-input and whole-map rendering checks. See the [stability audit](docs/STABILITY_AUDIT.md) for results, reproduction commands and limits.
+
+The current six-mission campaign and boss improvements are included. The building-led redesign in [LEVEL_DESIGN_RESEARCH.md](LEVEL_DESIGN_RESEARCH.md) is **planned work, not part of v0.2.5**. Promotional art does not represent new playable buildings or the in-game boss scale.
 
 Technical notes: [sprite audit](SPRITE_AUDIT.md), [art direction](ART_DIRECTION.md), [level research](LEVEL_DESIGN_RESEARCH.md).
 

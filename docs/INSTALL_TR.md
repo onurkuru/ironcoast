@@ -10,12 +10,12 @@ Bu rehber cihazın homebrew kurulumunun hazır olduğunu varsayar. Hazır değil
 
 ## 1. Doğru dosyayı indirin
 
-GitHub **Releases → Assets** bölümünden `Iron-Coast-PSVita-v0.2.4.vpk` dosyasını indirin. “Source code” ZIP/TAR dosyaları oyunun kurulum paketi değildir.
+GitHub **Releases → Assets** bölümünden `Iron-Coast-PSVita-v0.2.5.vpk` dosyasını indirin. “Source code” ZIP/TAR dosyaları oyunun kurulum paketi değildir.
 
 İsterseniz `SHA256SUMS.txt` dosyasını da indirip VPK'nın SHA-256 değerini karşılaştırın. Windows PowerShell'de:
 
 ```powershell
-Get-FileHash .\Iron-Coast-PSVita-v0.2.4.vpk -Algorithm SHA256
+Get-FileHash .\Iron-Coast-PSVita-v0.2.5.vpk -Algorithm SHA256
 ```
 
 Linux'ta:
@@ -37,7 +37,7 @@ sha256sum -c SHA256SUMS.txt
 ## 3. Kurun ve açın
 
 1. VitaShell'de `ux0:VPK/` klasörüne girin.
-2. `Iron-Coast-PSVita-v0.2.4.vpk` dosyasını seçip onay tuşuna basın; kurulum sorusunu onaylayın. VitaShell'de onay genellikle **Cross**, bazı ayarlarda **Circle** olabilir.
+2. `Iron-Coast-PSVita-v0.2.5.vpk` dosyasını seçip onay tuşuna basın; kurulum sorusunu onaylayın. VitaShell'de onay genellikle **Cross**, bazı ayarlarda **Circle** olabilir.
 3. Kurulum bitince LiveArea'ya dönün.
 4. Turuncu vinç kıskacı ve turkuaz çekirdek ikonlu **Iron Coast: Scrap Tide** balonunu açın; **Start** seçin.
 5. Başarılı kurulumdan sonra yalnızca `ux0:VPK/` içindeki kurulum dosyasını silebilirsiniz. Oyun ve kayıt klasörünü silmeyin.
