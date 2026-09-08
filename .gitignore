@@ -1,8 +1,12 @@
 # Local build and packaging output
 build/
+build-*/
 cmake-build-*/
 *.vpk
 *.app/
+*.dmg
+Iron-Coast-macOS-*.zip
+tools/package_macos.py
 
 # Runtime saves and generated captures
 save.dat

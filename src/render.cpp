@@ -15,6 +15,15 @@
 #include <stdexcept>
 
 namespace kh {
+static constexpr const char *controlHint(const char *vita, const char *host) {
+#ifdef KH_VITA
+  (void)host;
+  return vita;
+#else
+  (void)vita;
+  return host;
+#endif
+}
 static constexpr uint32_t INK = 0x0C1926FF, CREAM = 0xF7E6BAFF, GOLD = 0xF4B64AFF,
                           TEAL = 0x65D8D0FF, RED = 0xF47859FF;
 static const std::map<char, std::array<unsigned char, 7>> FONT = {
@@ -862,7 +871,8 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     rect(103, 48, 274 * g.boss.hp / g.boss.maxhp, 3, g.boss.phase == 2 ? RED : GOLD);
   } else if (time < 5) {
     text(l.subtitle, 12, 35, 1, GOLD);
-    text("MOVE: ARROWS  JUMP: Z  FIRE: X  GRENADE: C", 12, 249, 1, CREAM);
+    text(controlHint("MOVE: D-PAD  JUMP: CROSS  FIRE: SQUARE  GRENADE: R",
+                     "MOVE: ARROWS  JUMP: Z  FIRE: X  GRENADE: C"), 12, 249, 1, CREAM);
   } else if (g.player.x > l.width * .45f && g.player.x < l.width * .55f) {
     rect(7, 34, 466, 25, 0x071C29DC);
     wrapped(l.radio, 14, 40, 1, 450, TEAL);
@@ -903,7 +913,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
       text((v.menu == i ? "> " : "  ") + std::string(opts[i]), 29, 161 + i * 16, 1,
            v.menu == i ? GOLD : CREAM);
     }
-    text("ENTER / X  SELECT", 26, 248, 1, TEAL);
+    text(controlHint("CROSS  SELECT", "ENTER / X  SELECT"), 26, 248, 1, TEAL);
     text("PS VITA + DESKTOP", 337, 249, 1, CREAM);
   }
   if (v.screen == Screen::Map) {
@@ -931,7 +941,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     }
     for (auto &e : l.spawns)
       rect(20 + e.x / l.width * 435, 196 + e.y / 232 * 26, 2, 2, RED);
-    text("< > SELECT   ENTER / X START   ESC BACK", 20, 245, 1, CREAM);
+    text(controlHint("< > SELECT   CROSS START   CIRCLE BACK", "< > SELECT   ENTER / X START   ESC BACK"), 20, 245, 1, CREAM);
     if (v.selected > v.unlocked && !v.assist)
       text("COMPLETE THE PREVIOUS MISSION", 20, 234, 1, RED);
   }
@@ -946,20 +956,20 @@ void Renderer::render(const Game &g, const ViewState &v) {
     wrapped(l.brief2, 33, 132, 1, 405, CREAM);
     text("OBJECTIVE: " + l.bossName, 33, 185, 1, RED);
     text("RESCUE 3 WORKERS / DESTROY THE COMMAND NODE", 33, 202, 1, TEAL);
-    text("ENTER / X  DEPLOY", 33, 231, 1, GOLD);
+    text(controlHint("CROSS  DEPLOY", "ENTER / X  DEPLOY"), 33, 231, 1, GOLD);
   }
   if (v.screen == Screen::Pause) {
     rect(0, 0, 480, 272, 0x071320C8);
     text("PAUSED", 167, 79, 4, CREAM);
-    text("ENTER / START   RESUME", 149, 131, 1, GOLD);
+    text(controlHint("CROSS / START  RESUME", "ENTER / START   RESUME"), 149, 131, 1, GOLD);
     text("M   TOGGLE SOUND", 149, 152, 1, CREAM);
-    text("ESC / O   MAIN MENU", 149, 173, 1, CREAM);
+    text(controlHint("CIRCLE  MAIN MENU", "ESC / O   MAIN MENU"), 149, 173, 1, CREAM);
   }
   if (v.screen == Screen::Play && g.status == Status::GameOver) {
     rect(0, 0, 480, 272, 0x101523CB);
     text("SIGNAL LOST", 61, 89, 3, RED);
-    text("ENTER / X  CONTINUE FROM CHECKPOINT", 92, 140, 1, CREAM);
-    text("ESC / O  MAIN MENU", 182, 160, 1, GOLD);
+    text(controlHint("CROSS  CONTINUE FROM CHECKPOINT", "ENTER / X  CONTINUE FROM CHECKPOINT"), 92, 140, 1, CREAM);
+    text(controlHint("CIRCLE  MAIN MENU", "ESC / O  MAIN MENU"), 182, 160, 1, GOLD);
   }
   if (v.screen == Screen::Debrief) {
     rect(0, 0, 480, 272, 0x071A27EB);
@@ -968,7 +978,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     text("SCORE  " + std::to_string(g.score), 35, 128, 2, CREAM);
     text("RESCUED  " + std::to_string(g.rescued) + " / 3", 35, 153, 1, TEAL);
     text("ENEMIES  " + std::to_string(g.kills), 35, 172, 1, CREAM);
-    text("ENTER / X  NEXT MISSION", 35, 228, 1, GOLD);
+    text(controlHint("CROSS  NEXT MISSION", "ENTER / X  NEXT MISSION"), 35, 228, 1, GOLD);
   }
   if (v.screen == Screen::Ending) {
     rect(0, 0, 480, 272, 0x071A27E8);
@@ -983,7 +993,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
             30, 141, 1, 420, TEAL);
     text("CAMPAIGN SCORE " + std::to_string(g.score), 30, 199, 1, GOLD);
     text("RESCUE " + std::to_string(g.totalRescued) + " / 18", 30, 217, 1, CREAM);
-    text("ENTER / X   MAIN MENU", 30, 245, 1, CREAM);
+    text(controlHint("CROSS  MAIN MENU", "ENTER / X   MAIN MENU"), 30, 245, 1, CREAM);
   }
   if (v.screen == Screen::Options) {
     rect(0, 0, 480, 272, 0x071A27E8);
@@ -1000,6 +1010,16 @@ void Renderer::render(const Game &g, const ViewState &v) {
   if (v.screen == Screen::Controls) {
     rect(0, 0, 480, 272, 0x071A27ED);
     text("CONTROLS", 25, 24, 3, GOLD);
+#ifdef KH_VITA
+    const char *rows[] = {"MOVE         D-PAD / LEFT STICK",
+                         "JUMP         CROSS",
+                         "FIRE         SQUARE",
+                         "GRENADE      CIRCLE / R",
+                         "VEHICLE      TRIANGLE",
+                         "AIM UP       UP + SQUARE",
+                         "AIM DOWN     AIR DOWN + SQUARE",
+                         "PAUSE        START"};
+#else
     const char *rows[] = {"MOVE         ARROWS / WASD       D-PAD / LEFT STICK",
                           "JUMP         Z / SPACE          X (CROSS)",
                           "FIRE         X / J              SQUARE",
@@ -1008,9 +1028,10 @@ void Renderer::render(const Game &g, const ViewState &v) {
                           "AIM UP       UP + FIRE          UP + SQUARE",
                           "AIM DOWN     AIR DOWN + FIRE     AIR DOWN + SQUARE",
                           "PAUSE        ESC                START"};
+#endif
     for (int i = 0; i < 8; i++)
       text(rows[i], 23, 75 + i * 18, 1, CREAM);
-    text("ENTER / O / ESC  BACK", 25, 244, 1, TEAL);
+    text(controlHint("CROSS / CIRCLE  BACK", "ENTER / O / ESC  BACK"), 25, 244, 1, TEAL);
   }
   if (v.screen == Screen::Play || v.screen == Screen::Pause) {
     // Keep small character details clear; only the frame edges are shaded.

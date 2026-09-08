@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
+option(KH_VITA "Build the PS Vita release (OFF for host-side QA only)" ON)
+if(KH_VITA AND NOT DEFINED ENV{VITASDK})
+  message(FATAL_ERROR "Set VITASDK to your VitaSDK installation before building the Vita release.")
+endif()
 if(DEFINED ENV{VITASDK} AND KH_VITA)
   set(CMAKE_TOOLCHAIN_FILE "$ENV{VITASDK}/share/vita.toolchain.cmake" CACHE PATH "Vita toolchain")
 endif()
-project(KiyiHurdasi VERSION 0.2.3 LANGUAGES C CXX)
+project(KiyiHurdasi VERSION 0.2.4 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(kh_core src/game.cpp src/campaign.cpp)
@@ -15,7 +19,14 @@ if(KH_VITA)
  target_include_directories(kiyi_hurdasi PRIVATE "$ENV{VITASDK}/arm-vita-eabi/include/SDL2" third_party)
  target_link_libraries(kiyi_hurdasi kh_core SDL2 SceGxm_stub SceDisplay_stub SceCtrl_stub SceAppMgr_stub SceAppUtil_stub SceAudio_stub SceAudioIn_stub SceSysmodule_stub SceIofilemgr_stub SceCommonDialog_stub SceTouch_stub SceHid_stub SceMotion_stub ScePower_stub SceProcessmgr_stub m)
  vita_create_self(eboot.bin kiyi_hurdasi SAFE)
- vita_create_vpk(kiyi-hurdasi.vpk KHYI00001 eboot.bin VERSION 00.23 NAME "Iron Coast: Scrap Tide" FILE assets assets)
+ vita_create_vpk(kiyi-hurdasi.vpk KHYI00001 eboot.bin VERSION 00.24 NAME "Iron Coast: Scrap Tide"
+   FILE assets assets
+   FILE licenses licenses
+   FILE sce_sys/icon0.png sce_sys/icon0.png
+   FILE sce_sys/pic0.png sce_sys/pic0.png
+   FILE sce_sys/livearea/contents/bg0.png sce_sys/livearea/contents/bg0.png
+   FILE sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
+   FILE sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml)
 else()
  find_package(PkgConfig REQUIRED)
  pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)

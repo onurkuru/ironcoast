@@ -1,119 +1,156 @@
-# Iron Coast: Scrap Tide
+<p align="center"><img src="sce_sys/icon0.png" width="96" alt="Iron Coast claw and power-core icon"></p>
 
-An original 2D run-and-gun game for PS Vita and desktop. It includes running, jumping, crouching, directional fire, close-range attacks, grenades, special weapons, rescues, vehicles and two-phase boss encounters. Player combat uses three health points, hit invulnerability and checkpoint respawns so a single mistake does not immediately end a run.
+# Iron Coast: Scrap Tide — PS Vita
 
-## Teslim edilenler
+An original single-player run-and-gun homebrew for **PlayStation Vita**. Fight across six industrial coastal missions, rescue workers, commandeer the Scrap Walker and bring down the Iron Grid.
 
-Metal Slug 1 ve 3'ün bölüm düzeni araştırması, mevcut haritaların denetimi ve altı görev için yeni mimari/karşılaşma planı: [LEVEL_DESIGN_RESEARCH.md](LEVEL_DESIGN_RESEARCH.md). Bu tasarım henüz oynanabilir paketlere uygulanmadı.
+[Download VPK](https://github.com/onurkuru/ironcoast/releases/latest) · [Türkçe kurulum](docs/INSTALL_TR.md) · [Report a bug](https://github.com/onurkuru/ironcoast/issues)
 
-- `Kiyi Hurdasi.app` — Apple Silicon macOS application bundle.
-- `kiyi-hurdasi.vpk` — VitaSDK ARM Vita homebrew package.
-- `data/campaign.json` — editable story, map, enemy, item and hazard data for all six missions.
-- `src/` — C++ game, renderer and audio code.
-- `assets/` — original sprite, boss, vehicle and environment atlases.
-- `tests/` — level reachability and gameplay rule tests.
+![Iron Coast promotional artwork](docs/art/cover.jpg)
 
-## macOS'ta çalıştırma
+*Original promotional artwork for the loading screen and LiveArea. Actual gameplay captures appear below.*
 
-Open `Kiyi Hurdasi.app` from Finder. For a quick mission test from Terminal:
+## Release
+
+**v0.2.4 · PS Vita homebrew preview · Title ID `KHYI00001` · Vita app version `00.24`**
+
+Download **`Iron-Coast-PSVita-v0.2.4.vpk`** from **Releases → Assets**. Everything needed is inside: executable, game assets, bubble icon, loading image and LiveArea. No separate asset download or commercial game data is required.
+
+Only PS Vita game packages are distributed here. The source includes host-side development and test support, but there is no desktop game release.
+
+**Validation:** VitaSDK cross-compilation and package checks are performed before publication. Gameplay/render tests run on the development host. Installation, LiveArea appearance, audio, controls and performance on physical Vita hardware have **not yet been verified**. This release is a development preview.
+
+## Story
+
+The coast once lived by its shipyards, freight lines and foundries. Now the **Iron Grid** has seized the industrial network and turned work machines into weapons.
+
+You play **Deniz**, entering the locked shipyard to find **Efe**, who has been sabotaging the Grid from inside. **Mira** coordinates the rescue over radio. Following a trail of stolen power cores takes Deniz through poisoned marshes, an armored freight route and a failing foundry toward Captain **Sarp's** command platform.
+
+Rescue the workers. Break the machines. Bring the coast home.
+
+Dialogue and UI are in English, with small Turkish touches in the characters and world.
+
+## Campaign
+
+| Mission | Setting | Boss |
+|---|---|---|
+| 01 — Rusted Harbor | Shipyard gate and waterfront | Claw Crane |
+| 02 — Toxic Marsh | Polluted marsh and pump works | Ash Dredger |
+| 03 — Ironline | Armored freight route | Black Locomotive |
+| 04 — Ember Foundry | Industrial furnace complex | Forge Titan |
+| 05 — Storm Relay | Storm-battered signal installation | Four Poles |
+| 06 — Final Wave | Offshore command platform | Iron Grid / Sarp |
+
+The campaign concludes after mission six. Each mission has its own dialogue, rescues, pickups and boss encounter.
+
+## Gameplay
+
+- Run, jump, crouch, aim upward and fire downward while airborne.
+- Pistol, Heavy MG, shotgun, rockets, Flame Shot and laser pickups.
+- Close-range attacks, grenades, destructible props and worker rescues.
+- Pilot the Scrap Walker; manage health, ammunition and checkpoints.
+- Six moving bosses with attack preparation, recovery and second-phase behavior.
+- Layered industrial scenery, animated lighting, sound effects and background music.
+
+Boss recovery now uses a teal glow on the mechanism instead of the floating `CORE OPEN` label.
+
+## Screenshots
+
+**Unretouched captures from the actual game renderer**, recorded on the development host at 960×544 with the same game assets as the VPK. These are not Vita hardware captures. Capture mode enables training assistance, which may be visible in the HUD.
+
+| Rusted Harbor | Toxic Marsh |
+|---|---|
+| ![Rusted Harbor](docs/screenshots/mission-1.png) | ![Toxic Marsh](docs/screenshots/mission-2.png) |
+
+| Ironline / Scrap Walker | Ember Foundry / Forge Titan |
+|---|---|
+| ![Scrap Walker](docs/screenshots/mission-3.png) | ![Forge Titan](docs/screenshots/mission-4.png) |
+
+| Storm Relay | Final Wave / Iron Grid |
+|---|---|
+| ![Storm Relay](docs/screenshots/mission-5.png) | ![Iron Grid](docs/screenshots/mission-6.png) |
+
+## Installation
+
+### Requirements
+
+A PS Vita already configured for homebrew, working [VitaShell](https://github.com/TheOfficialFloW/VitaShell), and at least **100 MB free on `ux0:`** as installation headroom. Use USB or FTP to transfer the package. No game-specific plugin is required by this build.
+
+This guide starts with an existing homebrew setup. For an unmodified console, consult the maintained [Vita Hacks Guide](https://vita.hacks.guide/) first.
+
+### Download and transfer
+
+1. Open [Releases](https://github.com/onurkuru/ironcoast/releases/latest). Download **`Iron-Coast-PSVita-v0.2.4.vpk`** under Assets. GitHub's “Source code” archives are for developers, not installation.
+2. Optionally download `SHA256SUMS.txt` and compare the VPK's SHA-256 hash with the published value.
+3. Open VitaShell. Press **START**, set the **SELECT button** action to **USB**, and choose the USB storage device that corresponds to your active `ux0:` storage.
+4. Connect a data-capable USB cable and press **SELECT** to begin transfer. On the mounted storage, create a `VPK` folder if needed and copy the file into it. It will appear as `ux0:VPK/` on the Vita.
+5. Safely eject the storage on the computer, then leave USB mode on the Vita.
+
+**FTP alternative:** set VitaShell's SELECT action to FTP. Press SELECT and enter the address and port shown by your Vita into an FTP client on the same network. Upload to `ux0:VPK/` and end the transfer. Both transfer modes are provided by [VitaShell](https://github.com/TheOfficialFloW/VitaShell).
+
+### Install and launch
+
+1. In VitaShell, navigate to `ux0:VPK/` and select the downloaded `.vpk`.
+2. Press VitaShell's confirm button and confirm installation. Confirm is usually **Cross**, but can depend on system/VitaShell settings.
+3. Wait until installation completes. Return to LiveArea and open **Iron Coast: Scrap Tide**, identified by the orange claw and cyan core icon.
+4. Select **Start**. After successful installation, the copied VPK in `ux0:VPK/` can be deleted to reclaim space.
+
+### Updates and saves
+
+Close the game and back up **`ux0:data/KiyiHurdasi/save.dat`** before updating. Install the newer VPK with the same Title ID over the existing application; uninstalling the old bubble is unnecessary.
+
+The save holds campaign progress and settings, not a snapshot of the current fight. Checkpoints work during a run. The internal save-folder name is retained for compatibility.
+
+## Vita controls
+
+| Input | Action |
+|---|---|
+| D-pad / left stick | Move; aim up or crouch/aim down |
+| Cross | Jump / menu confirm |
+| Square | Fire; close-range attack when an infantry enemy is in reach |
+| Circle or R | Grenade |
+| Triangle | Enter / exit available vehicle |
+| START | Pause / resume |
+| Circle in menus | Back |
+
+Hold **Up + Square** to shoot upward. Use **Down + Square while airborne** to shoot downward. Game controls are fixed as listed, independently of VitaShell's confirm-button setting.
+
+## Troubleshooting
+
+| Problem | Check |
+|---|---|
+| VPK not visible | Copy the `.vpk`, not a source archive, to the storage mounted as `ux0:`. |
+| Transfer fails | Check VitaShell's USB/FTP mode, cable, selected storage or local network. |
+| Installation error | Check free space, download again and compare SHA-256. Report the exact error code. |
+| Game does not launch | Confirm homebrew is active and installation finished. Report model, firmware and release version. |
+| Old icon remains | Close the app and restart the Vita before checking again. Do not delete saves to refresh artwork. |
+| Lost progress | Check the backup of `ux0:data/KiyiHurdasi/save.dat`; report old and new versions. |
+| Slowdown, audio or input issue | Report the mission, location, Vita model and reproduction steps. Hardware tuning is still pending. |
+
+[Open an issue](https://github.com/onurkuru/ironcoast/issues) with the release number and a screenshot/video if possible.
+
+## Development status
+
+The current six-mission campaign and boss improvements are included. The building-led redesign in [LEVEL_DESIGN_RESEARCH.md](LEVEL_DESIGN_RESEARCH.md) is **planned work, not part of v0.2.4**. Promotional art does not represent new playable buildings or the in-game boss scale.
+
+Technical notes: [sprite audit](SPRITE_AUDIT.md), [art direction](ART_DIRECTION.md), [level research](LEVEL_DESIGN_RESEARCH.md).
+
+## Build for Vita
+
+Install [VitaSDK](https://vitasdk.org/) with SDL2, CMake and a build tool. Set `VITASDK` and add its `bin` directory to PATH according to the SDK instructions.
 
 ```sh
-./Kiyi\ Hurdasi.app/Contents/MacOS/kiyi_hurdasi --assets "Kiyi Hurdasi.app/Contents/Resources/assets"
+cmake -S . -B build-vita -DKH_VITA=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build-vita -j4
+python3 tools/validate_vpk.py build-vita/kiyi-hurdasi.vpk
 ```
 
-Building from source requires SDL2 and CMake:
+Output: `build-vita/kiyi-hurdasi.vpk`. The validator needs only Python's standard library. LiveArea images are committed; Pillow is needed only to regenerate them using `tools/prepare_livearea.py`.
 
-```sh
-cmake -S . -B ../../work/build-desktop -DCMAKE_BUILD_TYPE=RelWithDebInfo
-cmake --build ../../work/build-desktop -j4
-ctest --test-dir ../../work/build-desktop --output-on-failure
-```
+Host-side QA uses `-DKH_VITA=OFF` with SDL2/pkg-config; it is not a distributed game package.
 
-## Vita paketini yeniden üretme
+## Credits
 
-The VitaSDK `bin` directory must be on PATH and `VITASDK` must be set:
+Original Iron Coast world, characters and assets. The new icon and cover use built-in image generation; see [prompts and provenance](docs/art/PROVENANCE.md). Runtime technology: SDL2, VitaSDK and stb. Third-party notices accompany the package in `licenses/`.
 
-```sh
-cmake -S . -B ../../work/build-vita -DKH_VITA=ON -DCMAKE_BUILD_TYPE=Release
-cmake --build ../../work/build-vita -j4
-```
-
-The output is `../../work/build-vita/kiyi-hurdasi.vpk`. Install it with a homebrew installer such as VitaShell. The device must be configured to run homebrew.
-
-## Kontroller
-
-Keyboard: arrows or WASD move; Z/Space jump; X/J fire; C/K grenade; E vehicle; Esc/P pause.
-
-Vita/gamepad: D-pad or left stick move; Cross jump/confirm; Square fire; Circle grenade/back; Triangle vehicle; Start pause.
-
-Up + fire aims upward. Down + fire in the air aims downward. A fire command aimed at a nearby infantry target becomes a close-range attack.
-
-## Hızlı görsel denemeler
-
-```sh
-SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./build/kiyi_hurdasi --assets ../assets --stage 4 --showcase 2 --frames 150 --fast --capture boss.png
-```
-
-`--stage 1..6`, `--demo`, `--showcase 1..5`, `--frames N`, `--capture path.png` and `--screen map|brief|controls` are development preview options.
-
-## Original sprite atlas pass
-
-Version 0.2.3 removes the floating `CORE OPEN` label and targeting ring from all six bosses. Recovery now uses a small teal glow on the authored core anchor, fading with the existing recovery animation. Damage rules are unchanged. Desktop gameplay/render tests and a native macOS boss preview passed; the Vita package was cross-compiled, not tested on a physical device.
-
-Version 0.2.2 uses explicit full-pose rectangles for every active actor in `tools/sourceboards/*-frames.json`. The original boards are irregularly spaced; dividing them into equal cells cut off limbs and introduced neighboring poses. All actor atlases now use a stable authored scale, transparent gutters and a measured foot anchor. See [SPRITE_AUDIT.md](SPRITE_AUDIT.md) for the full audit of 236 cells and the lighting corrections.
-
-The player uses `hero-v2.png` with eight authored rows: run, idle/fire, a mixed
-jump transition strip, crouch-fire, grenade, melee, death and run-fire. The
-renderer maps the jump arc to cells 17–21, crouch idle to 16/24/25, crouch-fire
-to 26–30, and the full melee swing to 40–47 so mixed rows never select the wrong
-pose. `enemies-v2.png` contains eight frames for
-guards, grenadiers, shield troops, drones, turrets and rescued workers. `vehicle-v2.png`
-adds movement, firing, hatch/boarding, damage and collapse frames for the Scrap Walker. Each of the
-six missions has its own `boss0-v2.png` through `boss5-v2.png` 4×4 atlas so Vita never
-needs to upload an oversized texture. Vehicle and boss cells have transparent
-gutters around full source poses; worker rescue uses dedicated gesture/run
-cells. Boss core coordinates are generated alongside the image into `.anchors`
-files. `tools/prepare_sprite_atlases.py` documents the
-normalization and backdrop-keying step; the `tools/sourceboards/` files are only source
-boards and are not loaded by the game.
-
-## Boss motion and animation pass
-
-All six bosses now move through the arena with acceleration and braking. Encounters follow entry, repositioning, preparation, attack and recovery states, with an overload transition below half health. The crane and walkers use authored locomotion frames, the hammer has a timed backswing/contact/recovery, tracked machines roll and recoil, and the flying relay follows a continuous aerial path. The new boss atlases provide complete movement, attack, recovery and destruction poses; the state machine selects them without whole-sprite scale pops.
-
-Player, camera, enemies, bullets and particles now share interpolation between simulation ticks. Player running frames follow distance travelled, and firing frames restart on the actual shot. Mechanical footsteps and impacts play at animation events.
-
-To enter an interactive boss practice encounter without playing the whole mission:
-
-```sh
-../../work/build-desktop/kiyi_hurdasi --assets assets --boss-preview --stage 4
-```
-
-Use `--stage 1..6` to select a boss and `--preview-phase 2` for its second phase. Practice enables no-damage training mode and does not unlock campaign progress.
-
-The reproducible six-boss video uses the actual game renderer and requires FFmpeg:
-
-```sh
-python3 tools/capture_bosses.py --binary ../../work/build-desktop/kiyi_hurdasi \
-  --work-dir ../../work --output ../iron-coast-boss-motion.mp4
-```
-
-The comparison video is a silent 12-second, 30 fps recording of the 60 Hz simulation; it is not a hardware performance benchmark. Physical Vita performance remains unverified.
-
-## Teknik notlar
-
-The game runs at a 480×272 logical resolution with nearest-neighbor pixel sampling and a 60 Hz simulation. Desktop uses SDL2; Vita uses the VitaSDK SDL2 port. Normal player poses share a 48×48 ground box, atlas cells retain a consistent authored scale, visible sprite bottoms are measured at load time, and grounded frames receive a small baseline correction so feet stay on the same collision line. Trimmed actor atlases skip that second correction because their visible bounds already fill the destination box. The player is interpolated between fixed ticks for smoother motion. Each of the six missions now has a continuous cinematic panorama, spanning the level without mirrored landmarks. Haze travels at 24%, industrial middle silhouettes at 48%, the gameplay plane at 100%, and a floor-level near-field silhouette at 112%. This creates a restrained 2.5D effect without hanging geometry crossing the actors or adding a large texture. The sprite preparation tool packs complete hero and infantry poses from explicit source bounds; seven-pose rows hold their final valid pose. World-anchored practical lights illuminate actors and cast soft contact shadows. Reflected light stays clipped to platform surfaces. Background/foreground detail is subdued and CRT scanlines are removed. Only the active environment texture is resident, and the light pass reuses a 64×64 alpha texture. Music is generated in real time with per-stage motifs and a higher-intensity boss arrangement; 32 kHz sound effects use per-weapon noise balance and click-free envelopes. The visual designs are original and do not use existing commercial characters or vehicles.
-
-
-## Cinematic art direction (0.2.2)
-
-See [ART_DIRECTION.md](ART_DIRECTION.md) for the six palettes, asset provenance, renderer design and validation. The original environment PNGs are in `assets/*-night.png`; exact built-in image generation prompts are in `tools/sourceboards/environment-prompts.json`.
-
-Run visual regressions without opening a desktop window:
-
-```sh
-ctest --test-dir ../../work/build-desktop --output-on-failure
-python3 tests/test_atlases.py
-# Optional: capture all six scenes into an existing output directory.
-../../work/build-desktop/kh_render_tests assets ../../work/art-review
-```
+Independent homebrew; not an official PlayStation release. No Metal Slug or REPLACED sprites are included.
