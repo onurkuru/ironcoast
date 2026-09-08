@@ -289,8 +289,10 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
     text(b.state == BossState::Overload ? "OVERDRIVE" : "!", cx - 24, cy - size, 1, GOLD);
   }
   if (pose.core > 0) {
-    ring(core.x, core.y, 9 + pose.core * 4, 9 + pose.core * 4, TEAL);
-    text("CORE OPEN", cx - 26, cy - size, 1, TEAL);
+    // Recovery exposes the core. Keep the cue on the painted mechanism,
+    // fading with its animation instead of displaying a floating status label.
+    float radius = 6 + pose.core * 4;
+    softLight(core.x, core.y, radius, radius, TEAL, Uint8(110 * pose.core));
   }
   if (pose.kick > 0) {
     auto muzzle = bossMuzzlePoint(b, kind, alpha);

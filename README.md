@@ -58,6 +58,8 @@ SDL_VIDEODRIVER=dummy SDL_AUDIODRIVER=dummy ./build/kiyi_hurdasi --assets ../ass
 
 ## Original sprite atlas pass
 
+Version 0.2.3 removes the floating `CORE OPEN` label and targeting ring from all six bosses. Recovery now uses a small teal glow on the authored core anchor, fading with the existing recovery animation. Damage rules are unchanged. Desktop gameplay/render tests and a native macOS boss preview passed; the Vita package was cross-compiled, not tested on a physical device.
+
 Version 0.2.2 uses explicit full-pose rectangles for every active actor in `tools/sourceboards/*-frames.json`. The original boards are irregularly spaced; dividing them into equal cells cut off limbs and introduced neighboring poses. All actor atlases now use a stable authored scale, transparent gutters and a measured foot anchor. See [SPRITE_AUDIT.md](SPRITE_AUDIT.md) for the full audit of 236 cells and the lighting corrections.
 
 The player uses `hero-v2.png` with eight authored rows: run, idle/fire, a mixed
