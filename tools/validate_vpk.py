@@ -48,7 +48,7 @@ def main():
         require(archive.read('eboot.bin')[:4] == b'SCE\0', 'Missing Vita SELF executable')
         fields = sfo_fields(archive.read('sce_sys/param.sfo'))
         require(fields.get('TITLE_ID') == 'KHYI00001', 'Unexpected title ID')
-        require(fields.get('APP_VER') == '00.25', 'Unexpected Vita version')
+        require(fields.get('APP_VER') == '00.26', 'Unexpected Vita version')
         require(fields.get('TITLE') == 'Iron Coast: Scrap Tide', 'Unexpected application title')
         for name, size in IMAGES.items():
             data = archive.read(name)

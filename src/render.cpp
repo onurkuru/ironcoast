@@ -902,7 +902,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     text("COAST", 25, 92, 5, 0xA55531FF);
     text("COAST", 22, 88, 5, GOLD);
     text("ONE COAST. SIX FRONTS. ONE LAST SIGNAL.", 26, 135, 1, CREAM);
-    text("HAZIRIZ", 383, 30, 1, TEAL);
+    text("READY", 383, 30, 1, TEAL);
     sprite(hero, 12 + int(v.clock * 5) % 4, 365, 123, 88, 91);
     const char *opts[] = {"START CAMPAIGN", "CAMPAIGN MAP", "SETTINGS", "CONTROLS", "EXIT"};
     for (int i = 0; i < 5; i++) {

@@ -1869,7 +1869,7 @@
       "vehicleX": 2790,
       "brief1": "EFE: The Iron Grid core is in Captain Sarp armor. Fire when it opens.",
       "brief2": "DENIZ: The whole coast can hear us. We get the workers out, then end this war.",
-      "radio": "MIRA: Haziriz. Evac ships are ready. There is no retreat now.",
+      "radio": "MIRA: Evac ships are ready. There is no retreat now.",
       "ending": "The Iron Grid is silent. The coast belongs to its people again. Deniz and Efe sail home.",
       "bossName": "IRON GRID / SARP",
       "theme": 5,

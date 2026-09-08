@@ -49,7 +49,7 @@ rows=[
  dict(name='FINAL WAVE',subtitle='06 / COMMAND PLATFORM',width=4200,vehicleX=2790,
  brief1='EFE: The Iron Grid core is in Captain Sarp armor. Fire when it opens.',
  brief2='DENIZ: The whole coast can hear us. We get the workers out, then end this war.',
- radio='MIRA: Haziriz. Evac ships are ready. There is no retreat now.',ending='The Iron Grid is silent. The coast belongs to its people again. Deniz and Efe sail home.',bossName='IRON GRID / SARP',
+ radio='MIRA: Evac ships are ready. There is no retreat now.',ending='The Iron Grid is silent. The coast belongs to its people again. Deniz and Efe sail home.',bossName='IRON GRID / SARP',
  ground=[(0,704),(760,1472),(1528,2240),(2296,3040),(3096,4200)],
  upper=[(390,188,144),(960,190,144),(1180,146,128),(1650,184,144),(1860,140,128),(2450,184,144),(2980,144,128),(3290,184,128)],
  enemies=[(320,2),(560,3),(670,1),(910,4),(1090,2),(1330,3),(1580,1),(1780,2),(2040,4),(2180,3),(2420,2),(2620,1),(2840,4),(3010,3),(3190,2),(3410,4),(3560,1)],
