@@ -1,0 +1,33 @@
+name: Campaign stability
+on:
+  push:
+    paths: ['src/**', 'tests/**', 'assets/**', 'tools/test_runtime.py', 'CMakeLists.txt', '.github/workflows/stability.yml']
+  pull_request:
+    paths: ['src/**', 'tests/**', 'assets/**', 'tools/test_runtime.py', 'CMakeLists.txt', '.github/workflows/stability.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sanitizers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install host QA dependencies
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev clang cmake ninja-build python3-pil
+      - name: Build instrumented QA executables
+        run: >-
+          cmake -S . -B build-qa -G Ninja -DKH_VITA=OFF -DCMAKE_BUILD_TYPE=RelWithDebInfo
+          -DCMAKE_CXX_COMPILER=clang++
+          '-DCMAKE_CXX_FLAGS=-fsanitize=address,undefined,float-cast-overflow -fno-omit-frame-pointer'
+          '-DCMAKE_EXE_LINKER_FLAGS=-fsanitize=address,undefined,float-cast-overflow'
+      - run: cmake --build build-qa -j2
+      - name: Campaign, restart and full-world renderer tests
+        run: ctest --test-dir build-qa --timeout 180 --output-on-failure
+      - name: Sprite atlas validation
+        run: /usr/bin/python3 -m unittest discover -s tests -p test_atlases.py
+      - name: Full application, audio and malformed-save startup
+        run: python3 tools/test_runtime.py --binary build-qa/kiyi_hurdasi

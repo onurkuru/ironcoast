@@ -123,7 +123,16 @@ void Game::syncPresentation() {
 }
 void Game::retry() {
   int c = continues + 1;
+  int savedRescues = rescued;
+  std::vector<Item> savedWorkers;
+  for (const auto &item : items)
+    if (item.kind == 0 && item.used) savedWorkers.push_back(item);
   load(levelIndex, true, checkpoint);
+  rescued = savedRescues;
+  for (auto &item : items)
+    if (item.kind == 0)
+      for (const auto &worker : savedWorkers)
+        if (item.x == worker.x && item.y == worker.y) item.used = true;
   player.lives = 3;
   continues = c;
 }
@@ -266,7 +275,9 @@ void Game::hitPlayer() {
   deathTimer = 1.0f;
   player.lives--;
   player.action = 0;
-  rescued = 0;
+  // Workers stay marked as rescued through a life-loss respawn. Preserve the
+  // matching count too; clearing it made those rescues permanently disappear
+  // from the mission HUD and completion bonus.
   player.vx = -player.dir * 70;
   player.vy = -125;
   shake = 3;

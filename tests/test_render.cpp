@@ -100,6 +100,32 @@ int main(int argc, char **argv) {
       if (argc > 2)
         renderer.screenshot(std::string(argv[2]) + "/stage" + std::to_string(stage + 1) + ".png");
     }
+    // Sweep the complete world, including platform edges and every checkpoint.
+    // Exercise scenery, lighting, actor indexing and camera clamping beyond the
+    // opening screenshots. Alternate grounded and airborne presentation.
+    int worldSamples = 0;
+    for (int stage = 0; stage < 6; ++stage) {
+      for (float x = 12; x < campaign()[stage].width; x += 32) {
+        Game scene;
+        scene.load(stage, false, x);
+        scene.time = 9;
+        scene.player.inv = 0;
+        scene.player.weapon = worldSamples % 6;
+        scene.player.vx = worldSamples % 2 ? 145 : -145;
+        scene.player.dir = worldSamples % 2 ? 1 : -1;
+        scene.player.y = worldSamples % 2 ? 160 : scene.player.y;
+        scene.player.grounded = worldSamples % 2 == 0;
+        scene.player.stride = worldSamples * .19f;
+        scene.syncPresentation();
+        view.input = {};
+        view.input.shoot = true;
+        view.input.up = worldSamples % 3 == 0;
+        renderer.render(scene, view);
+        ++worldSamples;
+      }
+    }
+    std::cout << worldSamples << " full-world render samples passed\n";
+    view.input = {};
     // Stage texture replacement must not change a later identical harbor frame.
     renderer.render(original, view);
     if (pixels() != baseline)
