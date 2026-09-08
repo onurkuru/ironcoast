@@ -68,6 +68,8 @@ struct Player {
   float stride = 0, fireAge = 1;
   float land = 0, recoil = 0, hitFlash = 0;
   float vehicleDeath = 0, vehicleDeathX = 0, vehicleDeathY = 232;
+  float vehicleDeathVY = 0, prevVehicleDeathY = 232;
+  int vehicleDeathDir = 1;
   int actionKind = 0;
   int dir = 1, weapon = 0, ammo = 0, grenades = 10, lives = 3, health = 3, maxHealth = 3,
       vehicleHP = 0;
@@ -118,6 +120,7 @@ struct Game {
   float time = 0, camera = 0, shake = 0, flash = 0, deathTimer = 0, clearTimer = 0, checkpoint = 40,
         vehicleX = 0;
   float prevCamera = 0, prevTime = 0;
+  float vehicleHatch = 0;
   bool vehicleAvailable = true, debugInvincible = false;
   uint32_t randomState = 1024;
   std::vector<Enemy> enemies;

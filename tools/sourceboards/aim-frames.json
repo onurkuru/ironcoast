@@ -1,0 +1,13 @@
+{
+  "source_size": [1448, 1086],
+  "scale": 0.30,
+  "cell_size": 112,
+  "cols": 4,
+  "baseline": 106,
+  "description": "Complete directional poses centered on a stable root. Downward muzzle effects beyond y=959 are drawn by the shared weapon effect so their length cannot move the character between frames. Draw at 56px: the head-to-foot body height matches the 48px hero atlas.",
+  "rows": [
+    [[148,28,304,352],[488,28,643,352],[805,28,959,352],[1143,28,1297,352]],
+    [[139,381,315,678],[485,381,651,678],[790,381,971,678],[1122,381,1306,678]],
+    [[149,738,291,959],[485,738,627,959],[811,738,949,959],[1141,738,1277,959]]
+  ]
+}

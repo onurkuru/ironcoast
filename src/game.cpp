@@ -68,6 +68,7 @@ void Game::load(int index, bool keepScore, float startX) {
     player.y = 232;
   player.prevX = player.x;
   player.prevY = player.y;
+  player.prevVehicleDeathY = player.vehicleDeathY;
   player.inv = 1.5f;
   checkpoint = startX;
   camera = clamp(startX - 120, 0, level().width - W);
@@ -102,6 +103,7 @@ void Game::load(int index, bool keepScore, float startX) {
 void Game::syncPresentation() {
   player.prevX = player.x;
   player.prevY = player.y;
+  player.prevVehicleDeathY = player.vehicleDeathY;
   boss.prevX = boss.x;
   boss.prevY = boss.y;
   prevCamera = camera;
@@ -240,6 +242,9 @@ void Game::hitPlayer() {
       player.vehicleDeath = .48f;
       player.vehicleDeathX = player.x;
       player.vehicleDeathY = player.y;
+      player.prevVehicleDeathY = player.y;
+      player.vehicleDeathVY = std::max(0.0f, player.vy);
+      player.vehicleDeathDir = player.dir;
       explosion(player.x, player.y - 20, 42, 5);
       player.vy = -220;
       vehicleAvailable = false;
@@ -268,7 +273,8 @@ void Game::hitPlayer() {
 }
 void Game::fireBossVolley() {
   const int k = level().bossKind, phase = boss.phase, volley = boss.volleys++;
-  float ox = boss.x - 48, oy = boss.y - 51;
+  auto muzzle = bossMuzzlePoint(boss, k);
+  float ox = muzzle.x, oy = muzzle.y;
   auto aimed = [&](float speed, float spread = 0) {
     float a = std::atan2(player.y - 18 - oy, player.x - ox) + spread;
     fire(ox, oy, std::cos(a) * speed, std::sin(a) * speed, 1, 4, true, 5);
@@ -324,6 +330,12 @@ void Game::updateBoss(float dt) {
   boss.impact = std::max(0.0f, boss.impact - dt * 4);
   if (boss.dead) {
     boss.vx *= std::max(0.0f, 1 - dt * 8);
+    if (k == 4) {
+      float floor = floorAt(boss.x, boss.y - .2f);
+      boss.vy += 240 * dt;
+      boss.y = std::min(floor, boss.y + boss.vy * dt);
+      if (boss.y >= floor) boss.vy = 0;
+    }
     boss.death -= dt;
     if (int(boss.death * 12) != int((boss.death + dt) * 12) && boss.death > 0) {
       burst(boss.x + (random() - .5f) * 100, boss.y - random() * 95, 3, 1, 45 + random() * 50);
@@ -451,6 +463,14 @@ void Game::update(Input in, float dt) {
   // 60 Hz simulation ticks when the desktop window is refreshed more often.
   syncPresentation();
   time += dt;
+  vehicleHatch = std::max(0.0f, vehicleHatch - dt);
+  if (player.vehicleDeath > 0) {
+    player.vehicleDeath = std::max(0.0f, player.vehicleDeath - dt);
+    float floor = floorAt(player.vehicleDeathX, player.vehicleDeathY - .2f);
+    player.vehicleDeathVY += 600 * dt;
+    player.vehicleDeathY = std::min(floor, player.vehicleDeathY + player.vehicleDeathVY * dt);
+    if (player.vehicleDeathY >= floor) player.vehicleDeathVY = 0;
+  }
   shake = std::max(0.0f, shake - dt * 8);
   flash = std::max(0.0f, flash - dt);
   for (auto &p : particles)
@@ -473,9 +493,18 @@ void Game::update(Input in, float dt) {
   }
   if (status == Status::Dying) {
     deathTimer -= dt;
+    float previousFeet = player.y;
     player.x += player.vx * dt;
     player.y += player.vy * dt;
     player.vy += 450 * dt;
+    float floor = floorAt(player.x, previousFeet - .2f);
+    if (player.vy >= 0 && floor < H && player.y >= floor) {
+      player.y = floor;
+      player.vy = player.vx = 0;
+      player.grounded = true;
+    } else {
+      player.grounded = false;
+    }
     if (deathTimer <= 0) {
       if (player.lives <= 0) {
         status = Status::GameOver;
@@ -506,7 +535,6 @@ void Game::update(Input in, float dt) {
   player.land = std::max(0.0f, player.land - dt);
   player.recoil = std::max(0.0f, player.recoil - dt);
   player.hitFlash = std::max(0.0f, player.hitFlash - dt);
-  player.vehicleDeath = std::max(0.0f, player.vehicleDeath - dt);
   player.fireAge += dt;
   const bool wasGrounded = player.grounded;
   player.crouch = in.down && player.grounded && player.vehicleHP == 0;
@@ -591,6 +619,7 @@ void Game::update(Input in, float dt) {
       if (ground < player.y + 12) {
         vehicleX = player.x;
         vehicleAvailable = true;
+        vehicleHatch = .36f;
         player.vehicleHP = 0;
         player.x = exitX;
         player.inv = .5f;
@@ -598,6 +627,7 @@ void Game::update(Input in, float dt) {
     } else if (vehicleAvailable && std::fabs(player.x - vehicleX) < 48) {
       player.vehicleHP = 3;
       vehicleAvailable = false;
+      vehicleHatch = .36f;
       sounds.push_back(Sound::Pickup);
     }
   }
@@ -619,22 +649,14 @@ void Game::update(Input in, float dt) {
     if (!melee) {
       player.fireAge = 0;
       int w = player.vehicleHP ? 1 : player.weapon;
-      float vx = player.dir * 500.0f, vy = 0, ox = player.x + player.dir * 19,
-            oy = player.y - (player.crouch ? 14 : 27);
+      const auto muzzle = muzzlePoint(player, in);
+      float vx = player.dir * 500.0f, vy = 0, ox = muzzle.x, oy = muzzle.y;
       if (in.up) {
         vx = 0;
         vy = -500;
-        ox = player.x + player.dir * 4;
-        oy = player.y - 44;
       } else if (in.down && !player.grounded) {
         vx = 0;
         vy = 500;
-        ox = player.x;
-        oy = player.y + 2;
-      }
-      if (player.vehicleHP) {
-        oy = player.y - 36;
-        ox = player.x + player.dir * 31;
       }
       if (w == 0) {
         fire(ox, oy, vx, vy, 1, 0);

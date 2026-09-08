@@ -1,5 +1,12 @@
 # Debug and Combat Pass
 
+Current audit: [SPRITE_AUDIT.md](SPRITE_AUDIT.md), version 0.2.2. All active
+actors now use explicit source rectangles and square destination proportions.
+Boss light anchors follow each painted core; death collision, directional aim
+and rescue sequences are checked through the actual SDL renderer. The entries
+below record earlier development stages; uniform-cell import, sliced boss rigs,
+whole-sprite bob/rotation and CRT scanlines have been superseded.
+
 ## Baseline findings
 
 - The simulation already used a fixed 60 Hz step, but the player animation clock was reset to zero whenever movement stopped. That made a run-to-idle transition snap back to the first frame.

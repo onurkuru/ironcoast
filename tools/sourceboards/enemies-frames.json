@@ -3,6 +3,7 @@
   "scale": 0.46,
   "cell_size": 96,
   "baseline": 92,
+  "clean_edges": true,
   "description": "Full source silhouettes from irregular enemy/worker pose rows. Exclusive right/bottom. Live attack frame 4, hurt 5, collapse 6/7.",
   "rows": [
     [[29,49,167,216],[210,53,353,216],[382,53,525,215],[561,55,702,216],[725,66,892,216],[924,73,1042,215],[1072,89,1211,215],[1231,152,1422,215]],

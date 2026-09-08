@@ -87,6 +87,7 @@ int main() {
     g.damageBoss(10000);
     ticks(g, {}, 210);
     check(g.status == Status::Clear, "boss death leads to mission completion");
+    if (index == 4) check(g.boss.y == 232, "flying boss wreck settles on the arena floor");
     std::cout << "PASS stage " << index + 1
               << " geometry, story, hazards, boss phases and completion\n";
   }
@@ -274,8 +275,10 @@ int main() {
   enter.interact = true;
   g.update(enter);
   check(g.player.vehicleHP == 3 && !g.vehicleAvailable, "enter vehicle");
+  check(g.vehicleHatch > 0, "boarding plays the hatch strip");
   g.update(enter);
   check(g.player.vehicleHP == 0 && g.vehicleAvailable, "exit vehicle");
+  check(g.vehicleHatch > 0, "leaving plays the hatch strip");
   g.load(0);
   g.items.clear();
   g.enemies.clear();
@@ -303,6 +306,49 @@ int main() {
   for (auto &b : g.bullets)
     active += b.alive;
   check(active == 256, "bullet pool stays bounded");
+  g.load(0, false, 220);
+  g.player.inv = 0;
+  g.player.health = 1;
+  g.hitPlayer();
+  check(g.status == Status::Dying, "fatal hit starts death animation");
+  for (int i = 0; i < 48; ++i) {
+    g.update({});
+    check(g.player.y <= 232.01f, "death animation never sinks through solid floor");
+  }
+  check(g.player.grounded && g.player.vy == 0, "corpse settles on its platform");
+  g.load(0, false, 220);
+  g.player.inv = 0; g.player.vehicleHP = 1; g.player.dir = -1; g.player.y = 200;
+  g.hitPlayer();
+  check(g.player.vehicleDeath > 0 && g.player.vehicleHP == 0, "vehicle destruction starts once");
+  g.player.dir = 1;
+  ticks(g, {}, 24);
+  check(g.player.vehicleDeathY > 200 && g.player.vehicleDeathY <= 232,
+        "destroyed airborne vehicle falls onto the floor");
+  check(g.player.vehicleDeathDir == -1, "wreck does not flip when the pilot turns");
+  std::set<int> rescueFrames;
+  for (int i = 0; i < 120; ++i) rescueFrames.insert(workerFrame(true, i * DT));
+  for (int frame = 42; frame <= 47; ++frame)
+    check(rescueFrames.count(frame) == 1, "rescue reaches stand, wave and run frames");
+  for (int kind = 0; kind < 6; ++kind) {
+    Boss b;
+    b.state = BossState::Windup; b.duration = .92f; b.stateAge = .91f;
+    check(bossFrame(b, kind) == 6, "windup holds the final raised pose");
+    b.state = BossState::Attack; b.stateAge = 0;
+    check(bossFrame(b, kind) == 6, "attack does not restart the windup strip");
+    b.stateAge = kind == 0 || kind == 3 ? .18f : .06f;
+    check(bossFrame(b, kind) == 7, "contact pose coincides with combat impact");
+  }
+  for (int aim = 0; aim < 3; ++aim) {
+    g.load(0, false, 220);
+    g.enemies.clear(); g.items.clear(); g.props.clear();
+    g.player.y = 150; g.player.grounded = false;
+    Input fire; fire.shoot = true; fire.up = aim == 1; fire.down = aim == 2;
+    g.update(fire);
+    auto muzzle = muzzlePoint(g.player, fire);
+    const auto &shot = g.bullets[0];
+    check(shot.alive && std::hypot(shot.px - muzzle.x, shot.py - muzzle.y) < .01f,
+          "gameplay projectile uses the shared directional muzzle anchor");
+  }
   g.load(0);
   g.debugInvincible = true;
   for (int i = 0; i < 36000; i++) {

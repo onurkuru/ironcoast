@@ -3,6 +3,7 @@
   "scale": 0.52,
   "cell_size": 96,
   "baseline": 92,
+  "clean_edges": true,
   "description": "Explicit full-pose source bounds, exclusive right/bottom. The source is an irregular contact sheet, not an 8x8 atlas. Each row is padded by holding its final pose.",
   "rows": [
     [[42,33,168,173],[208,29,338,172],[372,25,511,166],[545,28,679,169],[696,26,838,168],[848,26,988,165],[1005,32,1134,171]],

@@ -1,5 +1,6 @@
 #pragma once
 #include "game.h"
+#include "boss_muzzles.h"
 #include <algorithm>
 #include <cmath>
 
@@ -25,12 +26,45 @@ struct MuzzlePoint {
 // up/down pose and made the light detach from the weapon.
 inline MuzzlePoint muzzlePoint(const Player &p, const Input &input) {
   if (p.vehicleHP)
-    return {p.x + p.dir * 31.0f, p.y - 36.0f, false};
+    return {p.x + p.dir * 22.0f, p.y - 42.0f, false};
   if (input.up)
-    return {p.x + p.dir * 4.0f, p.y - 44.0f, true};
+    return {p.x + p.dir * (std::fabs(p.vx) > 1 ? 6.0f : 0.0f),
+            p.y - (std::fabs(p.vx) > 1 ? 44.0f : 48.0f), true};
   if (input.down && !p.grounded)
-    return {p.x, p.y + 2.0f, true};
+    return {p.x + p.dir * 3.0f, p.y, true};
   return {p.x + p.dir * 19.0f, p.y - (p.crouch ? 14.0f : 27.0f), false};
+}
+
+inline int workerFrame(bool rescued, float age) {
+  age = std::max(0.0f, age);
+  if (!rescued) return 40 + int(age * 2) % 2;
+  if (age < .2f) return 42;
+  if (age < .4f) return 43;
+  if (age < .85f) return 44 + int((age - .4f) * 8) % 2;
+  return 46 + int((age - .85f) * 10) % 2;
+}
+
+inline MuzzlePoint bossMuzzlePoint(const Boss &boss, int kind, float alpha = 1) {
+  return {between(boss.prevX, boss.x, alpha) + BOSS_MUZZLES[kind][0],
+          between(boss.prevY, boss.y, alpha) + BOSS_MUZZLES[kind][1], false};
+}
+
+inline int bossFrame(const Boss &b, int kind, float alpha = 1) {
+  float lag = DT * (1 - std::clamp(alpha, 0.0f, 1.0f));
+  float elapsed = std::max(0.0f, b.stateAge - lag);
+  float progress = std::clamp(elapsed / std::max(.01f, b.duration), 0.0f, 1.0f);
+  if (b.dead)
+    return 12 + std::clamp(int((1 - (b.death + lag) / 3.2f) * 4), 0, 3);
+  if (b.state == BossState::Windup)
+    return 4 + std::min(2, int(progress * 3));
+  if (b.state == BossState::Attack)
+    return elapsed + .00001f < ((kind == 0 || kind == 3) ? .18f : .06f) ? 6 : 7;
+  if (b.state == BossState::Recover)
+    return 8 + std::min(3, int(progress * 4));
+  if (b.state == BossState::Overload) return 10;
+  float cycle = kind == 4 ? std::max(0.0f, b.age - lag) * 3
+                         : std::max(0.0f, b.gait - std::fabs(b.vx) * lag / 54);
+  return int(cycle * 4) % 4;
 }
 
 // Animation is derived from combat time, never from the render frame counter.

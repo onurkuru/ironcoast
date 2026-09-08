@@ -10,6 +10,7 @@ struct Atlas {
   bool trimmed = false;
   std::vector<SDL_Rect> cells;
   std::vector<float> baselines;
+  std::vector<SDL_FPoint> anchors;
 };
 enum class Screen { Title, Map, Brief, Play, Pause, Debrief, Ending, Options, Controls };
 struct ViewState {
@@ -20,9 +21,10 @@ struct ViewState {
   Input input;
 };
 class Renderer {
+  friend struct RendererAudit;
   SDL_Renderer *r;
   std::string assets;
-  Atlas hero, enemies, scenery, machines, props, aim, melee, vehicle;
+  Atlas hero, enemies, scenery, props, aim, vehicle;
   int sceneryTheme = -1;
   std::array<Atlas, 6> bosses;
   struct LocalLight {
@@ -40,6 +42,7 @@ class Renderer {
   void surfaceLights(const Game &, float);
   void actorLight(const Atlas &, float, float, bool hurt = false);
   void contactShadow(float, float, float, float);
+  SDL_FPoint bossCore(const Game &, float, float) const;
 
 public:
   explicit Renderer(SDL_Renderer *, std::string);

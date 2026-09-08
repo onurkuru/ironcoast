@@ -1,0 +1,119 @@
+{
+  "source_size": [
+    1254,
+    1254
+  ],
+  "scale": 0.5,
+  "cell_size": 192,
+  "cols": 4,
+  "baseline": 187,
+  "preserve_alpha": true,
+  "clean_edges": true,
+  "description": "Full connected source silhouettes, exclusive right/bottom. Source poses cross the old uniform cell boundaries. A fixed scale and common bottom anchor preserve anatomy; overlapping neighbour components are removed only after retaining the complete pose.",
+  "rows": [
+    [
+      [
+        6,
+        12,
+        297,
+        312
+      ],
+      [
+        343,
+        10,
+        619,
+        313
+      ],
+      [
+        657,
+        13,
+        926,
+        317
+      ],
+      [
+        950,
+        12,
+        1244,
+        314
+      ]
+    ],
+    [
+      [
+        8,
+        333,
+        285,
+        628
+      ],
+      [
+        315,
+        333,
+        669,
+        628
+      ],
+      [
+        633,
+        328,
+        951,
+        627
+      ],
+      [
+        968,
+        341,
+        1245,
+        628
+      ]
+    ],
+    [
+      [
+        8,
+        637,
+        291,
+        931
+      ],
+      [
+        328,
+        641,
+        609,
+        933
+      ],
+      [
+        645,
+        636,
+        923,
+        933
+      ],
+      [
+        963,
+        637,
+        1239,
+        933
+      ]
+    ],
+    [
+      [
+        8,
+        944,
+        288,
+        1231
+      ],
+      [
+        322,
+        941,
+        604,
+        1233
+      ],
+      [
+        627,
+        936,
+        922,
+        1235
+      ],
+      [
+        927,
+        964,
+        1241,
+        1231
+      ]
+    ]
+  ]
+}
