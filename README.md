@@ -4,6 +4,8 @@ An original 2D run-and-gun game for PS Vita and desktop. It includes running, ju
 
 ## Teslim edilenler
 
+Metal Slug 1 ve 3'ün bölüm düzeni araştırması, mevcut haritaların denetimi ve altı görev için yeni mimari/karşılaşma planı: [LEVEL_DESIGN_RESEARCH.md](LEVEL_DESIGN_RESEARCH.md). Bu tasarım henüz oynanabilir paketlere uygulanmadı.
+
 - `Kiyi Hurdasi.app` — Apple Silicon macOS application bundle.
 - `kiyi-hurdasi.vpk` — VitaSDK ARM Vita homebrew package.
 - `data/campaign.json` — editable story, map, enemy, item and hazard data for all six missions.
