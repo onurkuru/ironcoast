@@ -155,6 +155,14 @@ void Audio::play(Sound s) {
     v->volume = .08f;
     v->noiseMix = .46f;
     break;
+  case Sound::MetalStep:
+    v->freq = 430; v->slide = -900; v->remaining = .07f;
+    v->wave = 3; v->volume = .055f; v->noiseMix = .18f;
+    break;
+  case Sound::WaterStep:
+    v->freq = 175; v->slide = -480; v->remaining = .09f;
+    v->wave = 3; v->volume = .065f; v->noiseMix = .82f;
+    break;
   case Sound::Stomp:
     v->freq = 88;
     v->slide = -230;

@@ -177,6 +177,7 @@ def main() -> None:
     prepare_mapped(args.source_dir, assets, "vehicle")
     prepare_bosses(args.source_dir, assets, args.headers)
     prepare_auxiliary(args.source_dir, assets)
+    prepare_mapped(args.source_dir, assets, "climb")
 
 
 if __name__ == "__main__":

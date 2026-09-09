@@ -13,6 +13,21 @@ from prepare_sprite_atlases import prepare_auxiliary, prepare_bosses, prepare_ma
 
 
 class HeroAtlasTests(unittest.TestCase):
+    def test_climbing_poses_have_safe_mapping_and_reproduce(self):
+        atlas = Image.open(ROOT / "assets/climb-v2.png").convert("RGBA")
+        self.assertEqual(atlas.size, (256, 192))
+        for row in range(3):
+            for col in range(4):
+                box = atlas.crop((col*64,row*64,(col+1)*64,(row+1)*64)).getchannel("A").getbbox()
+                self.assertIsNotNone(box)
+                self.assertGreaterEqual(box[0], 2)
+                self.assertGreaterEqual(box[1], 2)
+                self.assertLessEqual(box[2], 62)
+                self.assertLessEqual(box[3], 61)
+        with tempfile.TemporaryDirectory() as directory:
+            prepare_mapped(ROOT / "tools/sourceboards", Path(directory), "climb")
+            self.assertEqual(atlas.tobytes(), Image.open(Path(directory)/"climb-v2.png").tobytes())
+
     def test_all_poses_have_transparent_gutters(self):
         for actor, rows in [("hero", 8), ("enemies", 6)]:
             self.check_gutters(actor, rows)

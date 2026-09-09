@@ -250,7 +250,6 @@ int main(int argc, char **argv) {
     int frames = 0;
     double accumulator = 0;
     uint64_t last = SDL_GetPerformanceCounter();
-    float footTimer = 0;
     while (running) {
       uint64_t now = SDL_GetPerformanceCounter();
       double delta = std::min(.2, double(now - last) / SDL_GetPerformanceFrequency());
@@ -510,13 +509,6 @@ int main(int argc, char **argv) {
               audio.play(s);
             accumulator -= DT;
             first = false;
-          }
-          if (game.player.grounded && std::fabs(game.player.vx) > 20) {
-            footTimer += float(delta);
-            if (footTimer > .21f) {
-              audio.play(Sound::Step);
-              footTimer = 0;
-            }
           }
           if (game.status == Status::Clear) {
             if (!view.assist) {

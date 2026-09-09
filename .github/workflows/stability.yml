@@ -1,9 +1,9 @@
 name: Campaign stability
 on:
   push:
-    paths: ['src/**', 'tests/**', 'assets/**', 'tools/test_runtime.py', 'CMakeLists.txt', '.github/workflows/stability.yml']
+    paths: ['src/**', 'tests/**', 'assets/**', 'tools/**', 'data/**', 'CMakeLists.txt', '.github/workflows/stability.yml']
   pull_request:
-    paths: ['src/**', 'tests/**', 'assets/**', 'tools/test_runtime.py', 'CMakeLists.txt', '.github/workflows/stability.yml']
+    paths: ['src/**', 'tests/**', 'assets/**', 'tools/**', 'data/**', 'CMakeLists.txt', '.github/workflows/stability.yml']
   workflow_dispatch:
 permissions:
   contents: read

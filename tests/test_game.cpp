@@ -45,6 +45,10 @@ int main() {
         if (reached[a])
           for (size_t b = 0; b < l.platforms.size(); b++) {
             auto p = l.platforms[a].box, q = l.platforms[b].box;
+            for (const auto &ladder : l.ladders)
+              if (ladder.x >= p.x && ladder.x <= p.x + p.w && ladder.x >= q.x && ladder.x <= q.x + q.w &&
+                  p.y >= ladder.top && p.y <= ladder.bottom && q.y >= ladder.top && q.y <= ladder.bottom)
+                reached[b] = true;
             float height = p.y - q.y;
             if (height > 51.2f)
               continue;
@@ -54,7 +58,7 @@ int main() {
               reached[b] = true;
           }
     for (size_t b = 0; b < reached.size(); b++)
-      check(reached[b], "authored platform reachable by jump graph");
+      check(reached[b], "authored platform reachable by jump/ladder graph");
     for (auto &i : l.items)
       if (i.kind == 0) {
         bool support = false;
@@ -244,10 +248,14 @@ int main() {
     if (b.alive && b.kind == 8)
       laserShot = true;
   check(laserShot && g.player.ammo == 35, "laser fires a precision projectile");
-  g.load(0, false, 1500);
+  auto pickupX = [](int kind) {
+    for (const auto &item : campaign()[0].items) if (item.kind == kind) return item.x;
+    throw std::runtime_error("missing weapon pickup");
+  };
+  g.load(0, false, pickupX(6));
   g.update({});
   check(g.player.weapon == 4 && g.player.ammo == 80, "flame pickup equips the weapon");
-  g.load(0, false, 2860);
+  g.load(0, false, pickupX(9));
   g.update({});
   check(g.player.weapon == 5 && g.player.ammo == 36, "laser pickup equips the weapon");
   g.load(0);

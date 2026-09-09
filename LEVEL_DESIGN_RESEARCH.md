@@ -2,7 +2,7 @@
 
 September 8, 2026 · Iron Coast revision reviewed: `dfc8fe7` / 0.2.2
 
-**Status: research and proposed level design. These redesigned maps are not implemented.**
+**Historical research, with an implementation update:** v0.3.0 now includes an architectural interpretation across all six maps, ladder routes, a vertical camera, door encounters and masked lighting. See the [implementation report](docs/ARCHITECTURE_UPDATE.md). The original proposals below are retained as research; they are not an exact specification of the shipped geometry. Elevators and sloped collision remain unimplemented.
 
 ## Findings and scope
 

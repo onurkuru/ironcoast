@@ -18,11 +18,17 @@ struct Input {
 struct Platform {
   Rect box;
   bool oneWay = false;
+  int material = 0; // concrete, metal, timber
 };
 struct Spawn {
   float x, y;
   int kind;
+  int entrance = -1;
+  float delay = 0;
 };
+struct Building { Rect box; int style = 0; };
+struct Ladder { float x, top, bottom; };
+struct Entrance { float x, y, triggerX; };
 struct ItemSpec {
   float x, y;
   int kind;
@@ -41,6 +47,11 @@ struct Level {
   std::vector<ItemSpec> items;
   std::vector<Hazard> hazards;
   std::vector<float> checkpoints;
+  std::vector<Building> buildings;
+  std::vector<Ladder> ladders;
+  std::vector<Entrance> entrances;
+  std::vector<Rect> puddles;
+  float minY = 0;
 };
 const std::vector<Level> &campaign();
 enum class Status { Play, Dying, GameOver, Clear };
@@ -60,6 +71,8 @@ enum class Sound {
   Hurt,
   Boss,
   Step,
+  MetalStep,
+  WaterStep,
   Stomp
 };
 struct Player {
@@ -74,12 +87,17 @@ struct Player {
   int dir = 1, weapon = 0, ammo = 0, grenades = 10, lives = 3, health = 3, maxHealth = 3,
       vehicleHP = 0;
   bool grounded = false, crouch = false;
+  int ladder = -1;
+  float climbCycle = 0, ladderLock = 0, climbTransition = 0;
+  int climbPose = 8;
 };
 struct Enemy {
   float x = 0, y = 0, baseY = 0, origin = 0, vy = 0, timer = 1, hurt = 0, death = 0;
   int kind = 0, hp = 1, maxhp = 1, dir = -1, state = 0;
   bool active = false, dead = false;
   float prevX = 0, prevY = 0;
+  int entrance = -1;
+  float entryAge = 1, entryDelay = 0;
 };
 struct Bullet {
   float x = 0, y = 0, px = 0, py = 0, vx = 0, vy = 0, life = 0, r = 2, damage = 1;
@@ -120,6 +138,8 @@ struct Game {
   float time = 0, camera = 0, shake = 0, flash = 0, deathTimer = 0, clearTimer = 0, checkpoint = 40,
         vehicleX = 0;
   float prevCamera = 0, prevTime = 0;
+  float cameraY = 0, prevCameraY = 0;
+  std::vector<float> entranceAges;
   float vehicleHatch = 0;
   bool vehicleAvailable = true, debugInvincible = false;
   uint32_t randomState = 1024;
@@ -149,5 +169,7 @@ struct Game {
   void syncPresentation();
   bool hazardOn(const Hazard &) const;
   float random();
+  Sound footstep() const;
+  bool lightBlocked(float ax, float ay, float bx, float by) const;
 };
 } // namespace kh

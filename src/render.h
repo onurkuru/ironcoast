@@ -24,13 +24,16 @@ class Renderer {
   friend struct RendererAudit;
   SDL_Renderer *r;
   std::string assets;
-  Atlas hero, enemies, scenery, props, aim, vehicle;
+  Atlas hero, enemies, scenery, props, aim, vehicle, architectureTiles, climb;
+  const Game *world = nullptr;
+  float worldCamera = 0;
   int sceneryTheme = -1;
   std::array<Atlas, 6> bosses;
   struct LocalLight {
     float x, y, floor, radius, strength;
     uint32_t color;
     bool fixture;
+    bool window = false;
   };
   std::vector<LocalLight> lights;
   SDL_Texture *lightMask = nullptr;
@@ -39,6 +42,9 @@ class Renderer {
   Atlas load(const std::string &, int, int, bool trim = false, bool paperKey = false);
   void softLight(float, float, float, float, uint32_t, uint8_t, bool additive = true);
   void collectLights(const Game &, const Input &, float, float, float);
+  void architecture(const Game &, float, float);
+  void wetSurfaces(const Game &, float, float);
+  void reflection(const Game &, const Atlas &, int, float, float, float, bool, float, float);
   void surfaceLights(const Game &, float);
   void actorLight(const Atlas &, float, float, bool hurt = false);
   void contactShadow(float, float, float, float);

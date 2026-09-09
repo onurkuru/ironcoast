@@ -63,6 +63,8 @@ Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move
     bosses[i] = load("boss" + std::to_string(i) + "-v2.png", 4, 4, false);
   props = load("props.png", 4, 4, false);
   aim = load("aim-v2.png", 4, 3, false);
+  climb = load("climb-v2.png", 4, 3, false);
+  architectureTiles = load("architecture-v1.png", 3, 2, false);
   // One small radial alpha mask is reused for lamps, fog and contact shadows.
   // No full-screen render targets or per-frame texture uploads are required.
   SDL_Surface *mask = SDL_CreateRGBSurfaceWithFormat(0, 64, 64, 32, SDL_PIXELFORMAT_RGBA32);
@@ -81,7 +83,7 @@ Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move
     throw std::runtime_error(SDL_GetError());
 }
 Renderer::~Renderer() {
-  for (auto *a : {&hero, &enemies, &scenery, &props, &aim, &vehicle})
+  for (auto *a : {&hero, &enemies, &scenery, &props, &aim, &vehicle, &architectureTiles, &climb})
     SDL_DestroyTexture(a->texture);
   for (auto &a : bosses)
     SDL_DestroyTexture(a.texture);
@@ -321,6 +323,7 @@ void Renderer::softLight(float x, float y, float rx, float ry, uint32_t color,
 void Renderer::collectLights(const Game &g, const Input &input, float camera, float time,
                              float alpha) {
   sceneTheme = g.levelIndex;
+  world = &g; worldCamera = camera;
   lights.clear();
   // Fixtures are anchored to world coordinates, including their light/shadow.
   // Only a few can be visible at once; there is no screen-space drifting light.
@@ -337,7 +340,17 @@ void Renderer::collectLights(const Game &g, const Input &input, float camera, fl
     float strength = .94f + .025f * std::sin(time * 1.7f + i);
     lights.push_back({wx - camera, ground - 76, ground, 102, strength, color, true});
   }
-  if (g.player.recoil > 0 && g.player.action <= 0 && g.status == Status::Play) {
+  for (const auto &b : g.level().buildings) {
+    if (b.style == 7 || b.box.x + b.box.w < camera - 100 || b.box.x > camera + W + 100) continue;
+    float wx = b.box.x + b.box.w * .55f;
+    lights.push_back({wx - camera, 176, g.floorAt(wx, 179), 68, .72f, 0xE8BA8200u, true});
+    lights.push_back({b.box.x + b.box.w * .8f - camera, b.box.y - 38,
+                      b.box.y, 65, .58f, 0x8FC5D000u, true});
+    if (b.box.y + 44 < 167)
+      lights.push_back({b.box.x + 78 - camera, b.box.y + 31, 232,
+                        82, .42f, 0xDEAF7400u, true, true});
+  }
+  if (g.player.recoil > 0 && g.player.action <= 0 && g.player.ladder < 0 && g.status == Status::Play) {
     float x = between(g.player.prevX, g.player.x, alpha) - camera;
     float y = between(g.player.prevY, g.player.y, alpha);
     Player presentation = g.player;
@@ -375,6 +388,7 @@ void Renderer::collectLights(const Game &g, const Input &input, float camera, fl
 void Renderer::actorLight(const Atlas &atlas, float x, float y, bool hurt) {
   float red = 183, green = 202, blue = 215;
   for (const auto &light : lights) {
+    if (world && world->lightBlocked(light.x + worldCamera, light.y, x + worldCamera, y)) continue;
     float dx = (x - light.x) / light.radius;
     float dy = (y - light.y) / (light.radius * 1.2f);
     float amount = std::max(0.0f, 1 - dx * dx - dy * dy) * light.strength;
@@ -457,12 +471,45 @@ void Renderer::foregroundDepth(int, float camera, float) {
     rect(x + 6, 262, 2, 2, 0x47585965);
   }
 }
-void Renderer::lightingPass(const Game &, float, float, float) {
+void Renderer::lightingPass(const Game &g, float, float, float) {
+  SDL_Rect previousClip{};
+  const bool hadClip = SDL_RenderIsClipEnabled(r);
+  SDL_RenderGetClipRect(r, &previousClip);
   for (const auto &light : lights) {
+    float left = -100, right = W + 100, top = g.level().minY - 100, bottom = light.floor;
+    const float wx = light.x + worldCamera;
+    for (const auto &b : g.level().buildings)
+      if (b.style != 7 && wx > b.box.x && wx < b.box.x + b.box.w &&
+          light.y > b.box.y + 8 && light.y < 232) {
+        left = std::max(left, b.box.x - worldCamera + 6);
+        right = std::min(right, b.box.x + b.box.w - worldCamera - 6);
+        top = std::max(top, b.box.y + 8);
+      }
+    for (const auto &p : g.level().platforms)
+      if (p.oneWay && wx >= p.box.x && wx <= p.box.x + p.box.w) {
+        if (p.box.y > light.y) bottom = std::min(bottom, p.box.y);
+        else if (p.box.y + p.box.h < light.y) top = std::max(top, p.box.y + p.box.h);
+      }
+    SDL_Rect clip{int(std::floor(left + offsetX)), int(std::floor(top + offsetY)),
+                  std::max(0,int(std::ceil(right-left))), std::max(0,int(std::ceil(bottom-top)))};
+    if (hadClip) SDL_IntersectRect(&clip, &previousClip, &clip);
+    SDL_RenderSetClipRect(r, &clip);
     softLight(light.x, light.y + 16, light.radius, light.radius * .85f,
               light.color, Uint8(34 * light.strength));
-    if (!light.fixture)
+    if (!light.fixture) {
+      SDL_RenderSetClipRect(r, hadClip ? &previousClip : nullptr);
       continue;
+    }
+    if (light.window) {
+      // Hand-authored window projection: two warm panes separated by mullions.
+      for (float y = light.y + 10; y < bottom; y += 3) {
+        float reach = (y - light.y) * .18f;
+        rect(light.x - 10 - reach, y, 8 + reach, 3, light.color | 13);
+        rect(light.x + 3, y, 8 + reach, 3, light.color | 13);
+      }
+      SDL_RenderSetClipRect(r, hadClip ? &previousClip : nullptr);
+      continue;
+    }
     // Visible grounded lamp: the cone, glow and reflected pool share its root.
     rect(light.x + 6, light.y - 8, 2, light.floor - light.y + 8, 0x080F17FF);
     line(light.x + 7, light.y - 8, light.x + 7, light.floor, 0x36515F9A);
@@ -472,6 +519,7 @@ void Renderer::lightingPass(const Game &, float, float, float) {
     // Analytic cone with smooth edges, low alpha, and a real source.
     SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_ADD);
     for (int y = int(light.y + 2); y < int(light.floor); y += 2) {
+      if (g.lightBlocked(light.x + worldCamera, light.y, light.x + worldCamera, float(y))) break;
       float t = (y - light.y) / (light.floor - light.y);
       float width = 4 + t * 35;
       for (int band = 0; band < 3; ++band) {
@@ -482,6 +530,7 @@ void Renderer::lightingPass(const Game &, float, float, float) {
     }
     SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
     rect(light.x + 3, light.floor - 3, 8, 3, 0x09151EFF);
+    SDL_RenderSetClipRect(r, hadClip ? &previousClip : nullptr);
   }
 }
 void Renderer::surfaceLights(const Game &g, float camera) {
@@ -490,7 +539,8 @@ void Renderer::surfaceLights(const Game &g, float camera) {
     if (box.x + box.w < camera || box.x > camera + W)
       continue;
     for (const auto &light : lights) {
-      if (light.y > box.y || box.y - light.y > 140)
+      if (platform.material != 1 || light.y > box.y || box.y - light.y > 140 ||
+          g.lightBlocked(light.x + camera, light.y, light.x + camera, box.y - 1))
         continue;
       float start = std::max(box.x - camera, light.x - 62);
       float end = std::min(box.x + box.w - camera, light.x + 62);
@@ -520,7 +570,13 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
   offsetX = sx;
   offsetY = sy;
   collectLights(g, v.input, camera, time, alpha);
+  // Far scenery moves vertically at a smaller depth, while all playable
+  // architecture, feet, shadows and lights use the exact same world camera.
+  float cameraY = between(g.prevCameraY, g.cameraY, alpha);
+  offsetY = sy - cameraY * .18f;
   background(g.levelIndex, camera, time);
+  offsetY = sy - cameraY;
+  architecture(g, camera, time);
   lightingPass(g, camera, time, alpha);
   const auto &l = g.level();
   for (auto &p : l.platforms) {
@@ -544,6 +600,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       line(x, p.box.y + p.box.h, x + p.box.w, p.box.y + p.box.h, INK);
   }
   surfaceLights(g, camera);
+  wetSurfaces(g, camera, time);
   for (auto &h : l.hazards) {
     float x = h.x - camera;
     if (x + h.w < 0 || x > W)
@@ -614,14 +671,14 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     }
   }
   if (g.vehicleAvailable && g.vehicleX > camera - 80 && g.vehicleX < camera + W + 80) {
-    float feet = g.floorAt(g.vehicleX);
+    float feet = g.floorAt(g.vehicleX, 200);
     actorLight(vehicle, g.vehicleX - camera, feet - 30);
     contactShadow(g.vehicleX - camera, feet, feet, 27);
     int frame = g.vehicleHatch > 0 ? 8 + std::clamp(int((.36f - g.vehicleHatch) / .36f * 4), 0, 3) : 0;
     groundedSprite(vehicle, frame, g.vehicleX - camera - 38, feet - 76, 76, 76);
     SDL_SetTextureColorMod(vehicle.texture, 255, 255, 255);
     if (std::fabs(g.player.x - g.vehicleX) < 48)
-      text("E / TRIANGLE", g.vehicleX - camera - 32, 155, 1, GOLD);
+      text(controlHint("TRIANGLE", "E / TRIANGLE"), g.vehicleX - camera - 32, 155, 1, GOLD);
   }
   for (const auto &source : g.enemies) {
     auto e = source;
@@ -643,7 +700,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     float drawW = w, drawH = h;
     float yy = e.y - drawH - (e.dead ? std::sin(deathT * 3.14159f) * 12.0f : 0.0f);
     double angle = 0;
-    uint8_t alpha = e.dead ? uint8_t(e.death / .45f * 255) : 255;
+    uint8_t alpha = e.dead ? uint8_t(e.death / .45f * 255) : uint8_t(std::min(1.0f, e.entryAge / .45f) * 255);
     if (!e.dead)
       contactShadow(e.x - camera, e.y, g.floorAt(e.x, e.y - 2), drawW * .34f);
     else {
@@ -653,6 +710,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     }
     actorLight(enemies, e.x - camera, e.y - drawH * .5f, e.hurt > 0);
     groundedSprite(enemies, idx, e.x - camera - drawW / 2, yy, drawW, drawH, e.dir > 0, angle, alpha);
+    if (!e.dead) reflection(g, enemies, idx, e.x - camera, e.y, drawW, e.dir > 0, camera, time);
     SDL_SetTextureColorMod(enemies.texture, 255, 255, 255);
     if (e.state == 1 && !e.dead) {
       text("!", e.x - camera - 2, yy - 10, 1, GOLD);
@@ -715,6 +773,15 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         frame = deathFrames[std::min(7, int(deathT * 8))];
         y = playerY - h;
         angle = 0;
+      } else if (p.ladder >= 0 || p.climbTransition > 0) {
+        int step = int(p.climbCycle * 8) % 8;
+        static constexpr int cycle[] = {0, 1, 2, 4, 0, 1, 2, 4};
+        int cell = p.climbTransition > 0 ? p.climbPose : cycle[step];
+        actorLight(climb, px, playerY - 24, p.hitFlash > 0);
+        groundedSprite(climb, cell, px - 24, playerY - 48, 48, 48,
+                       p.climbTransition <= 0 && step >= 4);
+        SDL_SetTextureColorMod(climb.texture, 255, 255, 255);
+        frame = -1;
       } else if (p.action > 0 && p.actionKind == 1) {
         frame = 40 + std::clamp(int((.42f - p.action) / .42f * 8.0f), 0, 7);
       } else if (p.action > 0) {
@@ -754,6 +821,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       }
       if (frame >= 0) {
         groundedSprite(hero, frame, px - w / 2, y, w, h, p.dir < 0, angle);
+        if (p.grounded) reflection(g, hero, frame, px, playerY, w, p.dir < 0, camera, time);
         SDL_SetTextureColorMod(hero.texture, 255, 255, 255);
       }
       if (p.recoil > 0 && (v.input.shoot || p.shot > 0) && p.action <= 0) {
@@ -786,6 +854,8 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       } else if (part.kind == 1) {
         rect(x - part.size / 2, part.y - part.size / 2, part.size, part.size,
              0xA3B6B000 | uint8_t((1 - age) * 50));
+      } else if (part.kind == 4) {
+        line(x, part.y, x + part.vx * .025f, part.y + 2, 0x90C9D000u | uint32_t((1-age)*180));
       } else if (part.kind == 2) {
         rect(x - 3, part.y - 1, 6, 2, 0xFFF1BBFF);
         rect(x - 1, part.y - 3, 2, 6, GOLD);
@@ -877,6 +947,11 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     rect(7, 34, 466, 25, 0x071C29DC);
     wrapped(l.radio, 14, 40, 1, 450, TEAL);
   }
+  for (const auto &ladder : l.ladders)
+    if (std::fabs(p.x - ladder.x) < 20 && p.y >= ladder.top - 2 && p.y <= ladder.bottom + 2) {
+      text("UP / DOWN: CLIMB   JUMP: RELEASE", 118, 238, 1, TEAL);
+      break;
+    }
   if (v.assist)
     text("TRAINING", 10, 238, 1, TEAL);
   if (g.flash > 0 && v.shake)
@@ -1030,7 +1105,8 @@ void Renderer::render(const Game &g, const ViewState &v) {
                           "PAUSE        ESC                START"};
 #endif
     for (int i = 0; i < 8; i++)
-      text(rows[i], 23, 75 + i * 18, 1, CREAM);
+      text(rows[i], 23, 69 + i * 18, 1, CREAM);
+    text("CLIMB        UP / DOWN   JUMP TO RELEASE", 23, 218, 1, CREAM);
     text(controlHint("CROSS / CIRCLE  BACK", "ENTER / O / ESC  BACK"), 25, 244, 1, TEAL);
   }
   if (v.screen == Screen::Play || v.screen == Screen::Pause) {

@@ -19,3 +19,7 @@ Master: `cover-source.png`. Outputs: `cover.jpg`, `../../sce_sys/pic0.png`, Live
 `tools/prepare_livearea.py` performs deterministic resizing, opaque compositing and 256-color PNG encoding. It does not redraw the artwork. The bubble has an inset to protect the main silhouette from circular clipping. Master images remain unchanged.
 
 Dimensions and indexed-image constraints follow the first-hand [LiveArea specifications](https://github.com/hammerill/livearea-specs); XML uses the minimal structure in the [VitaSDK sample](https://github.com/vitasdk/samples/blob/master/hello_world/sce_sys/livearea/contents/template.xml). Package validation checks image headers, palette sizes, XML references and archived file bytes. Appearance on a physical Vita remains unverified.
+
+## v0.3.0 gameplay architecture and climbing
+
+The built-in image-generation tool created the six-panel wall material atlas and a new climbing board using the original hero as its identity reference. Exact prompts and import details are recorded in [architecture-prompts.json](../../tools/sourceboards/architecture-prompts.json). Runtime assets are [architecture-v1.png](../../assets/architecture-v1.png) and [climb-v2.png](../../assets/climb-v2.png). The original climbing source and measured pose map are committed alongside the other source boards. No external game sprites were used.

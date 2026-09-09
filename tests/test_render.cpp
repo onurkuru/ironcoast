@@ -12,9 +12,13 @@ namespace kh {
 struct RendererAudit {
   static std::vector<std::pair<std::string, const Atlas *>> atlases(const Renderer &r) {
     std::vector<std::pair<std::string, const Atlas *>> result = {
-        {"hero", &r.hero}, {"enemies", &r.enemies}, {"aim", &r.aim}, {"vehicle", &r.vehicle}};
+        {"hero", &r.hero}, {"climb", &r.climb}, {"enemies", &r.enemies}, {"aim", &r.aim}, {"vehicle", &r.vehicle}};
     for (int i = 0; i < 6; ++i) result.push_back({"boss" + std::to_string(i), &r.bosses[i]});
     return result;
+  }
+  static void reflect(Renderer &r, const Game &g, bool flip) {
+    const auto &wet = g.level().puddles.front();
+    r.reflection(g, r.hero, 8, wet.x + 5, wet.y, 48, flip, 0, 0);
   }
   static void lights(Renderer &r, const Game &g, const Input &input, float camera, float alpha) {
     r.collectLights(g, input, camera, g.time, alpha);
@@ -136,7 +140,7 @@ int main(int argc, char **argv) {
     // catches destination scaling/baseline bugs that PNG border checks cannot.
     int auditedFrames = 0;
     for (const auto &[name, atlas] : RendererAudit::atlases(renderer)) {
-      float size = name == "hero" ? 48 : name == "enemies" ? 43 : name == "aim" ? 56
+      float size = (name == "hero" || name == "climb") ? 48 : name == "enemies" ? 43 : name == "aim" ? 56
                        : name == "vehicle" ? 76 : name == "boss4" ? 142 : 152;
       SDL_SetTextureColorMod(atlas->texture, 255, 255, 255);
       for (int frame = 0; frame < int(atlas->cells.size()); ++frame) {
@@ -176,6 +180,51 @@ int main(int argc, char **argv) {
         renderer.text(name + " / ALL FRAMES", 8, 5, 1, 0xF5D798FF);
         renderer.screenshot(std::string(argv[2]) + "/atlas-" + name + ".png");
       }
+    }
+
+    // Full moving climb sequences cover negative world heights, light clipping,
+    // transition poses and return to the floor. Optional captures use this renderer.
+    for (int stage = 0; stage < 6; ++stage) {
+      Game scene;
+      const auto &ladder = campaign()[stage].ladders[stage == 4 ? 4 : 0];
+      scene.load(stage, false, ladder.x);
+      scene.debugInvincible = true;
+      for (int n = 0; n < 700; ++n) {
+        Input input;
+        input.up = n < 300;
+        input.down = n >= 350;
+        scene.update(input);
+        view.input = input;
+        if (n % 10 == 0) renderer.render(scene, view);
+        if (argc > 3 && (stage == 0 || stage == 4) && n % 4 == 0 && n < 600) {
+          renderer.render(scene, view);
+          char filename[80];
+          std::snprintf(filename, sizeof(filename), "/motion-%d-%04d.png", stage, n / 4);
+          renderer.screenshot(std::string(argv[3]) + filename);
+        }
+        if (argc > 2 && n == 100) {
+          renderer.render(scene, view);
+          renderer.screenshot(std::string(argv[2]) + "/climbing-" + std::to_string(stage + 1) + ".png");
+        }
+      }
+    }
+    view.input = {};
+
+    for (bool flip : {false, true}) {
+      Game wetScene; wetScene.load(0);
+      SDL_SetRenderDrawColor(device, 0, 0, 0, 255);
+      SDL_RenderClear(device);
+      RendererAudit::reflect(renderer, wetScene, flip);
+      auto image = pixels();
+      const auto &wet = wetScene.level().puddles.front();
+      int reflected = 0;
+      for (int y = 0; y < 544; ++y) for (int x = 0; x < 960; ++x)
+        if (image[y*960+x] != image[0]) {
+          ++reflected;
+          if (x < wet.x*2 || x >= (wet.x+wet.w)*2 || y <= wet.y*2 || y >= (wet.y+wet.h)*2)
+            throw std::runtime_error("Reflection escaped wet-surface mask");
+        }
+      if (!reflected) throw std::runtime_error("Missing character reflection");
     }
 
     // Exercise every presentation family that can expose an atlas mapping

@@ -12,9 +12,9 @@ An original single-player run-and-gun homebrew for **PlayStation Vita**. Fight a
 
 ## Release
 
-**v0.2.6 · PS Vita homebrew preview · Title ID `KHYI00001` · Vita app version `00.26`**
+**v0.3.0 · PS Vita homebrew preview · Title ID `KHYI00001` · Vita app version `00.30`**
 
-Download **`Iron-Coast-PSVita-v0.2.6.vpk`** from **Releases → Assets**. Everything needed is inside: executable, game assets, bubble icon, loading image and LiveArea. No separate asset download or commercial game data is required.
+Download **`Iron-Coast-PSVita-v0.3.0.vpk`** from **Releases → Assets**. Everything needed is inside: executable, game assets, bubble icon, loading image and LiveArea. No separate asset download or commercial game data is required.
 
 Only PS Vita game packages are distributed here. The source includes host-side development and test support, but there is no desktop game release.
 
@@ -50,7 +50,8 @@ The campaign concludes after mission six. Each mission has its own dialogue, res
 - Close-range attacks, grenades, destructible props and worker rescues.
 - Pilot the Scrap Walker; manage health, ammunition and checkpoints.
 - Six moving bosses with attack preparation, recovery and second-phase behavior.
-- Layered industrial scenery, animated lighting, sound effects and background music.
+- Climb ladders, cross connected roofs and return through building interiors.
+- Layered industrial scenery, clipped lighting, wet-surface reflections and material-specific footsteps.
 
 Boss recovery now uses a teal glow on the mechanism instead of the floating `CORE OPEN` label.
 
@@ -62,13 +63,19 @@ Boss recovery now uses a teal glow on the mechanism instead of the floating `COR
 |---|---|
 | ![Rusted Harbor](docs/screenshots/mission-1.png) | ![Toxic Marsh](docs/screenshots/mission-2.png) |
 
-| Ironline / Scrap Walker | Ember Foundry / Forge Titan |
+| Ironline freight route | Ember Foundry |
 |---|---|
-| ![Scrap Walker](docs/screenshots/mission-3.png) | ![Forge Titan](docs/screenshots/mission-4.png) |
+| ![Freight architecture](docs/screenshots/mission-3.png) | ![Foundry architecture](docs/screenshots/mission-4.png) |
 
-| Storm Relay | Final Wave / Iron Grid |
+| Storm Relay | Final Wave |
 |---|---|
-| ![Storm Relay](docs/screenshots/mission-5.png) | ![Iron Grid](docs/screenshots/mission-6.png) |
+| ![Storm Relay](docs/screenshots/mission-5.png) | ![Command hangar](docs/screenshots/mission-6.png) |
+
+Upper routes and vertical movement:
+
+| Harbor roof | Relay ascent |
+|---|---|
+| ![Harbor roof](docs/screenshots/harbor-roof.png) | ![Relay ladder](docs/screenshots/relay-climb.png) |
 
 ## Installation
 
@@ -80,7 +87,7 @@ This guide starts with an existing homebrew setup. For an unmodified console, co
 
 ### Download and transfer
 
-1. Open [Releases](https://github.com/onurkuru/ironcoast/releases/latest). Download **`Iron-Coast-PSVita-v0.2.6.vpk`** under Assets. GitHub's “Source code” archives are for developers, not installation.
+1. Open [Releases](https://github.com/onurkuru/ironcoast/releases/latest). Download **`Iron-Coast-PSVita-v0.3.0.vpk`** under Assets. GitHub's “Source code” archives are for developers, not installation.
 2. Optionally download `SHA256SUMS.txt` and compare the VPK's SHA-256 hash with the published value.
 3. Open VitaShell. Press **START**, set the **SELECT button** action to **USB**, and choose the USB storage device that corresponds to your active `ux0:` storage.
 4. Connect a data-capable USB cable and press **SELECT** to begin transfer. On the mounted storage, create a `VPK` folder if needed and copy the file into it. It will appear as `ux0:VPK/` on the Vita.
@@ -106,6 +113,7 @@ The save holds campaign progress and settings, not a snapshot of the current fig
 | Input | Action |
 |---|---|
 | D-pad / left stick | Move; aim up or crouch/aim down |
+| Up / Down near a ladder, without firing | Attach and climb; Jump releases the ladder |
 | Cross | Jump / menu confirm |
 | Square | Fire; close-range attack when an infantry enemy is in reach |
 | Circle or R | Grenade |
@@ -131,9 +139,9 @@ Hold **Up + Square** to shoot upward. Use **Down + Square while airborne** to sh
 
 ## Development status
 
-v0.2.6 completes the English-only presentation and documentation pass. It retains the v0.2.5 fixes for rescue progress after death/Continue, along with full-campaign, restart, randomized-input and whole-map rendering checks. See the [stability audit](docs/STABILITY_AUDIT.md) for results, reproduction commands and limits.
+v0.3.0 introduces playable architecture across all six missions: connected roofs, 60 ladders, a vertical camera, 30 finite door encounters, material-specific footsteps and masked lighting/reflections. See the [architecture update and verification report](docs/ARCHITECTURE_UPDATE.md).
 
-The current six-mission campaign and boss improvements are included. The building-led redesign in [LEVEL_DESIGN_RESEARCH.md](LEVEL_DESIGN_RESEARCH.md) is **planned work, not part of v0.2.6**. Promotional art does not represent new playable buildings or the in-game boss scale.
+The original [level research](LEVEL_DESIGN_RESEARCH.md) informed this implementation. Building and ladder routes are included; elevators, sloped collision and a full 3D renderer are not. The [v0.2.5 stability audit](docs/STABILITY_AUDIT.md) records the earlier baseline; current architecture checks are documented separately. Promotional art remains separate from actual gameplay captures.
 
 Technical notes: [sprite audit](SPRITE_AUDIT.md), [art direction](ART_DIRECTION.md), [level research](LEVEL_DESIGN_RESEARCH.md).
 

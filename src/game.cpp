@@ -47,6 +47,26 @@ float Game::floorAt(float x, float fromY) const {
       y = std::min(y, p.box.y);
   return y;
 }
+bool Game::lightBlocked(float ax, float ay, float bx, float by) const {
+  for (const auto &p : level().platforms)
+    if (p.oneWay && segmentRect(ax, ay, bx, by, p.box)) return true;
+  for (const auto &b : level().buildings) {
+    if (b.style == 7 || b.style == 8) continue;
+    for (float x : {b.box.x, b.box.x + b.box.w - 4})
+      if (segmentRect(ax, ay, bx, by, {x, b.box.y + 8, 4, b.box.h - 8})) return true;
+  }
+  return false;
+}
+Sound Game::footstep() const {
+  if (player.ladder >= 0) return Sound::MetalStep;
+  for (const auto &wet : level().puddles)
+    if (player.x >= wet.x && player.x <= wet.x + wet.w && std::fabs(player.y - wet.y) < 3)
+      return Sound::WaterStep;
+  for (const auto &p : level().platforms)
+    if (player.x >= p.box.x && player.x <= p.box.x + p.box.w && std::fabs(player.y - p.box.y) < 3)
+      return p.material == 1 ? Sound::MetalStep : Sound::Step;
+  return Sound::Step;
+}
 bool Game::hazardOn(const Hazard &h) const {
   return h.period <= 0 || std::fmod(time + h.offset, h.period) < h.on;
 }
@@ -63,7 +83,7 @@ void Game::load(int index, bool keepScore, float startX) {
   }
   randomState = 12345 + levelIndex * 891;
   player.x = startX;
-  player.y = floorAt(startX);
+  player.y = floorAt(startX, 200);
   if (player.y > 500)
     player.y = 232;
   player.prevX = player.x;
@@ -74,11 +94,15 @@ void Game::load(int index, bool keepScore, float startX) {
   camera = clamp(startX - 120, 0, level().width - W);
   vehicleX = level().vehicleX;
   vehicleAvailable = vehicleX > 0;
+  entranceAges.assign(level().entrances.size(), -1);
   for (auto &s : level().spawns) {
     Enemy e;
     e.x = e.origin = s.x;
     e.y = e.baseY = s.y;
     e.kind = s.kind;
+    e.entrance = s.entrance;
+    e.entryDelay = s.delay;
+    e.entryAge = s.entrance >= 0 ? 0 : 1;
     e.hp = e.maxhp = (s.kind == 0 ? 2 : s.kind == 1 ? 3 : s.kind == 2 ? 7 : s.kind == 3 ? 3 : 9);
     e.timer = .4f + random();
     if (s.x < startX - 70) {
@@ -107,6 +131,7 @@ void Game::syncPresentation() {
   boss.prevX = boss.x;
   boss.prevY = boss.y;
   prevCamera = camera;
+  prevCameraY = cameraY;
   prevTime = time;
   for (auto &e : enemies) {
     e.prevX = e.x;
@@ -164,6 +189,9 @@ void Game::burst(float x, float y, int kind, int count, float power) {
           p.vy = -15 - random() * 10;
           p.life = .6f + random() * .5f;
           p.size = 5 + random() * 8;
+        }
+        if (kind == 4) {
+          p.life = .24f; p.size = 1; p.vy = -18 - random() * 20;
         }
         if (kind == 3) {
           p.life = .52f;
@@ -489,7 +517,7 @@ void Game::update(Input in, float dt) {
       p.life -= dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      if (p.kind == 0)
+      if (p.kind == 0 || p.kind == 4)
         p.vy += 180 * dt;
     }
   for (auto &e : enemies) {
@@ -522,7 +550,7 @@ void Game::update(Input in, float dt) {
       } else {
         status = Status::Play;
         player.x = checkpoint;
-        player.y = floorAt(checkpoint);
+        player.y = floorAt(checkpoint, 200);
         player.vx = player.vy = 0;
         player.inv = 2;
         player.health = player.maxHealth;
@@ -530,6 +558,9 @@ void Game::update(Input in, float dt) {
         player.weapon = player.ammo = 0;
         player.grenades = 10;
         player.vehicleHP = 0;
+        player.ladder = -1;
+        player.climbTransition = 0;
+        cameraY = 0;
         player.vehicleDeath = 0;
         for (auto &b : bullets)
           if (b.hostile)
@@ -548,6 +579,54 @@ void Game::update(Input in, float dt) {
   player.hitFlash = std::max(0.0f, player.hitFlash - dt);
   player.fireAge += dt;
   const bool wasGrounded = player.grounded;
+  const float oldStride = player.stride, oldClimbCycle = player.climbCycle;
+  player.climbTransition = std::max(0.0f, player.climbTransition - dt);
+  player.ladderLock = std::max(0.0f, player.ladderLock - dt);
+  // Up/down aim never grabs a ladder while firing; vehicles use the lower road.
+  if (player.ladder < 0 && !player.vehicleHP && !in.shoot && !in.jump &&
+      player.ladderLock <= 0 && (in.up || in.down)) {
+    for (size_t i = 0; i < level().ladders.size(); ++i) {
+      const auto &ladder = level().ladders[i];
+      if (std::fabs(player.x - ladder.x) <= 10 && player.y >= ladder.top - 2 &&
+          player.y <= ladder.bottom + 2 &&
+          ((in.up && player.y > ladder.top + 1) || (in.down && player.y < ladder.bottom - 1))) {
+        player.ladder = int(i);
+        player.climbPose = in.down ? 10 : 8;
+        player.climbTransition = .14f;
+        player.x = ladder.x;
+        player.action = 0;
+        break;
+      }
+    }
+  }
+  bool climbing = player.ladder >= 0;
+  if (climbing) {
+    const auto &ladder = level().ladders[player.ladder];
+    player.crouch = false;
+    player.grounded = false;
+    player.vx = 0;
+    player.vy = (in.down ? 72.0f : 0) - (in.up ? 72.0f : 0);
+    if (player.climbTransition > 0) player.vy = 0;
+    const float before = player.y;
+    player.y = clamp(player.y + player.vy * dt, ladder.top, ladder.bottom);
+    player.climbCycle += std::fabs(player.y - before) / 32;
+    player.anim += dt;
+    if (in.jump) {
+      player.ladder = -1;
+      player.ladderLock = .25f;
+      player.vy = -240;
+      player.vx = in.move * 145;
+    } else if ((in.up && player.y <= ladder.top) || (in.down && player.y >= ladder.bottom)) {
+      player.ladder = -1;
+      player.ladderLock = .2f;
+      player.climbPose = in.up ? 9 : 11;
+      player.climbTransition = .14f;
+      player.grounded = true;
+      player.vy = 0;
+    }
+  }
+  const float strideStartX = player.x;
+  if (!climbing) {
   player.crouch = in.down && player.grounded && player.vehicleHP == 0;
   player.vx = player.crouch ? 0 : in.move * (player.vehicleHP ? 125.0f : 145.0f);
   if (std::fabs(in.move) > .1f)
@@ -590,18 +669,24 @@ void Game::update(Input in, float dt) {
         player.vy = 0;
       }
     }
+  } // ordinary movement; ladder movement shares the same world feet anchor
   if (!wasGrounded && player.grounded) {
     player.land = .16f;
-    burst(player.x, player.y, 1, 4, .45f);
+    burst(player.x, player.y, footstep() == Sound::WaterStep ? 4 : 1, 4, .45f);
   }
   player.x = clamp(player.x, 12, level().width - 18);
   if (player.grounded)
-    player.stride += std::fabs(player.x - oldx) / 88.0f;
+    player.stride += std::fabs(player.x - strideStartX) / 88.0f;
+  if ((player.grounded && int(player.stride * 4) != int(oldStride * 4)) ||
+      (player.ladder >= 0 && int(player.climbCycle * 2) != int(oldClimbCycle * 2))) {
+    sounds.push_back(footstep());
+    if (player.grounded && footstep() == Sound::WaterStep) burst(player.x, player.y - 1, 4, 3, .3f);
+  }
   if (player.y > H + 85) {
     player.inv = 0;
     if (debugInvincible) {
       player.x = checkpoint;
-      player.y = floorAt(checkpoint);
+      player.y = floorAt(checkpoint, 200);
       player.vy = 0;
     } else
       hitPlayer();
@@ -619,11 +704,14 @@ void Game::update(Input in, float dt) {
     camera = level().width - W;
     if (std::fabs(camera - prevCamera) > 32)
       prevCamera = camera;
+  prevCameraY = cameraY;
   } else {
     float target = clamp(player.x - 155, 0, level().width - W);
     camera += (target - camera) * std::min(1.0f, dt * 7);
   }
-  if (in.interact) {
+  float targetY = boss.active ? 0 : clamp(player.y - 145, level().minY, 0);
+  cameraY += (targetY - cameraY) * std::min(1.0f, dt * 6);
+  if (in.interact && player.ladder < 0) {
     if (player.vehicleHP > 0) {
       float exitX = player.x - player.dir * 30;
       float ground = floorAt(exitX, player.y - 2);
@@ -635,14 +723,15 @@ void Game::update(Input in, float dt) {
         player.x = exitX;
         player.inv = .5f;
       }
-    } else if (vehicleAvailable && std::fabs(player.x - vehicleX) < 48) {
+    } else if (vehicleAvailable && std::fabs(player.x - vehicleX) < 48 &&
+               std::fabs(player.y - floorAt(vehicleX, 200)) < 12) {
       player.vehicleHP = 3;
       vehicleAvailable = false;
       vehicleHatch = .36f;
       sounds.push_back(Sound::Pickup);
     }
   }
-  if (in.shoot && player.shot <= 0) {
+  if (in.shoot && player.shot <= 0 && player.ladder < 0) {
     bool melee = false;
     if (!in.up && !player.vehicleHP)
       for (auto &e : enemies)
@@ -725,7 +814,7 @@ void Game::update(Input in, float dt) {
       }
     }
   }
-  if (in.grenade && player.grenades > 0) {
+  if (in.grenade && player.grenades > 0 && player.ladder < 0) {
     player.grenades--;
     player.action = .45f;
     player.actionKind = 2;
@@ -734,12 +823,27 @@ void Game::update(Input in, float dt) {
     fire(player.x + player.dir * 10, player.y - 26, player.dir * v, -220, 8, 3, false, .95f);
     sounds.push_back(Sound::Grenade);
   }
+  for (size_t i = 0; i < entranceAges.size(); ++i) {
+    auto &age = entranceAges[i];
+    if (age < 0 && player.x >= level().entrances[i].triggerX) age = 0;
+    if (age >= 0) age = std::min(8.0f, age + dt);
+  }
   for (auto &e : enemies) {
     if (e.dead) {
       continue;
     }
-    if (!e.active && e.x < camera + W + 30 && e.x > camera - 70)
+    if (e.entrance >= 0 && !e.active) {
+      if (entranceAges[e.entrance] < .6f + e.entryDelay) continue;
       e.active = true;
+      e.entryAge = 0;
+    } else if (!e.active && e.x < camera + W + 30 && e.x > camera - 70)
+      e.active = true;
+    if (e.active && e.entryAge < .45f) {
+      e.entryAge += dt;
+      // Walk out of the doorway before aiming or firing. No extra spawns.
+      e.x += (player.x < e.x ? -1 : 1) * 24 * dt;
+      continue;
+    }
     if (!e.active || e.x < camera - 180 || e.x > camera + W + 130)
       continue;
     float distance = std::fabs(player.x - e.x);
@@ -850,7 +954,7 @@ void Game::update(Input in, float dt) {
             break;
           }
     }
-    if (collision || b.life <= 0 || b.x < camera - 140 || b.x > camera + W + 160 || b.y < -100 ||
+    if (collision || b.life <= 0 || b.x < camera - 140 || b.x > camera + W + 160 || b.y < level().minY - 100 ||
         b.y > H + 100) {
       b.alive = false;
       if (b.kind == 2)

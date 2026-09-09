@@ -1,4 +1,8 @@
-# Iron Coast — cinematic art pass, 0.2.2
+# Iron Coast — art direction
+
+The v0.3.0 architectural pass is implemented. See [architecture, lighting and movement details](docs/ARCHITECTURE_UPDATE.md). Six original material panels, playable facades, ladders, finite door entries and clipped reflections now supplement the existing panoramas.
+
+## Historical 0.2.2 panorama pass
 
 Six original environment panoramas establish a coherent industrial coastal world. Large readable structures, quiet areas behind characters and motivated practical lights carry the composition. The art direction takes REPLACED as a mood and lighting reference while retaining Iron Coast's own locations and characters.
 
