@@ -1,3 +1,4 @@
+import argparse
 import json
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
@@ -18,5 +19,15 @@ for l in data:
  out.append('{'+','.join('{'+','.join(f(a[k]) for k in ['x','y','triggerX'])+'}' for a in l['entrances'])+'},')
  out.append('{'+','.join('{'+','.join(f(n) for n in a)+'}' for a in l['puddles'])+'},'+f(l['minY'])+'},')
 out+=['}; return result;','}','}']
-(root/'src/campaign.cpp').write_text('\n'.join(out)+'\n')
-print('Compiled six campaign stages into C++')
+parser=argparse.ArgumentParser(description='Compile campaign geometry into C++')
+parser.add_argument('--check', action='store_true', help='Check generated C++ without writing files')
+args=parser.parse_args()
+output='\n'.join(out)+'\n'
+target=root/'src/campaign.cpp'
+if args.check:
+ if target.read_text()!=output:
+  raise SystemExit('Campaign C++ is stale. Run tools/compile_campaign.py.')
+ print('Campaign C++ matches the authored level data')
+else:
+ target.write_text(output)
+ print('Compiled six campaign stages into C++')

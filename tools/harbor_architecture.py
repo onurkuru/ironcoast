@@ -1,4 +1,6 @@
 """Register Harbor gameplay to the integrated painting, never to overlay tiles."""
+import argparse
+import copy
 import json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -34,5 +36,17 @@ def apply_harbor(level):
     level['minY']=min(p['box'][1] for p in level['platforms'])-130
 
 if __name__=='__main__':
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--check', action='store_true', help='Check registration without writing files')
+    args=parser.parse_args()
     path=ROOT/'data/campaign.json';data=json.loads(path.read_text())
-    apply_harbor(data['levels'][0]);path.write_text(json.dumps(data,indent=2)+'\n')
+    previous=copy.deepcopy(data['levels'][0])
+    apply_harbor(data['levels'][0])
+    if args.check:
+        changed=[key for key,value in data['levels'][0].items() if previous.get(key)!=value]
+        if changed:
+            raise SystemExit('Harbor geometry differs from its painting: '+', '.join(changed)+
+                             '. Run tools/harbor_architecture.py and tools/compile_campaign.py.')
+        print('Harbor galleries, ladders, doors and encounters match the painting anchors')
+    else:
+        path.write_text(json.dumps(data,indent=2)+'\n')

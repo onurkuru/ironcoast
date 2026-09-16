@@ -48,7 +48,10 @@ class ProductionPackTests(unittest.TestCase):
             for name in ('production-props-v1', 'production-structures-v1'):
                 target = Path(folder)/f'{name}.png'
                 module.build(name, target)
-                self.assertEqual(target.read_bytes(), (ROOT/f'assets/{name}.png').read_bytes())
+                # Compare art, including alpha, independently of PNG compression.
+                with Image.open(target) as generated, Image.open(ROOT/f'assets/{name}.png') as checked_in:
+                    self.assertEqual(generated.size, checked_in.size)
+                    self.assertEqual(generated.convert('RGBA').tobytes(), checked_in.convert('RGBA').tobytes())
 
 if __name__=='__main__':
     unittest.main()

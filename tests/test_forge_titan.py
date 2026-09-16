@@ -30,6 +30,10 @@ class TitanAtlasTests(unittest.TestCase):
     def test_reproducible_from_source(self):
         with tempfile.TemporaryDirectory() as folder:
             target=Path(folder)/'titan.png';module.build(target)
-            self.assertEqual(target.read_bytes(),(ROOT/'assets/forge-titan-v3.png').read_bytes())
+            # PNG compression varies with zlib/Pillow; the decoded RGBA pixels
+            # and cell dimensions must reproduce exactly on every platform.
+            with Image.open(target) as generated, Image.open(ROOT/'assets/forge-titan-v3.png') as checked_in:
+                self.assertEqual(generated.size, checked_in.size)
+                self.assertEqual(generated.convert('RGBA').tobytes(), checked_in.convert('RGBA').tobytes())
 
 if __name__=='__main__':unittest.main()
