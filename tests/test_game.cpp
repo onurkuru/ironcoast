@@ -281,6 +281,16 @@ int main() {
   g.player.x = g.vehicleX;
   Input enter;
   enter.interact = true;
+  g.player.y = 100;
+  check(!g.canBoardVehicle(), "vehicle hint must not appear above the quay");
+  g.update(enter);
+  check(g.player.vehicleHP == 0 && g.vehicleAvailable, "cannot board from a raised route");
+  g.player.y = 232;
+  g.player.vy = 0;
+  g.player.ladder = 0;
+  check(!g.canBoardVehicle(), "vehicle hint must not appear while climbing");
+  g.player.ladder = -1;
+  check(g.canBoardVehicle(), "vehicle boarding available at quay height");
   g.update(enter);
   check(g.player.vehicleHP == 3 && !g.vehicleAvailable, "enter vehicle");
   check(g.vehicleHatch > 0, "boarding plays the hatch strip");

@@ -62,6 +62,11 @@ float Game::floorAt(float x, float fromY) const {
       y = std::min(y, p.box.y);
   return y;
 }
+bool Game::canBoardVehicle() const {
+  return status == Status::Play && vehicleAvailable && player.vehicleHP == 0 &&
+         player.ladder < 0 && std::fabs(player.x - vehicleX) < 48 &&
+         std::fabs(player.y - floorAt(vehicleX, 200)) < 12;
+}
 bool Game::lightBlocked(float ax, float ay, float bx, float by) const {
   for (const auto &p : level().platforms)
     if (p.oneWay && segmentRect(ax, ay, bx, by, p.box)) return true;
@@ -833,8 +838,7 @@ void Game::update(Input in, float dt) {
         player.x = exitX;
         player.inv = .5f;
       }
-    } else if (vehicleAvailable && std::fabs(player.x - vehicleX) < 48 &&
-               std::fabs(player.y - floorAt(vehicleX, 200)) < 12) {
+    } else if (canBoardVehicle()) {
       player.vehicleHP = 3;
       vehicleAvailable = false;
       vehicleHatch = .36f;

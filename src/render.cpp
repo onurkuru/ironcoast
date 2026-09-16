@@ -738,7 +738,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     int frame = g.vehicleHatch > 0 ? 8 + std::clamp(int((.36f - g.vehicleHatch) / .36f * 4), 0, 3) : 0;
     groundedSprite(vehicle, frame, g.vehicleX - camera - 38, feet - 76, 76, 76);
     SDL_SetTextureColorMod(vehicle.texture, 255, 255, 255);
-    if (std::fabs(g.player.x - g.vehicleX) < 48)
+    if (g.canBoardVehicle())
       text(controlHint("TRIANGLE", "E / TRIANGLE"), g.vehicleX - camera - 32, 155, 1, GOLD);
   }
   for (const auto &source : g.enemies) {

@@ -202,6 +202,7 @@ struct Game {
   Rect bossBox() const;
   HitZone hitZone(const Enemy &, const Bullet &) const;
   float floorAt(float x, float fromY = 0) const;
+  bool canBoardVehicle() const;
   void fire(float x, float y, float vx, float vy, float damage, int kind, bool hostile = false,
             float life = 2.0f);
   void weaponEffect(float x, float y, int weapon, bool impact = false, bool audible = true);

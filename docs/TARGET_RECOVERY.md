@@ -1,7 +1,12 @@
-# Cinematic target recovery
+# Cinematic target recovery — original review notes
 
-This development worktree resumes the approved workshop target. The main
-checkout remains at 378ec47. That commit is not a verified release called 6.0.
+**16 September 2026 continuation:** the recovered source and artwork are now
+versioned on `cinematic-target-recovery`. See the [Harbor integration report](HARBOR_INTEGRATION.md)
+for the continuous gallery route, current verification and remaining scope.
+The phase notes and per-map table below describe the earlier recovery baseline.
+
+This development worktree resumes the approved workshop target from commit
+378ec47. That commit is not a verified release called 6.0.
 The recovery stash remains intact. The six rejected campaign screenshots are
 not approved art and are not evidence that the campaign meets the targets.
 

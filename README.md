@@ -16,7 +16,7 @@ An original single-player run-and-gun homebrew for **PlayStation Vita**. Fight a
 
 Download **`Iron-Coast-PSVita-v0.3.0.vpk`** from **Releases → Assets**. Everything needed is inside: executable, game assets, bubble icon, loading image and LiveArea. No separate asset download or commercial game data is required.
 
-The source tree contains the newer **v0.4.0 development work**, recovered on 16 September 2026: cinematic environments, adult character animation rigs, weapon audio and reloads, chapter transitions, and Harbor platforms aligned to the painted architecture. These source changes are not included in the published v0.3.0 package. See the [development review notes](docs/TARGET_RECOVERY.md); visual review and physical Vita testing remain ongoing.
+The source tree contains the newer **v0.4.0 development work**, recovered on 16 September 2026: cinematic environments, adult character animation rigs, weapon audio and reloads, chapter transitions, and Harbor platforms aligned to the painted architecture. These source changes are not included in the published v0.3.0 package. See the [Harbor integration report and runnable review](docs/HARBOR_INTEGRATION.md); visual review and physical Vita testing remain ongoing.
 
 Only PS Vita game packages are distributed here. The source includes host-side development and test support, but there is no desktop game release.
 
