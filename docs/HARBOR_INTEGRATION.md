@@ -66,6 +66,14 @@ the art stays identical; differences in actual color or alpha still fail.
 
 ## Scope of this review
 
+| West gallery | Middle gallery | Control tower |
+|---|---|---|
+| ![West gallery](screenshots/harbor-integrated-west.png) | ![Middle gallery](screenshots/harbor-integrated-middle.png) | ![Control tower](screenshots/harbor-integrated-tower.png) |
+
+These are unedited executable frames at 5.67, 16.67 and 27.17 seconds of the
+34-second recording. The ladder and door passages were also inspected at lower
+and upper camera positions; the corrected vehicle hint is absent during ascent.
+
 The development Mac passed all 19 CTest checks. The source also cross-compiles
 to Vita, and the package validator accepts its SELF, metadata and 75 resources.
 This does not establish hardware frame rate, memory headroom, or controller feel.

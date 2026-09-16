@@ -58,6 +58,16 @@ The campaign concludes after mission six. Each mission has its own dialogue, res
 
 Boss recovery now uses a teal glow on the mechanism instead of the floating `CORE OPEN` label.
 
+## Current Harbor development captures
+
+Actual 960×544 executable frames from the continuous gallery route, captured on
+the development Mac. Platforms and ladders follow the integrated painting.
+See the [review and reproduction commands](docs/HARBOR_INTEGRATION.md).
+
+| West gallery | Middle gallery | Control tower |
+|---|---|---|
+| ![West gallery](docs/screenshots/harbor-integrated-west.png) | ![Middle gallery](docs/screenshots/harbor-integrated-middle.png) | ![Control tower](docs/screenshots/harbor-integrated-tower.png) |
+
 ## Published v0.3.0 screenshots
 
 **Unretouched captures from the v0.3.0 game renderer**, recorded on the development host at 960×544 with the same game assets as that VPK. These historical captures do not show all current development changes. These are not Vita hardware captures. Capture mode enables training assistance, which may be visible in the HUD.
