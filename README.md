@@ -10,11 +10,13 @@ An original single-player run-and-gun homebrew for **PlayStation Vita**. Fight a
 
 *Original promotional artwork for the loading screen and LiveArea. Actual gameplay captures appear below.*
 
-## Release
+## Published release
 
 **v0.3.0 · PS Vita homebrew preview · Title ID `KHYI00001` · Vita app version `00.30`**
 
 Download **`Iron-Coast-PSVita-v0.3.0.vpk`** from **Releases → Assets**. Everything needed is inside: executable, game assets, bubble icon, loading image and LiveArea. No separate asset download or commercial game data is required.
+
+The source tree contains the newer **v0.4.0 development work**, recovered on 16 September 2026: cinematic environments, adult character animation rigs, weapon audio and reloads, chapter transitions, and Harbor platforms aligned to the painted architecture. These source changes are not included in the published v0.3.0 package. See the [development review notes](docs/TARGET_RECOVERY.md); visual review and physical Vita testing remain ongoing.
 
 Only PS Vita game packages are distributed here. The source includes host-side development and test support, but there is no desktop game release.
 
@@ -51,13 +53,14 @@ The campaign concludes after mission six. Each mission has its own dialogue, res
 - Pilot the Scrap Walker; manage health, ammunition and checkpoints.
 - Six moving bosses with attack preparation, recovery and second-phase behavior.
 - Climb ladders, cross connected roofs and return through building interiors.
-- Layered industrial scenery, clipped lighting, wet-surface reflections and material-specific footsteps.
+- Layered industrial scenery, material-aware floor/wall lighting, wet-surface reflections and material-specific footsteps.
+- Six magazine/reload profiles, localized hit reactions and restrained cinematic camera framing.
 
 Boss recovery now uses a teal glow on the mechanism instead of the floating `CORE OPEN` label.
 
-## Screenshots
+## Published v0.3.0 screenshots
 
-**Unretouched captures from the actual game renderer**, recorded on the development host at 960×544 with the same game assets as the VPK. These are not Vita hardware captures. Capture mode enables training assistance, which may be visible in the HUD.
+**Unretouched captures from the v0.3.0 game renderer**, recorded on the development host at 960×544 with the same game assets as that VPK. These historical captures do not show all current development changes. These are not Vita hardware captures. Capture mode enables training assistance, which may be visible in the HUD.
 
 | Rusted Harbor | Toxic Marsh |
 |---|---|
@@ -118,6 +121,7 @@ The save holds campaign progress and settings, not a snapshot of the current fig
 | Square | Fire; close-range attack when an infantry enemy is in reach |
 | Circle or R | Grenade |
 | Triangle | Enter / exit available vehicle |
+| L | Reload (also automatic on an empty magazine) |
 | START | Pause / resume |
 | Circle in menus | Back |
 
@@ -139,7 +143,7 @@ Hold **Up + Square** to shoot upward. Use **Down + Square while airborne** to sh
 
 ## Development status
 
-v0.3.0 introduces playable architecture across all six missions: connected roofs, 60 ladders, a vertical camera, 30 finite door encounters, material-specific footsteps and masked lighting/reflections. See the [architecture update and verification report](docs/ARCHITECTURE_UPDATE.md).
+The v0.4.0 source work adds material-aware lighting, bounded cinematic camera framing, original environmental paintings, distinct weapon reports and reloads, localized enemy reactions and two hidden discoveries. See the [cinematic update, tuning reference and test guide](docs/CINEMATIC_UPDATE.md). Harbor routes are being rebuilt against the integrated painting; the [v0.3.0 architecture report](docs/ARCHITECTURE_UPDATE.md) describes the earlier layout.
 
 The original [level research](LEVEL_DESIGN_RESEARCH.md) informed this implementation. Building and ladder routes are included; elevators, sloped collision and a full 3D renderer are not. The [v0.2.5 stability audit](docs/STABILITY_AUDIT.md) records the earlier baseline; current architecture checks are documented separately. Promotional art remains separate from actual gameplay captures.
 
@@ -161,6 +165,6 @@ Host-side QA uses `-DKH_VITA=OFF` with SDL2/pkg-config; it is not a distributed 
 
 ## Credits
 
-Original Iron Coast world, characters and assets. The new icon and cover use built-in image generation; see [prompts and provenance](docs/art/PROVENANCE.md). Runtime technology: SDL2, VitaSDK and stb. Third-party notices accompany the package in `licenses/`.
+Original Iron Coast world and characters; generated environmental art and an attributed public-domain signature keepsake. See [asset provenance and implementation details](docs/CINEMATIC_UPDATE.md). The new icon and cover use built-in image generation; see [prompts and provenance](docs/art/PROVENANCE.md). Runtime technology: SDL2, VitaSDK and stb. Third-party notices accompany the package in `licenses/`.
 
 Independent homebrew; not an official PlayStation release. No Metal Slug or REPLACED sprites are included.

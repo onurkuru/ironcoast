@@ -1,0 +1,9 @@
+Signature of Mustafa Kemal Ataturk
+Original handwriting: Mustafa Kemal Ataturk.
+Vectorization: Ichwan Palongengi, 30 May 2009.
+Source: https://commons.wikimedia.org/wiki/File:Signature_of_Mustafa_Kemal_Atat%C3%BCrk.svg
+Original SVG: https://upload.wikimedia.org/wikipedia/commons/4/46/Signature_of_Mustafa_Kemal_Atat%C3%BCrk.svg
+Source designation: Public Domain Mark 1.0; PD-old-70.
+https://creativecommons.org/publicdomain/mark/1.0/
+Changes: rasterized to a transparent 256 x 92 PNG with CairoSVG.
+The small Turkish flag is original vector geometry authored for Iron Coast.

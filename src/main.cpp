@@ -1,6 +1,7 @@
 #include "audio.h"
 #include "game.h"
 #include "render.h"
+#include "presentation_config.h"
 #include <SDL.h>
 #include <algorithm>
 #include <cmath>
@@ -55,14 +56,34 @@ struct Buttons {
 };
 static bool newly(bool now, bool prev) { return now && !prev; }
 int main(int argc, char **argv) {
-  std::string assetPath, savePath, capture, recordDir, initialScreen;
+  std::string assetPath, savePath, capture, recordDir, initialScreen, recordAudio;
   int frameLimit = 0, stage = -1, showcase = 0, recordEvery = 1, previewPhase = 1;
-  bool demo = false, fast = false, bossPreview = false;
+  int reviewWeapon = 0;
+  bool reviewMotion=false;
+  bool reviewCamera=false;
+  bool ironlineReview=false,ironlineDemo=false;
+  bool heroMotionReview=false;
+  bool guardReactionReview=false;int guardReviewEvent=0;
+  bool guardActionReview=false;
+  int chapter = -1, climbPreview=-1;
+  bool demo = false, fast = false, bossPreview = false, workshopReview=false, reviewDemo=false;
   float beginX = 40;
   for (int i = 1; i < argc; i++) {
     std::string a = argv[i];
     auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
-    if (a == "--record")
+    if(a=="--workshop-review")workshopReview=true;
+    else if(a=="--chapter")chapter=std::clamp(std::stoi(next())-1,0,5);
+    else if(a=="--climb-preview")climbPreview=std::max(0,std::stoi(next()));
+    else if(a=="--ironline-review")ironlineReview=true;
+    else if(a=="--ironline-demo"){ironlineReview=true;ironlineDemo=true;}
+    else if(a=="--hero-motion-review"){ironlineReview=true;ironlineDemo=true;heroMotionReview=true;}
+    else if(a=="--guard-reaction-review"){workshopReview=true;reviewDemo=true;guardReactionReview=true;}
+    else if(a=="--guard-action-review"){workshopReview=true;reviewDemo=true;guardActionReview=true;}
+    else if(a=="--review-demo"){workshopReview=true;reviewDemo=true;}
+    else if(a=="--review-motion"){workshopReview=true;reviewDemo=true;reviewMotion=true;}
+    else if(a=="--review-camera"){workshopReview=true;reviewDemo=true;reviewCamera=true;}
+    else if(a=="--review-weapon"){workshopReview=true;reviewWeapon=std::clamp(std::stoi(next()),0,5);}
+    else if (a == "--record")
       recordDir = next();
     else if (a == "--record-every")
       recordEvery = std::max(1, std::stoi(next()));
@@ -78,6 +99,7 @@ int main(int argc, char **argv) {
       savePath = next();
     else if (a == "--capture")
       capture = next();
+    else if(a=="--record-audio")recordAudio=next();
     else if (a == "--frames")
       frameLimit = std::stoi(next());
     else if (a == "--stage")
@@ -91,11 +113,14 @@ int main(int argc, char **argv) {
     else if (a == "--start-x")
       beginX = std::stof(next());
     else if (a == "--help") {
-      std::cout << "Iron Coast: Scrap Tide --stage 1..6 --frames N --capture frame.png --demo --fast "
+      std::cout << "Iron Coast: Scrap Tide --stage 1..6 --chapter 1..6 --climb-preview LADDER_INDEX --frames N --capture frame.png --demo --fast "
                    "--assets PATH --save PATH --showcase 1..5 --boss-preview --preview-phase 1..2 "
-                   "--record DIR --record-every N\n";
+                   "--record DIR --record-every N --record-audio audio.s16le --workshop-review --review-demo --review-motion --review-camera --review-weapon 0..5 --ironline-review --ironline-demo --hero-motion-review --guard-reaction-review --guard-action-review\n";
       return 0;
     }
+  }
+  if(!recordAudio.empty() && (!fast || frameLimit<=0)) {
+    std::cerr<<"--record-audio requires --fast and a positive --frames limit\n";return 2;
   }
   if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER | SDL_INIT_TIMER) != 0) {
     std::cerr << SDL_GetError() << '\n';
@@ -164,7 +189,13 @@ int main(int argc, char **argv) {
   int exitCode = 0;
   try {
     Renderer graphics(renderer, assetPath);
-    Audio audio;
+    Audio audio(recordAudio.empty());
+    std::ofstream pcm;
+    if(!recordAudio.empty()) {
+      pcm.open(recordAudio,std::ios::binary);
+      if(!pcm)throw std::runtime_error("Cannot open offline audio output");
+    }
+    uint64_t audioSamples=0;
     Game game;
     game.load(0);
     bool continuing = false;
@@ -173,9 +204,46 @@ int main(int argc, char **argv) {
       view.screen = Screen::Play;
       game.load(view.selected, false, beginX);
     }
+    if(chapter>=0) {
+      game.beginChapter(chapter);view.selected=chapter;view.screen=Screen::Play;
+    }
+    if(workshopReview) {
+      game.load(0,false,tuning::workshop.heroStart,true);view.screen=Screen::Play;view.assist=reviewDemo;
+      game.debugInvincible=reviewDemo;game.player.inv=0;
+      game.player.weapon=game.player.firedWeapon=game.player.magazineWeapon=reviewWeapon;
+      game.player.magazine=int(tuning::weapons[reviewWeapon].magazine);
+      game.player.ammo=120;
+      if(reviewMotion || reviewCamera)game.enemies.clear();
+      if(guardReactionReview) {
+        game.enemies.clear();game.player.x=game.player.prevX=130;
+        Enemy e;e.x=e.prevX=e.origin=325;e.y=e.prevY=e.baseY=232;
+        e.active=true;e.hp=e.maxhp=100;e.state=1;e.timer=999;game.enemies.push_back(e);
+      }
+      if(guardActionReview) {
+        game.enemies.clear();game.player.x=game.player.prevX=130;
+        Enemy e;e.x=e.prevX=e.origin=375;e.y=e.prevY=e.baseY=232;
+        e.active=true;e.hp=e.maxhp=3;e.timer=2.2f;game.enemies.push_back(e);
+      }
+    }
+    if(climbPreview>=0) {
+      game.load(stage>=0?std::clamp(stage,0,5):0);
+      climbPreview=std::min(climbPreview,int(game.level().ladders.size())-1);
+      if(climbPreview<0)throw std::runtime_error("This scene has no ladder to preview");
+      game.player.x=game.level().ladders[climbPreview].x;
+      game.camera=std::clamp(game.player.x-tuning::camera.anchorX,0.f,game.level().width-W);
+      game.player.inv=0;game.debugInvincible=true;game.syncPresentation();
+      view.screen=Screen::Play;view.assist=true;
+    }
     if (demo) {
       view.assist = true;
       game.debugInvincible = true;
+    }
+    if(ironlineReview) {
+      game.load(2,false,tuning::ironlineReview.heroStart,false,true);
+      view.screen=Screen::Play;view.assist=ironlineDemo;game.debugInvincible=ironlineDemo;
+      game.player.inv=0;game.player.weapon=game.player.firedWeapon=game.player.magazineWeapon=reviewWeapon;
+      game.player.magazine=int(tuning::weapons[reviewWeapon].magazine);game.player.ammo=160;
+      if(heroMotionReview)game.enemies.clear();
     }
     if (showcase) {
       view.screen = Screen::Play;
@@ -303,6 +371,7 @@ int main(int argc, char **argv) {
       buttons.input.shoot = k[SDL_SCANCODE_X] || k[SDL_SCANCODE_J];
       buttons.input.grenade = k[SDL_SCANCODE_C] || k[SDL_SCANCODE_K];
       buttons.input.interact = k[SDL_SCANCODE_E];
+      buttons.input.reload = k[SDL_SCANCODE_R];
       buttons.confirm = k[SDL_SCANCODE_RETURN] || k[SDL_SCANCODE_Z];
       buttons.back = k[SDL_SCANCODE_ESCAPE];
       buttons.pause = k[SDL_SCANCODE_ESCAPE] || k[SDL_SCANCODE_P];
@@ -321,6 +390,7 @@ int main(int argc, char **argv) {
         buttons.input.grenade |=
             b(SDL_CONTROLLER_BUTTON_B) || b(SDL_CONTROLLER_BUTTON_RIGHTSHOULDER);
         buttons.input.interact |= b(SDL_CONTROLLER_BUTTON_Y);
+        buttons.input.reload |= b(SDL_CONTROLLER_BUTTON_LEFTSHOULDER);
         buttons.confirm |= b(SDL_CONTROLLER_BUTTON_A) || b(SDL_CONTROLLER_BUTTON_START);
         buttons.back |= b(SDL_CONTROLLER_BUTTON_B);
         buttons.pause |= b(SDL_CONTROLLER_BUTTON_START);
@@ -337,6 +407,7 @@ int main(int argc, char **argv) {
       buttons.input.shoot |= vb(SCE_CTRL_SQUARE);
       buttons.input.grenade |= vb(SCE_CTRL_CIRCLE) || vb(SCE_CTRL_RTRIGGER);
       buttons.input.interact |= vb(SCE_CTRL_TRIANGLE);
+      buttons.input.reload |= vb(SCE_CTRL_LTRIGGER);
       buttons.confirm |= vb(SCE_CTRL_CROSS);
       buttons.back |= vb(SCE_CTRL_CIRCLE);
       buttons.pause |= vb(SCE_CTRL_START);
@@ -391,7 +462,7 @@ int main(int argc, char **argv) {
       } else if (view.screen == Screen::Brief) {
         if (confirm) {
           int lives = game.player.lives;
-          game.load(view.selected, continuing);
+          game.beginChapter(view.selected, continuing);
           if (continuing)
             game.player.lives = std::min(5, lives + 1);
           continuing = false;
@@ -478,9 +549,64 @@ int main(int argc, char **argv) {
                                          std::fmod(game.time, .55f) < .05f);
             input.grenade = game.boss.active && int(game.time * 2) != int((game.time + DT) * 2);
             input.interact = game.vehicleAvailable && std::fabs(game.player.x - game.vehicleX) < 32;
+            if(game.chapterSequence && game.cinematicReview()) {
+              input.jump=game.player.grounded && look>game.player.y+18;
+              input.interact=true;
+            }
             for (auto &e : game.enemies)
               if (!e.dead && e.kind == 3 && std::fabs(e.x - game.player.x) < 65)
                 input.up = true;
+          }
+          if(reviewDemo) {
+            input={};float t=game.time;
+            if(t>1.5f && t<3)input.move=.5f;
+            if(t>3 && t<5)input.shoot=true;
+            if(t>5 && t<5.1f)input.reload=true;
+            if(t>6.5f && t<8){input.move=.5f;input.shoot=true;}
+            if(t>8 && t<8.08f)input.jump=true;
+            if(t>8 && t<9)input.move=.3f;
+            if(t>9 && t<10){input.down=true;input.shoot=true;}
+            if(t>10 && t<11.5f)input.move=-.4f;
+            if(t>12 && t<12.06f)input.grenade=true;
+          }
+          if(reviewMotion) {
+            input={};float t=game.time;
+            if(t>.6f && t<2.4f)input.move=1;
+            if(t>1.2f && t<1.2f+DT)input.jump=true;
+            if(t>2.9f && t<4.7f)input.move=-1;
+          }
+          if(reviewCamera) {
+            input={};const float t=game.time;
+            if(t>4 && t<6.5f)input.move=.45f;
+            // A staged sentry entrance leaves time to inspect the quiet shot.
+            if(t>7 && game.enemies.empty()) {
+              Enemy e;e.x=e.origin=tuning::workshop.guardStart;e.y=e.baseY=232;
+              e.prevX=e.x;e.prevY=e.y;e.hp=e.maxhp=6;e.timer=1;
+              game.enemies.push_back(e);
+            }
+            if(t>8 && t<10.5f)input.shoot=true;
+            if(t>11 && t<12)input.move=-.4f;
+          }
+          if(ironlineDemo) {
+            input={};const float t=game.time;
+            input.shoot=t>1;input.move=t>3 && t<10?.6f:0;
+            const auto &rail=tuning::ironlineReview;
+            input.jump=game.player.grounded && game.player.x>rail.bridgeEnd-45 && game.player.x<rail.bridgeEnd+12;
+            input.interact=game.player.x>rail.exitX;
+          }
+          if(heroMotionReview) {
+            input={};const float t=game.time;
+            if(t>.4f && t<3.6f)input.move=.8f;
+            if(t>1.5f && t<3.6f)input.shoot=true;
+            if(t>2.6f && t<2.6f+DT)input.jump=true;
+            if(t>4 && t<5.5f){input.move=-.7f;input.shoot=true;}
+          }
+          if(guardReactionReview) {
+            input={};float t=game.time;
+            input.shoot=(t>3.9f && t<4.9f)||(t>6 && t<7.1f);
+          }
+          if(guardActionReview) {
+            input={};input.shoot=game.time>5.4f && game.time<7;
           }
           if (showcase) {
             input = {};
@@ -491,6 +617,11 @@ int main(int argc, char **argv) {
               input.up = true;
             if (showcase == 5)
               input.down = true;
+          }
+          if(climbPreview>=0) {
+            input={};
+            const auto &ladder=game.level().ladders[climbPreview];
+            input.up=game.player.y>ladder.top+.1f;
           }
           view.input = input;
           queued.jump |= input.jump;
@@ -504,9 +635,29 @@ int main(int argc, char **argv) {
             tick.grenade = first && queued.grenade;
             tick.interact = first && queued.interact;
             game.update(tick);
+            // Isolated review: three controlled hit regions, then real player
+            // shots from either side. Never runs in an ordinary play session.
+            if(guardReactionReview) {
+              static constexpr float events[]={.8f,1.8f,2.8f,3.8f,5.8f};
+              if(guardReviewEvent<5 && game.time>=events[guardReviewEvent]) {
+                if(guardReviewEvent<3)
+                  game.damageEnemy(game.enemies.front(),1,false,1,HitZone(guardReviewEvent));
+                else if(guardReviewEvent==3)game.enemies.front().hp=2;
+                else {
+                  game.player.x=game.player.prevX=430;game.player.dir=-1;
+                  Enemy e;e.x=e.prevX=e.origin=325;e.y=e.prevY=e.baseY=232;
+                  e.active=true;e.hp=e.maxhp=2;e.state=1;e.timer=999;e.dir=1;
+                  game.enemies.push_back(e);
+                }
+                ++guardReviewEvent;
+              }
+            }
             queued = {};
             for (auto s : game.sounds)
               audio.play(s);
+            for (const auto &event : game.audioEvents)
+              audio.play(event.sound, std::hypot(event.x-game.player.x,event.y-game.player.y),event.weapon);
+            game.advanceSection();
             accumulator -= DT;
             first = false;
           }
@@ -527,6 +678,15 @@ int main(int argc, char **argv) {
                                : float(std::clamp(accumulator / double(DT), 0.0, 1.0));
       graphics.render(game, view);
       frames++;
+      if(pcm.is_open()) {
+        // Exact rational 32kHz/60fps scheduling avoids rounding drift.
+        uint64_t target=uint64_t(frames)*32000/60;
+        int count=int(target-audioSamples);std::array<int16_t,534> samples{};
+        audio.renderOffline(samples.data(),count);
+        for(int i=0;i<count;++i){uint16_t value=uint16_t(samples[i]);pcm.put(char(value&255));pcm.put(char(value>>8));}
+        if(!pcm)throw std::runtime_error("Offline audio write failed");
+        audioSamples=target;
+      }
       if (!recordDir.empty() && frames % recordEvery == 0) {
         char filename[48];
         std::snprintf(filename, sizeof(filename), "/frame%05d.png", frames / recordEvery);

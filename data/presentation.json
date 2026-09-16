@@ -1,0 +1,1816 @@
+{
+  "lighting": {
+    "key": 0.8,
+    "fill": 0.66,
+    "rim": 0.23,
+    "exposure": 1.18,
+    "bloom": 0.65,
+    "shaft": 0.7,
+    "shaftStep": 6.0,
+    "shaftSpread": 0.28,
+    "shaftNoise": 0.22,
+    "shaftSpeed": 0.8,
+    "ao": 0.28,
+    "aoWidth": 9.0,
+    "fogSpeed": 4.0,
+    "fogHeight": 40.0,
+    "fogSpacing": 175.0,
+    "dof": 1.15,
+    "motionBlur": 0.65,
+    "grade": 0.035,
+    "focusParallax": 0.18
+  },
+  "combat": {
+    "headThreshold": 0.26,
+    "legThreshold": 0.73,
+    "headFlinch": 0.19,
+    "torsoFlinch": 0.13,
+    "legFlinch": 0.23,
+    "headAngle": 12.0,
+    "torsoAngle": 7.0,
+    "legSquash": 0.12,
+    "knockback": 6.0,
+    "hitStop": 0.025,
+    "heavyHitStop": 0.045,
+    "hitCooldown": 0.12,
+    "hitShake": 0.65,
+    "deathDuration": 0.65,
+    "deathTravel": 17.0,
+    "deathLift": 12.0,
+    "deathAngle": 58.0,
+    "impactParticles": 7.0,
+    "impactLife": 0.24,
+    "impactSpeed": 75.0,
+    "hitColor": "FFB19AFF",
+    "bloodColor": "BA655EFF",
+    "dustColor": "B2BFC6FF"
+  },
+  "audio": {
+    "falloff": 230.0,
+    "distantLowpass": 0.08,
+    "musicGain": 0.7,
+    "duck": 0.7,
+    "attack": 0.0015,
+    "release": 0.025,
+    "tail": 0.16,
+    "tailDelay": 0.025,
+    "emptyDuration": 0.075,
+    "emptyGain": 0.12,
+    "reloadGain": 0.15,
+    "impactGain": 0.19,
+    "discoveryGain": 0.15,
+    "reloadLatch": 0.55,
+    "reloadClose": 0.88,
+    "clickDecay": 65.0,
+    "impactDecay": 35.0,
+    "crackDecay": 180.0,
+    "tailDecay": 11.0,
+    "tailGain": 0.18,
+    "flamePulse": 72.0,
+    "flameDecay": 4.0,
+    "discoveryFrequency": 660.0,
+    "discoveryPitchRise": 660.0,
+    "discoveryDuration": 0.6
+  },
+  "maps": [
+    {
+      "keyColor": "8FBFCBFF",
+      "fillColor": "FFD09AFF",
+      "fogColor": "244355FF",
+      "edgeColor": "73989EFF",
+      "skyColor": "102333FF",
+      "fogDensity": 0.08,
+      "fogDrift": 1.0,
+      "textureGain": 0.85,
+      "alcoveLampX": 0.18,
+      "alcoveLampY": 0.22
+    },
+    {
+      "keyColor": "B9CDB0FF",
+      "fillColor": "DADEA5FF",
+      "fogColor": "536C61FF",
+      "edgeColor": "A1B09AFF",
+      "skyColor": "182E2AFF",
+      "fogDensity": 0.15,
+      "fogDrift": 0.6,
+      "textureGain": 0.88,
+      "alcoveLampX": 0.74,
+      "alcoveLampY": 0.17
+    },
+    {
+      "keyColor": "95BDDCFF",
+      "fillColor": "F1B67EFF",
+      "fogColor": "354C65FF",
+      "edgeColor": "9BADBEFF",
+      "skyColor": "172537FF",
+      "fogDensity": 0.065,
+      "fogDrift": 1.5,
+      "textureGain": 0.87,
+      "alcoveLampX": 0.86,
+      "alcoveLampY": 0.25
+    },
+    {
+      "keyColor": "FFA371FF",
+      "fillColor": "FFD4A3FF",
+      "fogColor": "78534AFF",
+      "edgeColor": "C6A282FF",
+      "skyColor": "301E22FF",
+      "fogDensity": 0.1,
+      "fogDrift": 0.7,
+      "textureGain": 0.95,
+      "alcoveLampX": 0.16,
+      "alcoveLampY": 0.18
+    },
+    {
+      "keyColor": "9DCEEDFF",
+      "fillColor": "C4E9FFFF",
+      "fogColor": "677D98FF",
+      "edgeColor": "CADCE6FF",
+      "skyColor": "1A2B42FF",
+      "fogDensity": 0.13,
+      "fogDrift": 1.2,
+      "textureGain": 0.96,
+      "alcoveLampX": 0.85,
+      "alcoveLampY": 0.16
+    },
+    {
+      "keyColor": "8BCCC3FF",
+      "fillColor": "ED856CFF",
+      "fogColor": "395850FF",
+      "edgeColor": "8FADA7FF",
+      "skyColor": "102E2DFF",
+      "fogDensity": 0.07,
+      "fogDrift": 0.4,
+      "textureGain": 0.82,
+      "alcoveLampX": 0.9,
+      "alcoveLampY": 0.14
+    }
+  ],
+  "weapons": [
+    {
+      "flashColor": "FFF1B4FF",
+      "tracerColor": "FFE7A8FF",
+      "flashLength": 9.0,
+      "flashWidth": 3.0,
+      "flashDuration": 0.05,
+      "tracerLength": 7.0,
+      "recoil": 1.2,
+      "casing": 1.0,
+      "casingLife": 0.48,
+      "casingSpeed": 48.0,
+      "magazine": 12.0,
+      "reload": 0.72,
+      "fireDuration": 0.14,
+      "frequency": 175.0,
+      "pitchDrop": -600.0,
+      "noise": 0.72,
+      "lowpass": 0.65,
+      "gain": 0.32,
+      "decay": 28.0,
+      "reloadPitch": 800.0,
+      "impactSize": 2.0
+    },
+    {
+      "flashColor": "FFBF62FF",
+      "tracerColor": "FFBE6CFF",
+      "flashLength": 14.0,
+      "flashWidth": 4.0,
+      "flashDuration": 0.045,
+      "tracerLength": 11.0,
+      "recoil": 1.9,
+      "casing": 1.0,
+      "casingLife": 0.48,
+      "casingSpeed": 48.0,
+      "magazine": 30.0,
+      "reload": 1.15,
+      "fireDuration": 0.16,
+      "frequency": 110.0,
+      "pitchDrop": -320.0,
+      "noise": 0.65,
+      "lowpass": 0.48,
+      "gain": 0.34,
+      "decay": 23.0,
+      "reloadPitch": 500.0,
+      "impactSize": 2.5
+    },
+    {
+      "flashColor": "FFE3A0FF",
+      "tracerColor": "FFF2CDFF",
+      "flashLength": 19.0,
+      "flashWidth": 8.0,
+      "flashDuration": 0.085,
+      "tracerLength": 4.0,
+      "recoil": 4.0,
+      "casing": 2.0,
+      "casingLife": 0.48,
+      "casingSpeed": 48.0,
+      "magazine": 6.0,
+      "reload": 1.25,
+      "fireDuration": 0.32,
+      "frequency": 65.0,
+      "pitchDrop": -120.0,
+      "noise": 0.85,
+      "lowpass": 0.3,
+      "gain": 0.48,
+      "decay": 14.0,
+      "reloadPitch": 320.0,
+      "impactSize": 3.0
+    },
+    {
+      "flashColor": "F79455FF",
+      "tracerColor": "ED995EFF",
+      "flashLength": 17.0,
+      "flashWidth": 7.0,
+      "flashDuration": 0.11,
+      "tracerLength": 12.0,
+      "recoil": 4.8,
+      "casing": 0.0,
+      "casingLife": 0.48,
+      "casingSpeed": 48.0,
+      "magazine": 1.0,
+      "reload": 1.3,
+      "fireDuration": 0.42,
+      "frequency": 48.0,
+      "pitchDrop": 45.0,
+      "noise": 0.8,
+      "lowpass": 0.13,
+      "gain": 0.4,
+      "decay": 8.0,
+      "reloadPitch": 170.0,
+      "impactSize": 5.0
+    },
+    {
+      "flashColor": "FF783EFF",
+      "tracerColor": "FF934BFF",
+      "flashLength": 14.0,
+      "flashWidth": 9.0,
+      "flashDuration": 0.1,
+      "tracerLength": 13.0,
+      "recoil": 1.0,
+      "casing": 0.0,
+      "casingLife": 0.48,
+      "casingSpeed": 48.0,
+      "magazine": 24.0,
+      "reload": 0.95,
+      "fireDuration": 0.27,
+      "frequency": 72.0,
+      "pitchDrop": 80.0,
+      "noise": 0.94,
+      "lowpass": 0.18,
+      "gain": 0.28,
+      "decay": 3.0,
+      "reloadPitch": 110.0,
+      "impactSize": 4.0
+    },
+    {
+      "flashColor": "81F3FFFF",
+      "tracerColor": "70E7FFFF",
+      "flashLength": 22.0,
+      "flashWidth": 2.0,
+      "flashDuration": 0.075,
+      "tracerLength": 24.0,
+      "recoil": 0.6,
+      "casing": 0.0,
+      "casingLife": 0.48,
+      "casingSpeed": 48.0,
+      "magazine": 8.0,
+      "reload": 0.85,
+      "fireDuration": 0.25,
+      "frequency": 950.0,
+      "pitchDrop": -2100.0,
+      "noise": 0.045,
+      "lowpass": 0.6,
+      "gain": 0.27,
+      "decay": 17.0,
+      "reloadPitch": 610.0,
+      "impactSize": 2.0
+    }
+  ],
+  "secrets": [
+    {
+      "map": 0.0,
+      "x": 1380,
+      "y": -50.04978038067355,
+      "radius": 27.0,
+      "kind": 0.0
+    },
+    {
+      "map": 4.0,
+      "x": 800,
+      "y": -96,
+      "radius": 27.0,
+      "kind": 1.0
+    }
+  ],
+  "discovery": {
+    "duration": 3.0,
+    "score": 250.0,
+    "plaqueWidth": 22.0,
+    "plaqueHeight": 9.0,
+    "flagWidth": 20.0,
+    "flagHeight": 13.0,
+    "color": "EDD9A4FF"
+  },
+  "environment": {
+    "fanSpeed": 0.9,
+    "terminalBlink": 2.0,
+    "fogWaveSpeed": 0.19,
+    "windowShaftSlant": 0.32,
+    "shaftRadiance": 24.0,
+    "sourceBloomRadius": 22.0,
+    "sourceBloomHeight": 10.0,
+    "skyDofAlpha": 44.0,
+    "motionAlpha": 25.0,
+    "alcoveSize": 56.0,
+    "alcoveSpacing": 108.0,
+    "alcoveGain": 0.84,
+    "alcoveLampRadius": 55.0,
+    "alcoveLampStrength": 0.36
+  },
+  "materials": {
+    "color75876AFF": "75876AFF",
+    "color4B675AFF": "4B675AFF",
+    "color7C9DB3FF": "7C9DB3FF",
+    "color0A1522FF": "0A1522FF",
+    "color687263FF": "687263FF",
+    "color172A28FF": "172A28FF",
+    "colorAFBEC7FF": "AFBEC7FF",
+    "color120C15FF": "120C15FF",
+    "colorC48A5588": "C48A5588",
+    "colorC9D9DFFF": "C9D9DFFF",
+    "color294255FF": "294255FF",
+    "color304F51FF": "304F51FF",
+    "color0A2024FF": "0A2024FF",
+    "color36434AFF": "36434AFF",
+    "colorADA793FF": "ADA793FF",
+    "color722B33FF": "722B33FF",
+    "color091822FF": "091822FF"
+  },
+  "camera": {
+    "anchorX": 155.0,
+    "lookAhead": 32.0,
+    "followSpeed": 5.5,
+    "verticalSpeed": 5.0,
+    "climbLook": 18.0,
+    "bossIntroDuration": 1.8,
+    "bossLift": 9.0,
+    "bossZoom": 1.025,
+    "climbZoom": 1.012,
+    "zoomSpeed": 2.8
+  },
+  "surface": {
+    "sampleStep": 12.0,
+    "wallIntensity": 28.0,
+    "floorIntensity": 85.0,
+    "specularIntensity": 115.0,
+    "wallRadius": 0.8,
+    "reflectionHeight": 6.0,
+    "lightReach": 1.65
+  },
+  "surfaceMaterials": [
+    {
+      "diffuse": 0.85,
+      "specular": 0.12,
+      "roughness": 0.9
+    },
+    {
+      "diffuse": 0.58,
+      "specular": 0.85,
+      "roughness": 0.25
+    },
+    {
+      "diffuse": 0.68,
+      "specular": 0.06,
+      "roughness": 1.0
+    }
+  ],
+  "hud": {
+    "healthDuration": 2.4,
+    "weaponDuration": 1.4,
+    "fadeDuration": 0.5,
+    "opacity": 0.8,
+    "margin": 14.0,
+    "healthColor": "D58F73FF",
+    "weaponColor": "CDC6B3FF"
+  },
+  "harborScene": {
+    "width": 720.0,
+    "sourceFloor": 0.658,
+    "sourceAspect": 1.7768331562167907
+  },
+  "harborLights": [
+    {
+      "x": 73.0,
+      "y": 8.0,
+      "radius": 85.0,
+      "strength": 0.5,
+      "color": "E5A66CFF"
+    },
+    {
+      "x": 117.0,
+      "y": 106.0,
+      "radius": 95.0,
+      "strength": 0.6,
+      "color": "F9BA7AFF"
+    },
+    {
+      "x": 278.0,
+      "y": 145.0,
+      "radius": 95.0,
+      "strength": 0.6,
+      "color": "EDB886FF"
+    },
+    {
+      "x": 452.0,
+      "y": 198.0,
+      "radius": 78.0,
+      "strength": 0.5,
+      "color": "FFC07EFF"
+    },
+    {
+      "x": 501.0,
+      "y": 173.0,
+      "radius": 70.0,
+      "strength": 0.5,
+      "color": "96C77AFF"
+    },
+    {
+      "x": 664.0,
+      "y": 189.0,
+      "radius": 92.0,
+      "strength": 0.5,
+      "color": "99CFDCFF"
+    }
+  ],
+  "scenePlates": [
+    {
+      "sourceFloor": 0.704,
+      "sourceAspect": 3
+    },
+    {
+      "sourceFloor": 0.69,
+      "sourceAspect": 3
+    },
+    {
+      "sourceFloor": 0.707,
+      "sourceAspect": 3
+    },
+    {
+      "sourceFloor": 0.707,
+      "sourceAspect": 3
+    },
+    {
+      "sourceFloor": 0.74,
+      "sourceAspect": 2.998618784530387
+    },
+    {
+      "sourceFloor": 0.727,
+      "sourceAspect": 3
+    }
+  ],
+  "sceneLights": [
+    {
+      "map": 0,
+      "x": 805,
+      "y": 12,
+      "radius": 95,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 1.4,
+      "color": "FFD09AFF"
+    },
+    {
+      "map": 0,
+      "x": 1065,
+      "y": 102,
+      "radius": 115,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 1.77,
+      "color": "FFD09AFF"
+    },
+    {
+      "map": 0,
+      "x": 1300,
+      "y": 160,
+      "radius": 125,
+      "strength": 0.36,
+      "window": 1,
+      "flicker": 0.035,
+      "rate": 2.1399999999999997,
+      "color": "8FBFCBFF"
+    },
+    {
+      "map": 0,
+      "x": 1610,
+      "y": 120,
+      "radius": 120,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.51,
+      "color": "FFD09AFF"
+    },
+    {
+      "map": 0,
+      "x": 1840,
+      "y": 75,
+      "radius": 130,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.88,
+      "color": "FFD09AFF"
+    },
+    {
+      "map": 1,
+      "x": 160,
+      "y": 50,
+      "radius": 110,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 1.4,
+      "color": "DADEA5FF"
+    },
+    {
+      "map": 1,
+      "x": 530,
+      "y": 84,
+      "radius": 150,
+      "strength": 0.36,
+      "window": 1,
+      "flicker": 0.035,
+      "rate": 1.77,
+      "color": "B9CDB0FF"
+    },
+    {
+      "map": 1,
+      "x": 840,
+      "y": 168,
+      "radius": 100,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.1399999999999997,
+      "color": "DADEA5FF"
+    },
+    {
+      "map": 1,
+      "x": 1230,
+      "y": 98,
+      "radius": 145,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.51,
+      "color": "DADEA5FF"
+    },
+    {
+      "map": 2,
+      "x": 150,
+      "y": 153,
+      "radius": 105,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 1.4,
+      "color": "F1B67EFF"
+    },
+    {
+      "map": 2,
+      "x": 550,
+      "y": 162,
+      "radius": 125,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 1.77,
+      "color": "F1B67EFF"
+    },
+    {
+      "map": 2,
+      "x": 1040,
+      "y": 110,
+      "radius": 130,
+      "strength": 0.36,
+      "window": 1,
+      "flicker": 0.035,
+      "rate": 2.1399999999999997,
+      "color": "95BDDCFF"
+    },
+    {
+      "map": 2,
+      "x": 1530,
+      "y": 145,
+      "radius": 130,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.51,
+      "color": "F1B67EFF"
+    },
+    {
+      "map": 3,
+      "x": 140,
+      "y": 90,
+      "radius": 145,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 1.4,
+      "color": "FFD4A3FF"
+    },
+    {
+      "map": 3,
+      "x": 630,
+      "y": 40,
+      "radius": 130,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 1.77,
+      "color": "FFD4A3FF"
+    },
+    {
+      "map": 3,
+      "x": 980,
+      "y": 167,
+      "radius": 115,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.1399999999999997,
+      "color": "FFD4A3FF"
+    },
+    {
+      "map": 3,
+      "x": 1370,
+      "y": 105,
+      "radius": 165,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.51,
+      "color": "FFD4A3FF"
+    },
+    {
+      "map": 4,
+      "x": 125,
+      "y": -30,
+      "radius": 150,
+      "strength": 0.36,
+      "window": 1,
+      "flicker": 0.035,
+      "rate": 1.4,
+      "color": "9DCEEDFF"
+    },
+    {
+      "map": 4,
+      "x": 655,
+      "y": -80,
+      "radius": 170,
+      "strength": 0.36,
+      "window": 1,
+      "flicker": 0.035,
+      "rate": 1.77,
+      "color": "9DCEEDFF"
+    },
+    {
+      "map": 4,
+      "x": 1100,
+      "y": 45,
+      "radius": 130,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.1399999999999997,
+      "color": "C4E9FFFF"
+    },
+    {
+      "map": 4,
+      "x": 1510,
+      "y": 120,
+      "radius": 130,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.51,
+      "color": "C4E9FFFF"
+    },
+    {
+      "map": 5,
+      "x": 200,
+      "y": 44,
+      "radius": 125,
+      "strength": 0.36,
+      "window": 1,
+      "flicker": 0.035,
+      "rate": 1.4,
+      "color": "8BCCC3FF"
+    },
+    {
+      "map": 5,
+      "x": 690,
+      "y": 157,
+      "radius": 90,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 1.77,
+      "color": "ED856CFF"
+    },
+    {
+      "map": 5,
+      "x": 1020,
+      "y": 83,
+      "radius": 145,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.1399999999999997,
+      "color": "ED856CFF"
+    },
+    {
+      "map": 5,
+      "x": 1610,
+      "y": 100,
+      "radius": 160,
+      "strength": 0.36,
+      "window": 0,
+      "flicker": 0.035,
+      "rate": 2.51,
+      "color": "ED856CFF"
+    }
+  ],
+  "effects": {
+    "explosionFrames": 8,
+    "explosionSize": 0.95,
+    "flameFps": 24,
+    "flameWidth": 25,
+    "flameHeight": 14,
+    "smokeOpacity": 0.28,
+    "enemyWalkFps": 10,
+    "reloadLean": 4,
+    "reloadDip": 3
+  },
+  "enemyTypes": [
+    {
+      "speed": 34,
+      "standOff": 150,
+      "patrol": 120,
+      "windup": 0.48,
+      "recovery": 0.85,
+      "projectileSpeed": 115,
+      "bob": 0,
+      "strafe": 0
+    },
+    {
+      "speed": 24,
+      "standOff": 205,
+      "patrol": 80,
+      "windup": 0.8,
+      "recovery": 1.5,
+      "projectileSpeed": 90,
+      "bob": 0,
+      "strafe": 1
+    },
+    {
+      "speed": 21,
+      "standOff": 60,
+      "patrol": 130,
+      "windup": 0.65,
+      "recovery": 1.1,
+      "projectileSpeed": 105,
+      "bob": 0,
+      "strafe": 0
+    },
+    {
+      "speed": 38,
+      "standOff": 160,
+      "patrol": 140,
+      "windup": 0.55,
+      "recovery": 1.2,
+      "projectileSpeed": 115,
+      "bob": 13,
+      "strafe": 1
+    },
+    {
+      "speed": 0,
+      "standOff": 0,
+      "patrol": 0,
+      "windup": 0.9,
+      "recovery": 1.6,
+      "projectileSpeed": 145,
+      "bob": 0,
+      "strafe": 0
+    }
+  ],
+  "guardImpact": {
+    "sparkCount": 4,
+    "sparkLife": 0.16,
+    "sparkSpeed": 46,
+    "sparkGravity": 120,
+    "sparkTrailTime": 0.022,
+    "sparkTrailMax": 2.5,
+    "sparkColor": "DEB985FF",
+    "landingPhase": 0.62,
+    "dustCount": 5,
+    "dustLife": 0.32,
+    "dustSpeed": 18,
+    "dustLift": 7,
+    "dustSize": 3.5,
+    "dustOpacity": 24,
+    "dustColor": "87999EFF",
+    "drag": 6,
+    "landingFrequency": 92,
+    "landingPitchDrop": -135,
+    "landingDuration": 0.18,
+    "landingGain": 0.19,
+    "landingNoise": 0.15,
+    "landingDecay": 22
+  },
+  "guardAction": {
+    "cellSize": 160,
+    "baseline": 156,
+    "renderSize": 95,
+    "strideLength": 48,
+    "attackDuration": 0.3,
+    "flashDuration": 0.07,
+    "lightRadius": 58,
+    "lightStrength": 0.72,
+    "lightColor": "FFD09AFF"
+  },
+  "guardPoseRoots": [
+    {
+      "x": 81.5
+    },
+    {
+      "x": 82.5
+    },
+    {
+      "x": 79
+    },
+    {
+      "x": 79
+    },
+    {
+      "x": 79
+    },
+    {
+      "x": 78
+    },
+    {
+      "x": 79
+    },
+    {
+      "x": 78.5
+    },
+    {
+      "x": 89
+    },
+    {
+      "x": 90
+    },
+    {
+      "x": 90
+    },
+    {
+      "x": 89.5
+    },
+    {
+      "x": 90.5
+    },
+    {
+      "x": 85
+    },
+    {
+      "x": 88.5
+    },
+    {
+      "x": 89
+    }
+  ],
+  "guardFireAnchors": [
+    {
+      "x": 53,
+      "y": 76,
+      "end": 0.035
+    },
+    {
+      "x": 44,
+      "y": 75,
+      "end": 0.07
+    },
+    {
+      "x": 42,
+      "y": 75.5,
+      "end": 0.16
+    },
+    {
+      "x": 41,
+      "y": 75.5,
+      "end": 0.3
+    }
+  ],
+  "guardReactions": {
+    "enabled": 1,
+    "cellSize": 160,
+    "baseline": 156,
+    "sourceScale": 0.54,
+    "renderSize": 95,
+    "headDuration": 0.34,
+    "torsoDuration": 0.3,
+    "legDuration": 0.46,
+    "flashDuration": 0.065,
+    "collapseDuration": 0.72,
+    "corpseHold": 0.45,
+    "fadeDuration": 0.35,
+    "hitTravel": 1.5,
+    "deathTravel": 8
+  },
+  "guardHitTimeline": [
+    {
+      "frame": 1,
+      "end": 0.2
+    },
+    {
+      "frame": 2,
+      "end": 0.5
+    },
+    {
+      "frame": 0,
+      "end": 0.78
+    },
+    {
+      "frame": 3,
+      "end": 1
+    },
+    {
+      "frame": 5,
+      "end": 0.2
+    },
+    {
+      "frame": 6,
+      "end": 0.55
+    },
+    {
+      "frame": 4,
+      "end": 0.8
+    },
+    {
+      "frame": 7,
+      "end": 1
+    },
+    {
+      "frame": 9,
+      "end": 0.2
+    },
+    {
+      "frame": 10,
+      "end": 0.5
+    },
+    {
+      "frame": 9,
+      "end": 0.78
+    },
+    {
+      "frame": 11,
+      "end": 1
+    }
+  ],
+  "guardDeathTimeline": [
+    {
+      "frame": 12,
+      "end": 0.09
+    },
+    {
+      "frame": 13,
+      "end": 0.2
+    },
+    {
+      "frame": 14,
+      "end": 0.33
+    },
+    {
+      "frame": 15,
+      "end": 0.48
+    },
+    {
+      "frame": 16,
+      "end": 0.62
+    },
+    {
+      "frame": 17,
+      "end": 0.77
+    },
+    {
+      "frame": 18,
+      "end": 0.9
+    },
+    {
+      "frame": 19,
+      "end": 1
+    }
+  ],
+  "heroLocomotion": {
+    "enabled": 1,
+    "cellSize": 160,
+    "baseline": 156,
+    "sourceScale": 0.405,
+    "renderSize": 100,
+    "strideLength": 88,
+    "acceleration": 1600,
+    "braking": 2000
+  },
+  "heroRunMuzzles": [
+    {
+      "x": 130,
+      "height": 186
+    },
+    {
+      "x": 135,
+      "height": 192
+    },
+    {
+      "x": 130,
+      "height": 192
+    },
+    {
+      "x": 128,
+      "height": 204
+    },
+    {
+      "x": 129,
+      "height": 197
+    },
+    {
+      "x": 126,
+      "height": 194
+    },
+    {
+      "x": 131,
+      "height": 194
+    },
+    {
+      "x": 118,
+      "height": 203
+    }
+  ],
+  "ironlineReview": {
+    "width": 720,
+    "roofY": 132,
+    "roofFraction": 0.273,
+    "bridgeStart": 335,
+    "bridgeEnd": 394,
+    "bridgeY": 148.7,
+    "heroStart": 145,
+    "firstGuard": 297,
+    "secondGuard": 610,
+    "exitX": 685,
+    "travelSpeed": 155,
+    "mountainDepth": 0.055,
+    "mountainWidth": 1050,
+    "mountainY": -65,
+    "forestDepth": 0.48,
+    "forestWidth": 650,
+    "forestY": 24,
+    "forestAlpha": 190,
+    "fogSpeed": 21,
+    "fogAlpha": 33,
+    "fogY": 135,
+    "fogColor": "7294ACFF",
+    "windCount": 18,
+    "windSpeed": 140,
+    "windColor": "A4C8DA50",
+    "cameraAnchor": 155,
+    "cameraResponse": 3.2,
+    "cameraMaxSpeed": 180,
+    "leadResponse": 3.5
+  },
+  "productionPlates": [
+    {
+      "enabled": 1,
+      "sourceFloor": 0.7569546120058566,
+      "sourceAspect": 3
+    },
+    {
+      "enabled": 1,
+      "sourceFloor": 0.725,
+      "sourceAspect": 3
+    },
+    {
+      "enabled": 0,
+      "sourceFloor": 0.73,
+      "sourceAspect": 3
+    },
+    {
+      "enabled": 0,
+      "sourceFloor": 0.778,
+      "sourceAspect": 3
+    },
+    {
+      "enabled": 1,
+      "sourceFloor": 0.84,
+      "sourceAspect": 3
+    },
+    {
+      "enabled": 1,
+      "sourceFloor": 0.793,
+      "sourceAspect": 3
+    }
+  ],
+  "productionStructures": {
+    "deckWidth": 80,
+    "postWidth": 12,
+    "postInset": 12,
+    "postSpacing": 128
+  },
+  "productionProps": {
+    "crateSize": 42,
+    "barrelSize": 36,
+    "supplySize": 32,
+    "beaconSize": 32,
+    "workerSize": 68,
+    "doorWidth": 64,
+    "doorHeight": 76,
+    "doorOpenDuration": 0.6,
+    "crateCollisionWidth": 34,
+    "crateCollisionHeight": 27,
+    "barrelCollisionWidth": 21,
+    "barrelCollisionHeight": 34
+  },
+  "productionDepth": {
+    "nearDepth": 1.045,
+    "floorMargin": 0.025,
+    "stripHeight": 2
+  },
+  "productionWeather": [
+    {
+      "map": 0,
+      "u0": 0.35,
+      "u1": 1,
+      "v0": 0,
+      "v1": 0.77,
+      "count": 68,
+      "speed": 0.28,
+      "slant": -0.003,
+      "length": 0.009,
+      "color": "8EAFC344"
+    },
+    {
+      "map": 1,
+      "u0": 0.315,
+      "u1": 0.605,
+      "v0": 0.52,
+      "v1": 0.713,
+      "count": 58,
+      "speed": 0.38,
+      "slant": 0.001,
+      "length": 0.005,
+      "color": "9EBCC55A"
+    },
+    {
+      "map": 4,
+      "u0": 0,
+      "u1": 1,
+      "v0": 0,
+      "v1": 0.83,
+      "count": 96,
+      "speed": 0.055,
+      "slant": -0.002,
+      "length": 0.0015,
+      "color": "BAD5DE8A"
+    },
+    {
+      "map": 5,
+      "u0": 0.63,
+      "u1": 0.97,
+      "v0": 0.05,
+      "v1": 0.79,
+      "count": 64,
+      "speed": 0.22,
+      "slant": -0.003,
+      "length": 0.008,
+      "color": "8DACB84A"
+    }
+  ],
+  "productionLights": [
+    {
+      "map": 1,
+      "u": 0.061,
+      "v": 0.485,
+      "radius": 130,
+      "strength": 0.46,
+      "color": "FFD295FF"
+    },
+    {
+      "map": 1,
+      "u": 0.212,
+      "v": 0.444,
+      "radius": 115,
+      "strength": 0.34,
+      "color": "FFD295FF"
+    },
+    {
+      "map": 1,
+      "u": 0.852,
+      "v": 0.42,
+      "radius": 180,
+      "strength": 0.4,
+      "color": "B0D8CCFF"
+    },
+    {
+      "map": 3,
+      "u": 0.082,
+      "v": 0.59,
+      "radius": 120,
+      "strength": 0.45,
+      "color": "FFD09AFF"
+    },
+    {
+      "map": 3,
+      "u": 0.356,
+      "v": 0.15,
+      "radius": 240,
+      "strength": 0.38,
+      "color": "81CAE7FF"
+    },
+    {
+      "map": 3,
+      "u": 0.815,
+      "v": 0.57,
+      "radius": 200,
+      "strength": 0.65,
+      "color": "FFB578FF"
+    },
+    {
+      "map": 4,
+      "u": 0.145,
+      "v": 0.664,
+      "radius": 135,
+      "strength": 0.5,
+      "color": "FFD89FFF"
+    },
+    {
+      "map": 4,
+      "u": 0.31,
+      "v": 0.642,
+      "radius": 115,
+      "strength": 0.44,
+      "color": "FFD89FFF"
+    },
+    {
+      "map": 4,
+      "u": 0.806,
+      "v": 0.433,
+      "radius": 175,
+      "strength": 0.44,
+      "color": "FFD89FFF"
+    },
+    {
+      "map": 5,
+      "u": 0.146,
+      "v": 0.574,
+      "radius": 130,
+      "strength": 0.4,
+      "color": "FFD7A0FF"
+    },
+    {
+      "map": 5,
+      "u": 0.32,
+      "v": 0.58,
+      "radius": 135,
+      "strength": 0.43,
+      "color": "FFD7A0FF"
+    },
+    {
+      "map": 5,
+      "u": 0.47,
+      "v": 0.441,
+      "radius": 150,
+      "strength": 0.32,
+      "color": "FFE1ADFF"
+    },
+    {
+      "map": 5,
+      "u": 0.925,
+      "v": 0.3,
+      "radius": 210,
+      "strength": 0.32,
+      "color": "93CDE4FF"
+    },
+    {
+      "map": 0,
+      "u": 0.0380859375,
+      "v": 0.21815519765739386,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.06103515625,
+      "v": 0.5739385065885798,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.18212890625,
+      "v": 0.554904831625183,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.19775390625,
+      "v": 0.24597364568081992,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.3193359375,
+      "v": 0.3850658857979502,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.3544921875,
+      "v": 0.664714494875549,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.45166015625,
+      "v": 0.34260614934114203,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.5419921875,
+      "v": 0.3850658857979502,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.6572265625,
+      "v": 0.5578330893118595,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.60400390625,
+      "v": 0.1698389458272328,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.791015625,
+      "v": 0.5871156661786238,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.888671875,
+      "v": 0.5095168374816984,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    },
+    {
+      "map": 0,
+      "u": 0.98974609375,
+      "v": 0.5534407027818448,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFBB7700"
+    }
+  ],
+  "forgeTitanCores": [
+    {
+      "x": 131,
+      "y": 225
+    },
+    {
+      "x": 131,
+      "y": 214
+    },
+    {
+      "x": 132,
+      "y": 225
+    },
+    {
+      "x": 130,
+      "y": 197
+    },
+    {
+      "x": 128,
+      "y": 281
+    },
+    {
+      "x": 128,
+      "y": 230
+    },
+    {
+      "x": 150,
+      "y": 266
+    },
+    {
+      "x": 130,
+      "y": 287
+    }
+  ],
+  "forgeTitanPoses": [
+    {
+      "frame": 0
+    },
+    {
+      "frame": 1
+    },
+    {
+      "frame": 0
+    },
+    {
+      "frame": 2
+    },
+    {
+      "frame": 0
+    },
+    {
+      "frame": 3
+    },
+    {
+      "frame": 3
+    },
+    {
+      "frame": 4
+    },
+    {
+      "frame": 4
+    },
+    {
+      "frame": 5
+    },
+    {
+      "frame": 5
+    },
+    {
+      "frame": 0
+    },
+    {
+      "frame": 6
+    },
+    {
+      "frame": 6
+    },
+    {
+      "frame": 7
+    },
+    {
+      "frame": 7
+    }
+  ],
+  "forgeTitan": {
+    "cellSize": 320,
+    "sourceScale": 0.66,
+    "baseline": 308,
+    "renderSize": 208,
+    "collisionWidth": 150,
+    "collisionHeight": 155,
+    "muzzleX": -23,
+    "muzzleY": -6
+  },
+  "foundryHall": {
+    "sourceFloor": 0.778,
+    "sourceAspect": 3,
+    "width": 1600,
+    "steamSpeed": 8,
+    "steamAlpha": 13,
+    "steamColor": "9CBAC4FF",
+    "emberCount": 20,
+    "emberSpeed": 16,
+    "emberColor": "FFB16C88"
+  },
+  "campaignPresentation": {
+    "enabled": 1,
+    "health": 6,
+    "exitHold": 0.8,
+    "cameraPanResponse": 4,
+    "cameraMaxSpeed": 200,
+    "cameraLeadResponse": 4,
+    "bossArenaInset": 24
+  },
+  "workshop": {
+    "width": 640,
+    "sourceAspect": 1.7768331562167907,
+    "sourceFloor": 0.71,
+    "cameraLift": 26,
+    "heroSize": 100,
+    "guardSize": 95,
+    "aimSize": 112,
+    "climbSize": 100,
+    "bodyScale": 1.65,
+    "guardScale": 1.6,
+    "heroStart": 205,
+    "guardStart": 535,
+    "exitX": 608,
+    "ambientGain": 1.18,
+    "foregroundDepth": 1.035,
+    "foregroundAlpha": 0.15
+  },
+  "workshopView": {
+    "leadResponse": 3.5,
+    "maxCameraSpeed": 180,
+    "nearDepth": 1.08,
+    "depthStart": 0.75,
+    "stripHeight": 1.0
+  },
+  "workshopCamera": {
+    "establishDuration": 2.0,
+    "establishZoom": 1.0,
+    "trackingZoom": 1.015,
+    "detailZoom": 1.075,
+    "combatZoom": 1.035,
+    "galleryZoom": 1.0,
+    "exitZoom": 1.065,
+    "panResponse": 3.2,
+    "verticalResponse": 2.4,
+    "zoomResponse": 1.5,
+    "maxZoomSpeed": 0.035,
+    "maxVerticalSpeed": 55,
+    "idleSpeed": 4,
+    "idleDelay": 1.3,
+    "detailStart": 140,
+    "detailEnd": 340,
+    "detailAnchor": 185,
+    "detailLift": -4,
+    "combatLift": -2,
+    "combatDistance": 220,
+    "combatHeight": 70,
+    "combatHold": 1.25,
+    "combatSubjectWeight": 0.45,
+    "galleryHeight": 140,
+    "galleryFootY": 145,
+    "safeLeft": 85,
+    "safeRight": 405
+  },
+  "workshopParallax": {
+    "depth": 0.22,
+    "width": 1280,
+    "originX": -250,
+    "originY": -100,
+    "transmission": 0.9,
+    "chromaThreshold": 6,
+    "chromaFeather": 16,
+    "darkThreshold": 24,
+    "darkFeather": 30,
+    "edgeFeather": 0.004,
+    "fogDepth": 0.42,
+    "fogSpeed": 4.0,
+    "fogWave": 0.17,
+    "fogAmplitude": 7,
+    "fogY": 120,
+    "fogWidth": 160,
+    "fogHeight": 30,
+    "fogSpacing": 200,
+    "fogCount": 6,
+    "fogAlpha": 24,
+    "fogColor": "6994A5FF"
+  },
+  "workshopApertures": [
+    {
+      "x": 0.278,
+      "y": 0.058,
+      "w": 0.084,
+      "h": 0.156
+    },
+    {
+      "x": 0.47,
+      "y": 0.057,
+      "w": 0.126,
+      "h": 0.3
+    },
+    {
+      "x": 0.512,
+      "y": 0.345,
+      "w": 0.084,
+      "h": 0.088
+    },
+    {
+      "x": 0.632,
+      "y": 0.058,
+      "w": 0.102,
+      "h": 0.44
+    }
+  ],
+  "workshopMotion": {
+    "rainPerPane": 9,
+    "rainSpeed": 0.18,
+    "rainLength": 0.01,
+    "rainSlant": -0.003,
+    "rainColor": "A6D5E33C",
+    "terminalSpeed": 1.7,
+    "terminalGain": 0.11,
+    "terminalRadius": 38,
+    "terminalColor": "88C974FF",
+    "terminalAlpha": 32,
+    "rippleSpeed": 0.55,
+    "rippleRadius": 6,
+    "rippleAlpha": 26
+  },
+  "workshopPanes": [
+    {
+      "x": 0.278,
+      "y": 0.079,
+      "w": 0.042,
+      "h": 0.16
+    },
+    {
+      "x": 0.327,
+      "y": 0.079,
+      "w": 0.025,
+      "h": 0.16
+    },
+    {
+      "x": 0.48,
+      "y": 0.063,
+      "w": 0.053,
+      "h": 0.253
+    },
+    {
+      "x": 0.552,
+      "y": 0.063,
+      "w": 0.045,
+      "h": 0.253
+    },
+    {
+      "x": 0.613,
+      "y": 0.063,
+      "w": 0.06,
+      "h": 0.253
+    },
+    {
+      "x": 0.687,
+      "y": 0.063,
+      "w": 0.046,
+      "h": 0.253
+    }
+  ],
+  "workshopScreens": [
+    {
+      "x": 0.089,
+      "y": 0.433,
+      "w": 0.018,
+      "h": 0.032
+    },
+    {
+      "x": 0.453,
+      "y": 0.49,
+      "w": 0.033,
+      "h": 0.048
+    }
+  ],
+  "workshopLights": [
+    {
+      "x": 66,
+      "y": 5,
+      "radius": 110,
+      "strength": 0.4,
+      "color": "FFC28FFF",
+      "window": 0
+    },
+    {
+      "x": 69,
+      "y": 98,
+      "radius": 100,
+      "strength": 0.4,
+      "color": "EFA568FF",
+      "window": 0
+    },
+    {
+      "x": 225,
+      "y": 130,
+      "radius": 105,
+      "strength": 0.6,
+      "color": "FFD49EFF",
+      "window": 0
+    },
+    {
+      "x": 270,
+      "y": 158,
+      "radius": 65,
+      "strength": 0.35,
+      "color": "8DCF83FF",
+      "window": 0
+    },
+    {
+      "x": 342,
+      "y": 187,
+      "radius": 90,
+      "strength": 0.55,
+      "color": "FFBC75FF",
+      "window": 0
+    },
+    {
+      "x": 595,
+      "y": 30,
+      "radius": 120,
+      "strength": 0.5,
+      "color": "F6AC6CFF",
+      "window": 0
+    },
+    {
+      "x": 448,
+      "y": 18,
+      "radius": 170,
+      "strength": 0.4,
+      "color": "A4D7EAFF",
+      "window": 1
+    }
+  ],
+  "harborBuiltScene": {
+    "sourceFloor": 0.7569546120058566,
+    "sourceAspect": 3,
+    "doorOpenDuration": 0.6,
+    "doorInterior": "05090EFF",
+    "doorShade": "101921FF"
+  },
+  "harborGalleries": [
+    {
+      "u0": 0,
+      "u1": 0.23876953125,
+      "v": 0.34699853587115664
+    },
+    {
+      "u0": 0.31640625,
+      "u1": 0.58837890625,
+      "v": 0.4685212298682284
+    },
+    {
+      "u0": 0.58837890625,
+      "u1": 0.79248046875,
+      "v": 0.3162518301610542
+    }
+  ],
+  "harborLadders": [
+    {
+      "u": 0.0439453125,
+      "gallery": 0
+    },
+    {
+      "u": 0.20849609375,
+      "gallery": 0
+    },
+    {
+      "u": 0.33935546875,
+      "gallery": 1
+    },
+    {
+      "u": 0.51513671875,
+      "gallery": 1
+    },
+    {
+      "u": 0.61279296875,
+      "gallery": 2
+    },
+    {
+      "u": 0.7001953125,
+      "gallery": 2
+    }
+  ],
+  "harborDoors": [
+    {
+      "u": 0.1708984375,
+      "v": 0.5973645680819912,
+      "w": 0.0224609375,
+      "h": 0.15666178623718888
+    },
+    {
+      "u": 0.6396484375,
+      "v": 0.6002928257686676,
+      "w": 0.0341796875,
+      "h": 0.15519765739385066
+    }
+  ]
+}

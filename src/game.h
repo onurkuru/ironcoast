@@ -13,7 +13,7 @@ bool overlap(Rect a, Rect b);
 bool segmentRect(float ax, float ay, float bx, float by, Rect r);
 struct Input {
   float move = 0;
-  bool up = false, down = false, jump = false, shoot = false, grenade = false, interact = false;
+  bool up = false, down = false, jump = false, shoot = false, grenade = false, interact = false, reload = false;
 };
 struct Platform {
   Rect box;
@@ -73,12 +73,14 @@ enum class Sound {
   Step,
   MetalStep,
   WaterStep,
-  Stomp
+  Stomp, Reload, Empty, Discovery, BodyLand
 };
+struct AudioEvent { Sound sound; float x, y; int weapon = -1; };
 struct Player {
   float x = 40, y = 232, vx = 0, vy = 0, shot = 0, inv = 0, action = 0, anim = 0;
   float prevX = 40, prevY = 232;
   float stride = 0, fireAge = 1;
+  float prevStride = 0, prevAnim = 0, prevClimbCycle = 0, prevFireAge = 1;
   float land = 0, recoil = 0, hitFlash = 0;
   float vehicleDeath = 0, vehicleDeathX = 0, vehicleDeathY = 232;
   float vehicleDeathVY = 0, prevVehicleDeathY = 232;
@@ -90,7 +92,12 @@ struct Player {
   int ladder = -1;
   float climbCycle = 0, ladderLock = 0, climbTransition = 0;
   int climbPose = 8;
+  int firedWeapon = 0;
+  int magazine = 12, magazineWeapon = 0;
+  float reloadTime = 0, healthNotice = 0;
+  float presentationScale = 1;
 };
+enum class HitZone { Head, Torso, Legs };
 struct Enemy {
   float x = 0, y = 0, baseY = 0, origin = 0, vy = 0, timer = 1, hurt = 0, death = 0;
   int kind = 0, hp = 1, maxhp = 1, dir = -1, state = 0;
@@ -98,17 +105,29 @@ struct Enemy {
   float prevX = 0, prevY = 0;
   int entrance = -1;
   float entryAge = 1, entryDelay = 0;
+  HitZone hitZone = HitZone::Torso;
+  int hitDir = 1;
+  float flinch = 0, flinchDuration = 0;
+  float deathDuration = 0;
+  float gait = 0;
+  float prevGait = 0;
+  float fireAge = 10, prevFireAge = 10;
+  bool landingEffectPlayed = false;
 };
 struct Bullet {
   float x = 0, y = 0, px = 0, py = 0, vx = 0, vy = 0, life = 0, r = 2, damage = 1;
   int kind = 0;
   bool hostile = false, alive = false;
+  int weapon = 0;
 };
 struct Particle {
+  static constexpr int GuardSpark=8, BodyDust=9;
   float x = 0, y = 0, vx = 0, vy = 0, life = 0, maxlife = 0, size = 0;
   int kind = 0;
   uint32_t color = 0;
   float prevX = 0, prevY = 0;
+  int variant = -1;
+  float floor = 0;
 };
 struct Item {
   float x, y;
@@ -130,6 +149,7 @@ struct Boss {
   BossState state = BossState::Enter;
   bool active = false, dead = false;
 };
+enum class WorkshopShot { Establishing, Tracking, Detail, Combat, Gallery, Exit };
 struct Game {
   Player player;
   Boss boss;
@@ -139,9 +159,31 @@ struct Game {
         vehicleX = 0;
   float prevCamera = 0, prevTime = 0;
   float cameraY = 0, prevCameraY = 0;
+  float cameraLead = 0;
+  float cameraIdle = 0, cameraCombatHold = 0, cameraSubjectX = 0;
+  WorkshopShot workshopShot = WorkshopShot::Establishing;
+  void updateWorkshopCamera(const Input &in, float dt);
+  float cameraZoom = 1, prevCameraZoom = 1;
   std::vector<float> entranceAges;
   float vehicleHatch = 0;
+  float hitStop = 0, hitCooldown = 0;
+  uint32_t discoveries = 0;
+  float discoveryTime = 0;
+  void updateDiscoveries(float dt);
   bool vehicleAvailable = true, debugInvincible = false;
+  bool workshopReview = false, workshopSecured = false;
+  bool ironlineReview = false;
+  bool cinematicReview() const { return workshopReview || ironlineReview; }
+  // Scene selection and actor presentation are independent: production play
+  // must not silently fall back to the older rig when a review room ends.
+  bool cinematicHero() const;
+  bool cinematicGuard(const Enemy &) const;
+  float enemyBodyScale(const Enemy &) const;
+  bool chapterSequence = false;
+  float sectionExitAge = 0;
+  void beginChapter(int index, bool keepScore = false);
+  bool advanceSection();
+  void updateIronlineCamera(float dt);
   uint32_t randomState = 1024;
   std::vector<Enemy> enemies;
   std::vector<Item> items;
@@ -149,20 +191,25 @@ struct Game {
   std::array<Bullet, 256> bullets{};
   std::array<Particle, 384> particles{};
   std::vector<Sound> sounds;
+  std::vector<AudioEvent> audioEvents;
   const Level &level() const;
-  void load(int index, bool keepScore = false, float startX = 40);
+  void load(int index, bool keepScore = false, float startX = 40, bool review = false, bool railReview = false);
   void retry();
   void update(Input input, float dt = DT);
   Rect playerBox() const;
   Rect enemyBox(const Enemy &) const;
+  Rect propBox(const Prop &) const;
   Rect bossBox() const;
+  HitZone hitZone(const Enemy &, const Bullet &) const;
   float floorAt(float x, float fromY = 0) const;
   void fire(float x, float y, float vx, float vy, float damage, int kind, bool hostile = false,
             float life = 2.0f);
+  void weaponEffect(float x, float y, int weapon, bool impact = false, bool audible = true);
+  void guardImpact(float x,float y,float floor,int direction,bool landing=false);
   void burst(float x, float y, int kind, int count = 12, float power = 1);
   void explosion(float x, float y, float radius, float damage, bool hostile = false);
   void hitPlayer();
-  void damageEnemy(Enemy &, float amount, bool explosive = false, int approach = 0);
+  void damageEnemy(Enemy &, float amount, bool explosive = false, int approach = 0, HitZone zone = HitZone::Torso);
   void damageBoss(float amount);
   void updateBoss(float dt);
   void fireBossVolley();

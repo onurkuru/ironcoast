@@ -1,4 +1,5 @@
 #include "render.h"
+#include "presentation_config.h"
 #include "animation.h"
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
@@ -56,14 +57,22 @@ static const std::map<char, std::array<unsigned char, 7>> FONT = {
 Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move(path)) {
   // Keep the authored grid cells intact. Per-cell trimming makes a pose with
   // an outstretched arm occupy a different visual scale from its idle pose.
-  hero = load("hero-v2.png", 8, 8, false);
-  enemies = load("enemies-v2.png", 8, 6, false);
+  hero = load("hero-cinematic-v2.png", 8, 8, false);
+  enemies = load("enemies-cinematic-v2.png", 8, 6, false);
   vehicle = load("vehicle-v2.png", 4, 4, false);
   for (int i = 0; i < 6; i++)
     bosses[i] = load("boss" + std::to_string(i) + "-v2.png", 4, 4, false);
+  effects = load("effects-cinematic-v2.png",8,4,false);
   props = load("props.png", 4, 4, false);
-  aim = load("aim-v2.png", 4, 3, false);
-  climb = load("climb-v2.png", 4, 3, false);
+  productionProps=load("production-props-v1.png",4,2,false);
+  productionStructures=load("production-structures-v1.png",4,2,true);
+  aim = load("aim-cinematic-v2.png", 4, 3, false);
+  climb = load("climb-cinematic-v2.png", 4, 3, false);
+  harborScene = load("harbor-cinematic-v1.png",1,1,false);
+  harborExterior = load("harbor-exterior-cinematic-v1.png",1,1,false);
+  alcoves = load("environment-alcoves-v1.png",3,2,false);
+  signature = load("ataturk-signature.png",1,1,false);
+  hiddenFlag = load("hidden-flag.png",1,1,false);
   architectureTiles = load("architecture-v1.png", 3, 2, false);
   // One small radial alpha mask is reused for lamps, fog and contact shadows.
   // No full-screen render targets or per-frame texture uploads are required.
@@ -83,13 +92,20 @@ Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move
     throw std::runtime_error(SDL_GetError());
 }
 Renderer::~Renderer() {
-  for (auto *a : {&hero, &enemies, &scenery, &props, &aim, &vehicle, &architectureTiles, &climb})
+  SDL_DestroyTexture(productionProps.texture);
+  SDL_DestroyTexture(productionStructures.texture);
+  SDL_DestroyTexture(forgeTitan.texture);SDL_DestroyTexture(foundryHall.texture);
+  SDL_DestroyTexture(ironlineTrain.texture);SDL_DestroyTexture(ironlineDistance.texture);
+  SDL_DestroyTexture(ironlineForest.texture);
+  SDL_DestroyTexture(heroLocomotion.texture);
+  SDL_DestroyTexture(guardReactions.texture);
+  for (auto *a : {&hero, &enemies, &scenery, &props, &aim, &vehicle, &architectureTiles, &climb, &signature, &hiddenFlag, &alcoves, &harborScene, &scenePlate, &harborExterior, &effects, &workshopHero, &workshopGuard, &workshopAim, &workshopClimb, &workshopPlate, &workshopShell, &workshopDistance})
     SDL_DestroyTexture(a->texture);
   for (auto &a : bosses)
     SDL_DestroyTexture(a.texture);
   SDL_DestroyTexture(lightMask);
 }
-Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, bool paperKey) {
+Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, bool paperKey, bool windowMatte) {
   Atlas a;
   a.cols = cols;
   a.rows = rows;
@@ -102,6 +118,30 @@ Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, boo
   // neutral paper background of the directional pose reference at render time.
   for (int i = 0; i < a.width * a.height; i++) {
     unsigned char *p = pixels + i * 4;
+    if(name=="ironline-carriages-review-v1.png" || name=="ironline-forest-review-v1.png") {
+      // Soft coverage and despill remove antialiased key edges after resizing.
+      // This import rule is restricted to the two opaque green-key assets.
+      int neutral=std::max(p[0],p[2]),spill=int(p[1])-neutral;
+      if(spill>12) {
+        float coverage=1-std::clamp((spill-12)/64.f,0.f,1.f);
+        p[3]=Uint8(p[3]*coverage);p[1]=Uint8(neutral);
+      }
+    }
+    if(windowMatte) {
+      // Build a color-derived glass matte once at load time. The source asset
+      // stays intact. Dark mullions, the hoist and warm interior props remain
+      // opaque; only blue glass inside authored apertures transmits distance.
+      const auto &v=tuning::workshopParallax;
+      float u=float(i%a.width)/a.width,w=float(i/a.width)/a.height;
+      float aperture=0;
+      for(const auto &pane:tuning::workshopApertures) {
+        float edge=std::min({u-pane.x,pane.x+pane.w-u,w-pane.y,pane.y+pane.h-w});
+        aperture=std::max(aperture,std::clamp(edge/v.edgeFeather,0.f,1.f));
+      }
+      float blue=std::clamp((std::min(p[2]-p[0],p[1]-p[0])-v.chromaThreshold)/v.chromaFeather,0.f,1.f);
+      float value=std::clamp((p[1]-v.darkThreshold)/v.darkFeather,0.f,1.f);
+      p[3]=Uint8(p[3]*(1-aperture*blue*value*v.transmission));
+    }
       bool whitePaper = std::min({p[0], p[1], p[2]}) > 210 &&
                         std::max({p[0], p[1], p[2]}) - std::min({p[0], p[1], p[2]}) < 22;
       bool greenPaper = p[1] > 210 && p[0] < 80 && p[2] < 80;
@@ -140,7 +180,7 @@ Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, boo
       bool visible = false;
       for (int y = y0; y < y1; y++)
         for (int x = x0; x < x1; x++)
-          if (pixels[(y * a.width + x) * 4 + 3] > 16) {
+          if (pixels[(y * a.width + x) * 4 + 3] > 0) {
             visible = true;
             visibleBottom = std::max(visibleBottom, y + 1);
           }
@@ -262,6 +302,13 @@ void Renderer::ring(float x, float y, float rx, float ry, uint32_t color) {
 }
 SDL_FPoint Renderer::bossCore(const Game &g, float camera, float alpha) const {
   int kind = g.level().bossKind, frame = bossFrame(g.boss, kind, alpha);
+  if(kind==3) {
+    // Core points are authored in the fixed 320px cells, tied to each pose.
+    const auto &rig=tuning::forgeTitan;
+    const auto point=tuning::forgeTitanCores[forgeTitanFrame(g.boss,alpha)];
+    return {between(g.boss.prevX,g.boss.x,alpha)-camera+(point.x-rig.cellSize/2)*rig.renderSize/rig.cellSize,
+            between(g.boss.prevY,g.boss.y,alpha)+(point.y-rig.baseline)*rig.renderSize/rig.cellSize};
+  }
   const auto &atlas = bosses[kind];
   float size = kind == 4 ? 142.0f : 152.0f;
   float x = between(g.boss.prevX, g.boss.x, alpha) - camera;
@@ -274,10 +321,11 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
   if (!b.active) return;
   int kind = g.level().bossKind, frame = bossFrame(b, kind, alpha);
   const auto pose = bossPose(b, kind, alpha);
-  const auto &atlas = bosses[kind];
+  const auto &atlas = kind==3?forgeTitan:bosses[kind];
+  if(kind==3)frame=forgeTitanFrame(b,alpha);
   float cx = between(b.prevX, b.x, alpha) - camera;
   float cy = between(b.prevY, b.y, alpha) + (kind == 4 && !b.dead ? 7 : 0);
-  float size = kind == 4 ? 142.0f : 152.0f;
+  float size = kind==3?tuning::forgeTitan.renderSize:kind == 4 ? 142.0f : 152.0f;
   auto core = bossCore(g, camera, alpha);
   uint8_t opacity = b.dead ? uint8_t(std::clamp(b.death * 180, 0.0f, 255.0f)) : 255;
   contactShadow(cx, cy, g.floorAt(b.x, cy - 2), kind == 4 ? 42 : 64);
@@ -325,30 +373,37 @@ void Renderer::collectLights(const Game &g, const Input &input, float camera, fl
   sceneTheme = g.levelIndex;
   world = &g; worldCamera = camera;
   lights.clear();
-  // Fixtures are anchored to world coordinates, including their light/shadow.
-  // Only a few can be visible at once; there is no screen-space drifting light.
-  int first = std::max(0, int((camera - 160) / 360));
-  for (int i = first; i < first + 4; ++i) {
-    float wx = 180 + i * 360.0f;
-    if (wx > g.level().width - 75)
-      continue;
-    float ground = g.floorAt(wx, 200);
-    if (ground > H || wx - camera > W + 120 || wx - camera < -120)
-      continue;
-    bool cool = sceneTheme == 4 || (i + sceneTheme) % 3 == 1;
-    uint32_t color = cool ? 0x72CFDF00 : sceneTheme == 1 ? 0xC6D99900 : 0xFFC07C00;
-    float strength = .94f + .025f * std::sin(time * 1.7f + i);
-    lights.push_back({wx - camera, ground - 76, ground, 102, strength, color, true});
+  if(g.ironlineReview) {
+    const auto &rail=tuning::ironlineReview;
+    lights.push_back({W*.55f,25,rail.roofY,260,.4f,0xA4C8DA00u,false});
+    for(float x:{75.f,245.f,540.f,705.f})
+      lights.push_back({x-camera,rail.roofY+55,rail.roofY,90,.24f,0xFFB26700u,false});
   }
-  for (const auto &b : g.level().buildings) {
-    if (b.style == 7 || b.box.x + b.box.w < camera - 100 || b.box.x > camera + W + 100) continue;
-    float wx = b.box.x + b.box.w * .55f;
-    lights.push_back({wx - camera, 176, g.floorAt(wx, 179), 68, .72f, 0xE8BA8200u, true});
-    lights.push_back({b.box.x + b.box.w * .8f - camera, b.box.y - 38,
-                      b.box.y, 65, .58f, 0x8FC5D000u, true});
-    if (b.box.y + 44 < 167)
-      lights.push_back({b.box.x + 78 - camera, b.box.y + 31, 232,
-                        82, .42f, 0xDEAF7400u, true, true});
+  // Authored practical emitters are registered to painted windows and lamps.
+  const bool production=tuning::productionPlates[g.levelIndex].enabled>0 || g.levelIndex==3;
+  if(!production && !g.cinematicReview() && g.levelIndex==0)for(const auto &l:tuning::harborLights)
+    lights.push_back({l.x-camera,l.y,232,l.radius,l.strength,l.color&0xFFFFFF00u,false});
+  for(const auto &l:tuning::sceneLights)if(!production && !g.cinematicReview() && int(l.map)==g.levelIndex && l.x>camera-l.radius && l.x<camera+W+l.radius) {
+    float pulse=1+l.flicker*std::sin(time*l.rate+l.x);
+    lights.push_back({l.x-camera,l.y,232,l.radius,l.strength*pulse,l.color&0xFFFFFF00u,false,l.window>0});
+  }
+  if(production && !g.cinematicReview())for(const auto &l:tuning::productionLights)if(int(l.map)==g.levelIndex) {
+    const auto &plate=tuning::productionPlates[g.levelIndex];
+    float aspect=g.levelIndex==3?tuning::foundryHall.sourceAspect:plate.sourceAspect;
+    float floor=g.levelIndex==3?tuning::foundryHall.sourceFloor:plate.sourceFloor;
+    float width=g.level().width,height=width/aspect,x=l.u*width,y=232+(l.v-floor)*height;
+    if(x>camera-l.radius && x<camera+W+l.radius)
+      lights.push_back({x-camera,y,232,l.radius,l.strength,l.color&0xFFFFFF00u,false,true});
+  }
+  if(g.workshopReview)for(const auto &l:tuning::workshopLights)
+    lights.push_back({l.x-camera,l.y,232,l.radius,l.strength*(1+.025f*std::sin(time*1.7f+l.x)),l.color&0xFFFFFF00u,false,l.window>0});
+  if(g.workshopReview)for(const auto &screen:tuning::workshopScreens) {
+    const auto &room=tuning::workshop;const auto &motion=tuning::workshopMotion;
+    float height=room.width/room.sourceAspect;
+    float pulse=.7f+.3f*std::sin(time*motion.terminalSpeed+screen.x*13);
+    lights.push_back({(screen.x+screen.w*.5f)*room.width-camera,
+      232-height*room.sourceFloor+(screen.y+screen.h*.5f)*height,232,
+      motion.terminalRadius,motion.terminalGain*pulse,motion.terminalColor&0xFFFFFF00u,false});
   }
   if (g.player.recoil > 0 && g.player.action <= 0 && g.player.ladder < 0 && g.status == Status::Play) {
     float x = between(g.player.prevX, g.player.x, alpha) - camera;
@@ -359,7 +414,16 @@ void Renderer::collectLights(const Game &g, const Input &input, float camera, fl
     auto muzzle = muzzlePoint(presentation, input);
     lights.push_back({muzzle.x - camera, muzzle.y, y, 60,
                       std::min(1.0f, g.player.recoil * 14),
-                      g.player.weapon == 5 ? 0x75E7EE00u : 0xFFD59700u, false});
+                      tuning::weapons[std::clamp(g.player.firedWeapon,0,5)].flashColor & 0xFFFFFF00u, false});
+  }
+  for(const auto &source:g.enemies) {
+    if(!g.cinematicGuard(source))continue;
+    auto enemy=interpolatedEnemy(source,alpha);
+    if(!guardFlashVisible(enemy))continue;
+    auto muzzle=guardMuzzle(enemy);const auto &rig=tuning::guardAction;
+    if(muzzle.x<camera-rig.lightRadius || muzzle.x>camera+W+rig.lightRadius)continue;
+    lights.push_back({muzzle.x-camera,muzzle.y,enemy.y,rig.lightRadius,
+      rig.lightStrength*(1-enemy.fireAge/rig.flashDuration),rig.lightColor&0xFFFFFF00u,false});
   }
   if (g.player.vehicleDeath > 0) {
     float fade = std::clamp(g.player.vehicleDeath / .48f, 0.0f, 1.0f);
@@ -386,19 +450,26 @@ void Renderer::collectLights(const Game &g, const Input &input, float camera, fl
   }
 }
 void Renderer::actorLight(const Atlas &atlas, float x, float y, bool hurt) {
-  float red = 183, green = 202, blue = 215;
+  const auto &p = tuning::lighting;
+  const auto &m = tuning::maps[sceneTheme];
+  float red = 255*p.fill, green = 255*p.fill, blue = 255*p.fill;
   for (const auto &light : lights) {
     if (world && world->lightBlocked(light.x + worldCamera, light.y, x + worldCamera, y)) continue;
     float dx = (x - light.x) / light.radius;
     float dy = (y - light.y) / (light.radius * 1.2f);
-    float amount = std::max(0.0f, 1 - dx * dx - dy * dy) * light.strength;
+    float amount = std::max(0.0f, 1 - dx * dx - dy * dy) * light.strength * p.key;
+    amount += p.rim * std::max(0.f, 1-std::fabs(dx)) * (light.y < y ? .5f : .1f);
     red += amount * ((light.color >> 24) / 255.0f) * 88;
     green += amount * (((light.color >> 16) & 255) / 255.0f) * 66;
     blue += amount * (((light.color >> 8) & 255) / 255.0f) * 43;
   }
-  SDL_SetTextureColorMod(atlas.texture, hurt ? 255 : Uint8(std::min(red, 255.0f)),
-                         hurt ? 172 : Uint8(std::min(green, 255.0f)),
-                         hurt ? 142 : Uint8(std::min(blue, 255.0f)));
+  if(world && world->cinematicHero()){red*=tuning::workshop.ambientGain;green*=tuning::workshop.ambientGain;blue*=tuning::workshop.ambientGain;}
+  red *= .85f + .15f*((m.keyColor>>24)/255.f);
+  green *= .85f + .15f*(((m.keyColor>>16)&255)/255.f);
+  blue *= .85f + .15f*(((m.keyColor>>8)&255)/255.f);
+  SDL_SetTextureColorMod(atlas.texture, hurt ? Uint8(tuning::combat.hitColor>>24) : Uint8(std::min(red, 255.0f)),
+                         hurt ? Uint8((tuning::combat.hitColor>>16)&255) : Uint8(std::min(green, 255.0f)),
+                         hurt ? Uint8((tuning::combat.hitColor>>8)&255) : Uint8(std::min(blue, 255.0f)));
 }
 void Renderer::contactShadow(float x, float feet, float ground, float width) {
   if (ground > H || ground < feet - 3)
@@ -431,6 +502,16 @@ void Renderer::background(int theme, float camera, float time) {
   float width = H * float(scenery.width) / scenery.height;
   float progress = std::clamp(camera / (campaign()[theme].width - W), 0.0f, 1.0f);
   sprite(scenery, 0, -(width - W) * progress, 0, width, H);
+  const float blur = tuning::lighting.dof;
+  if (blur > 0) {
+    // Defocus only distant scenery. Never sample an actor atlas neighbour.
+    for (int tap : {-1, 1})
+      sprite(scenery, 0, -(width-W)*progress+tap*blur, 0, width, H, false, 0, Uint8(tuning::environment.skyDofAlpha));
+  }
+  if (tuning::lighting.motionBlur > 0) {
+    float travel = backgroundMotion;
+    sprite(scenery,0,-(width-W)*progress-travel,0,width,H,false,0,Uint8(tuning::environment.motionAlpha));
+  }
   // Far harbor haze separates distant architecture from the playable lane.
   for (int i = 0; i < 3; ++i) {
     float x = i * 270.0f - std::fmod(camera * .24f + time * 2, 270.0f);
@@ -533,72 +614,44 @@ void Renderer::lightingPass(const Game &g, float, float, float) {
     SDL_RenderSetClipRect(r, hadClip ? &previousClip : nullptr);
   }
 }
-void Renderer::surfaceLights(const Game &g, float camera) {
-  for (const auto &platform : g.level().platforms) {
-    const auto &box = platform.box;
-    if (box.x + box.w < camera || box.x > camera + W)
-      continue;
-    for (const auto &light : lights) {
-      if (platform.material != 1 || light.y > box.y || box.y - light.y > 140 ||
-          g.lightBlocked(light.x + camera, light.y, light.x + camera, box.y - 1))
-        continue;
-      float start = std::max(box.x - camera, light.x - 62);
-      float end = std::min(box.x + box.w - camera, light.x + 62);
-      if (start >= end)
-        continue;
-      // Horizontal broken highlights stay clipped to solid ground, never gaps.
-      SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_ADD);
-      for (int row = 0; row < std::min(9, int(box.h)); ++row) {
-        float reach = (end - start) * (.32f + .045f * ((row * 7) % 9));
-        float center = (start + end) * .5f + std::sin(row * 4.1f) * 5;
-        float left = std::max(start, center - reach * .5f);
-        float right = std::min(end, center + reach * .5f);
-        rect(left, box.y + row, right - left, 1,
-             light.color | Uint8((row == 0 ? 68 : 27 - row * 2) * light.strength));
-      }
-      SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
-    }
-  }
-}
 
 void Renderer::drawGame(const Game &g, const ViewState &v) {
+  releaseSceneLayers(g);
+  if(g.cinematicHero())loadActors();
+  if(g.workshopReview)loadWorkshop();
+  if(g.levelIndex==3)loadFoundry();
+  Atlas &hero=g.cinematicHero()?workshopHero:this->hero;
+  Atlas &aim=g.cinematicHero()?workshopAim:this->aim;
+  Atlas &climb=g.cinematicHero()?workshopClimb:this->climb;
+  backgroundMotion=std::clamp((g.camera-g.prevCamera)*tuning::lighting.motionBlur,-3.f,3.f);
   const float alpha = std::clamp(v.interpolation, 0.0f, 1.0f);
   const float camera = between(g.prevCamera, g.camera, alpha);
   const float time = between(g.prevTime, g.time, alpha);
+  float baseScaleX,baseScaleY;SDL_RenderGetScale(r,&baseScaleX,&baseScaleY);
+  float zoom=between(g.prevCameraZoom,g.cameraZoom,alpha);
+  SDL_RenderSetScale(r,baseScaleX*zoom,baseScaleY*zoom);
   float sx = v.shake ? std::sin(time * 83) * g.shake : 0,
         sy = v.shake ? std::cos(time * 73) * g.shake * .5f : 0;
+  sx+=W*(1/zoom-1)*.5f;sy+=H*(1/zoom-1)*.5f;
   offsetX = sx;
   offsetY = sy;
   collectLights(g, v.input, camera, time, alpha);
   // Far scenery moves vertically at a smaller depth, while all playable
   // architecture, feet, shadows and lights use the exact same world camera.
   float cameraY = between(g.prevCameraY, g.cameraY, alpha);
-  offsetY = sy - cameraY * .18f;
+  offsetY = sy - cameraY * tuning::lighting.focusParallax;
   background(g.levelIndex, camera, time);
-  offsetY = sy - cameraY;
+  atmosphere(g, camera, time, false);
+  offsetY = sy - cameraY - (g.workshopReview?tuning::workshop.cameraLift:0.f);
+  cinematicHarbor(g,camera,time);
+  if(g.workshopReview)workshopMotion(camera,time);
   architecture(g, camera, time);
+  secretProps(g,camera);
+  wallLights(g,camera);
   lightingPass(g, camera, time, alpha);
+  cinematicLights(g, camera, time);
   const auto &l = g.level();
-  for (auto &p : l.platforms) {
-    float x = p.box.x - camera;
-    if (x + p.box.w < 0 || x > W)
-      continue;
-    int idx = l.theme;
-    SDL_SetTextureColorMod(props.texture, 107, 140, 160);
-    for (float t = 0; t < p.box.w; t += 32) {
-      float size = std::min(32.0f, p.box.w - t);
-      sprite(props, idx, x + t, p.box.y, size, p.box.h);
-    }
-    SDL_SetTextureColorMod(props.texture, 255, 255, 255);
-    rect(x, p.box.y, p.box.w, p.box.h, 0x0A17263E);
-    rect(x, p.box.y, p.box.w, std::min(p.box.h, 10.0f), 0x142531EC);
-    line(x, p.box.y, x + p.box.w, p.box.y, 0x799BA4FF);
-    line(x, p.box.y + 3, x + p.box.w, p.box.y + 3, 0x3A555FC0);
-    for (float joint = 32; joint < p.box.w; joint += 64)
-      line(x + joint, p.box.y + 1, x + joint - 2, p.box.y + 8, 0x0A141D98);
-    if (p.oneWay)
-      line(x, p.box.y + p.box.h, x + p.box.w, p.box.y + p.box.h, INK);
-  }
+  themedPlatforms(g, camera);
   surfaceLights(g, camera);
   wetSurfaces(g, camera, time);
   for (auto &h : l.hazards) {
@@ -631,11 +684,16 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     }
   }
   for (auto &p : g.props)
-    if (!p.dead && p.x > camera - 40 && p.x < camera + W + 40)
-      sprite(props, p.kind == 7 ? 6 : 7, p.x - camera - 14, p.y - 28, 28, 28);
+    if (!p.dead && p.x > camera - 40 && p.x < camera + W + 40) {
+      float size=p.kind==7?tuning::productionProps.crateSize:tuning::productionProps.barrelSize;
+      actorLight(productionProps,p.x-camera,p.y-size*.5f);
+      groundedSprite(productionProps,p.kind==7?0:1,p.x-camera-size/2,p.y-size,size,size);
+      SDL_SetTextureColorMod(productionProps.texture,255,255,255);
+    }
   for (float cp : l.checkpoints)
-    if (cp > camera - 25 && cp < camera + W + 25) {
-      sprite(props, 10, cp - camera - 9, 202, 18, 30);
+    if (!g.cinematicReview() && g.levelIndex!=0 && cp > camera - 25 && cp < camera + W + 25) {
+      float size=tuning::productionProps.beaconSize;
+      groundedSprite(productionProps,3,cp-camera-size/2,232-size,size,size);
       if (cp <= g.checkpoint)
         rect(cp - camera - 2, 204, 4, 3, TEAL);
     }
@@ -653,13 +711,16 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       x += run;
       actorLight(enemies, x, feet - 21, false);
       contactShadow(x, feet, feet, 13);
+      float size=tuning::productionProps.workerSize;
       groundedSprite(enemies, workerFrame(i.used, i.used ? i.anim : time),
-                     x - 21.5f, feet - 43, 43, 43, false, 0,
+                     x - size/2, feet - size, size, size, false, 0,
                      i.used ? uint8_t(255 * std::clamp((2 - i.anim) / .65f, 0.0f, 1.0f)) : 255);
       SDL_SetTextureColorMod(enemies.texture, 255, 255, 255);
     } else if (!i.used) {
       float y = i.y + std::sin(time * 4 + i.x) * 2;
-      sprite(props, i.kind == 4 ? 9 : 8, x - 11, y - 10, 22, 20);
+      const float feet=g.floorAt(i.x,i.y),size=tuning::productionProps.supplySize;
+      if(i.kind==4)sprite(props,9,x-9,feet-21,18,20);
+      else groundedSprite(productionProps,2,x-size/2,feet-size,size,size);
       const char *label = i.kind == 1   ? "H"
                           : i.kind == 2 ? "S"
                           : i.kind == 3 ? "R"
@@ -667,7 +728,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
                           : i.kind == 6 ? "F"
                           : i.kind == 9 ? "L"
                                         : "$";
-      text(label, x - 2, y - 5, 1, CREAM);
+      if (g.workshopReview) text(label, x - 2, y - 5, 1, CREAM);
     }
   }
   if (g.vehicleAvailable && g.vehicleX > camera - 80 && g.vehicleX < camera + W + 80) {
@@ -681,12 +742,14 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       text(controlHint("TRIANGLE", "E / TRIANGLE"), g.vehicleX - camera - 32, 155, 1, GOLD);
   }
   for (const auto &source : g.enemies) {
-    auto e = source;
-    e.x = between(source.prevX, source.x, alpha);
-    e.y = between(source.prevY, source.y, alpha);
+    auto e = interpolatedEnemy(source,alpha);
+    const bool authoredGuard=g.cinematicGuard(e);
+    Atlas &enemies=authoredGuard?workshopGuard:this->enemies;
     if ((e.dead && e.death <= 0) || !e.active || e.x < camera - 60 || e.x > camera + W + 60)
       continue;
-    float deathT = e.dead ? 1.0f - std::clamp(e.death / .45f, 0.0f, 1.0f) : 0.0f;
+    float life=e.deathDuration>0?e.deathDuration:tuning::combat.deathDuration;
+    float deathT = e.dead ? 1.0f - std::clamp(e.death / life, 0.0f, 1.0f) : 0.0f;
+    bool authoredReaction=authoredGuard && tuning::guardReactions.enabled>0 && (e.dead || e.flinch>0);
     // Full source poses: walk 0..3, attack 4, hurt 5, collapse 6/7.
     int frame = e.dead
                     ? (e.kind == 5 ? std::min(1, int(deathT * 2))
@@ -694,33 +757,74 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
                     : e.hurt > 0 ? 5
                     : e.state == 1 ? 3
                     : e.state == 2 ? 4
-                                    : int(time * 8 + e.origin) % 4;
+                                    : int(e.gait * tuning::effects.enemyWalkFps) % 4;
     int idx = e.kind * 8 + frame;
-    float h = e.kind == 3 ? 40 : 43, w = h;
+    if(authoredGuard) {
+      if(e.dead)idx=20+std::min(3,int(deathT*4));
+      else if(e.flinch>0)idx=16+int(e.hitZone);
+      else if(e.state==2 && e.fireAge<tuning::guardAction.attackDuration)idx=12+guardFirePhase(e);
+      else if(std::fabs(source.x-source.prevX)>.01f)idx=int(e.gait*8)%8;
+      else idx=8+int(time*3)%4;
+    }
+    float h = authoredGuard?tuning::workshop.guardSize:(e.kind == 3 ? 40 : 43)*g.enemyBodyScale(e), w = h;
     float drawW = w, drawH = h;
-    float yy = e.y - drawH - (e.dead ? std::sin(deathT * 3.14159f) * 12.0f : 0.0f);
-    double angle = 0;
-    uint8_t alpha = e.dead ? uint8_t(e.death / .45f * 255) : uint8_t(std::min(1.0f, e.entryAge / .45f) * 255);
+    const auto &reaction=tuning::combat;
+    float wave=e.dead?std::sin(deathT*3.14159f):std::sin((1-e.flinch/std::max(.001f,e.flinchDuration))*3.14159f);
+    if(!e.dead && e.flinch<=0)wave=0;
+    float visualX=e.x-camera+e.hitDir*wave*(e.dead?reaction.deathTravel:reaction.knockback);
+    if(!authoredReaction && !e.dead && e.hitZone==HitZone::Legs) drawH*=1-wave*reaction.legSquash;
+    float yy=e.y-drawH-(e.dead?wave*reaction.deathLift:0);
+    double angle=e.hitDir*wave*(e.dead?reaction.deathAngle:e.hitZone==HitZone::Head?reaction.headAngle:e.hitZone==HitZone::Torso?reaction.torsoAngle:0);
+    if(authoredGuard) {
+      // The authored hit/death frames already bend the body. Rotating their
+      // full atlas cells lifts the boots off the floor during a standing hit.
+      angle=0;yy=e.y-drawH;
+      visualX=e.x-camera+e.hitDir*wave*(e.dead?8:reaction.knockback);
+    }
+    // Lift the rotating full cell by its extra vertical extent, so its lowest
+    // painted foot cannot sink below the unchanged collision surface.
+    yy-=std::sin(std::fabs(angle)*.0174533f)*drawW*.5f;
+    uint8_t alpha = e.dead ? uint8_t(std::clamp(e.death/life,0.f,1.f)*255) : uint8_t(std::min(1.0f, e.entryAge / .45f) * 255);
     if (!e.dead)
       contactShadow(e.x - camera, e.y, g.floorAt(e.x, e.y - 2), drawW * .34f);
     else {
       uint8_t shadowAlpha = uint8_t(std::clamp((1.0f - deathT) * 80.0f, 0.0f, 80.0f));
-      rect(e.x - camera - drawW * .34f, e.y - 2, drawW * .68f, 2,
+      float shadowX=e.x-camera;
+      if(authoredReaction)shadowX+=e.hitDir*ease(enemyDeathElapsed(e)/tuning::guardReactions.collapseDuration)*tuning::guardReactions.deathTravel;
+      rect(shadowX - drawW * .34f, e.y - 2, drawW * .68f, 2,
            0x08131A00u | shadowAlpha);
     }
-    actorLight(enemies, e.x - camera, e.y - drawH * .5f, e.hurt > 0);
-    groundedSprite(enemies, idx, e.x - camera - drawW / 2, yy, drawW, drawH, e.dir > 0, angle, alpha);
-    if (!e.dead) reflection(g, enemies, idx, e.x - camera, e.y, drawW, e.dir > 0, camera, time);
-    SDL_SetTextureColorMod(enemies.texture, 255, 255, 255);
+    if(authoredReaction) {
+      const auto &rig=tuning::guardReactions;
+      int pose=guardReactionFrame(e);bool flip=guardReactionFlip(e);
+      // Monotonic collapse displacement: the corpse must not slide back as
+      // sin(deathT*pi) returns to zero. A hit uses only a small temporary shift.
+      float travel=e.dead?ease(enemyDeathElapsed(e)/rig.collapseDuration)*rig.deathTravel:wave*rig.hitTravel;
+      visualX=e.x-camera+e.hitDir*travel;
+      uint8_t opacity=e.dead?uint8_t(255*guardCorpseOpacity(e)):alpha;
+      actorLight(guardReactions,visualX,e.y-rig.renderSize*.5f,e.hurt>0);
+      sprite(guardReactions,pose,visualX-rig.renderSize/2,
+             e.y-rig.renderSize*rig.baseline/rig.cellSize,rig.renderSize,rig.renderSize,flip,0,opacity);
+      if(!e.dead)reflection(g,guardReactions,pose,visualX,e.y,rig.renderSize,flip,camera,time);
+      SDL_SetTextureColorMod(guardReactions.texture,255,255,255);
+    } else {
+      if(authoredGuard && !e.dead && e.flinch<=0) {
+        visualX=guardPoseX(e,idx)-camera;
+        drawW=drawH=tuning::guardAction.renderSize;yy=e.y-drawH;
+      }
+      actorLight(enemies, e.x - camera, e.y - drawH * .5f, e.hurt > 0);
+      groundedSprite(enemies, idx, visualX - drawW / 2, yy, drawW, drawH, e.dir > 0, angle, alpha);
+      if (!e.dead && e.flinch<=0) reflection(g, enemies, idx, visualX, e.y, drawW, e.dir > 0, camera, time);
+      SDL_SetTextureColorMod(enemies.texture, 255, 255, 255);
+    }
     if (e.state == 1 && !e.dead) {
-      text("!", e.x - camera - 2, yy - 10, 1, GOLD);
+      if(!authoredGuard)text("!", e.x - camera - 2, yy - 10, 1, GOLD);
     }
   }
   drawBoss(g, camera, alpha);
-  auto p = g.player;
-  p.anim = std::max(0.0f, p.anim - DT * (1 - alpha));
-  float playerX = p.prevX + (p.x - p.prevX) * alpha;
-  float playerY = p.prevY + (p.y - p.prevY) * alpha;
+  auto p = interpolatedPlayer(g.player,alpha);
+  float playerX = p.x;
+  float playerY = p.y;
   // Use interpolated coordinates for every presentation anchor, including
   // flashes. This keeps a 120 Hz desktop render from showing the effect one
   // fixed-step behind the sprite.
@@ -756,7 +860,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       // Every normal player pose shares one 48x48 ground box. The stable
       // baseline prevents visual size pops when switching between aim, fire,
       // grenade, melee and jump poses.
-      constexpr float playerW = 48.0f, playerH = 48.0f;
+      const float playerW = g.cinematicHero()?tuning::workshop.heroSize:48.f, playerH = playerW;
       float w = playerW, h = playerH;
       // Authored poses provide the body motion. Moving the entire grounded
       // quad down for breathing/landing buries the feet below the floor.
@@ -771,6 +875,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         float deathT = std::clamp(1.0f - g.deathTimer, 0.0f, 1.0f);
         static constexpr int deathFrames[] = {48, 49, 50, 51, 52, 53, 54, 54};
         frame = deathFrames[std::min(7, int(deathT * 8))];
+        if(g.cinematicHero())frame=48+std::min(5,int(deathT*7));
         y = playerY - h;
         angle = 0;
       } else if (p.ladder >= 0 || p.climbTransition > 0) {
@@ -778,7 +883,8 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         static constexpr int cycle[] = {0, 1, 2, 4, 0, 1, 2, 4};
         int cell = p.climbTransition > 0 ? p.climbPose : cycle[step];
         actorLight(climb, px, playerY - 24, p.hitFlash > 0);
-        groundedSprite(climb, cell, px - 24, playerY - 48, 48, 48,
+        float cs=g.cinematicHero()?tuning::workshop.climbSize:48.f;
+        groundedSprite(climb, cell, px - cs/2, playerY - cs, cs, cs,
                        p.climbTransition <= 0 && step >= 4);
         SDL_SetTextureColorMod(climb.texture, 255, 255, 255);
         frame = -1;
@@ -792,7 +898,8 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
                       : 8 + int(p.anim * 9) % 4;
         // The directional atlas includes the raised gun above a body of the
         // same height as hero. Its larger padded canvas preserves that scale.
-        groundedSprite(aim, idx, px - 28, playerY - 56, 56, 56, p.dir < 0);
+        float as=g.cinematicHero()?tuning::workshop.aimSize:56.f;
+        groundedSprite(aim, idx, px-as/2, playerY-as, as, as, p.dir < 0);
         frame = -1;
       } else if (!p.grounded) {
         // Row 2 is a mixed transition strip: cell 16 is a crouch settle and
@@ -811,34 +918,58 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
           frame = crouchIdleFrames[int(p.anim * 5) % 3];
         }
       } else if (std::fabs(p.vx) > 1 && (v.input.shoot || p.shot > 0)) {
-        static constexpr int runFireFrames[] = {56, 57, 58, 59, 60, 61, 62, 62};
+        static constexpr int runFireFrames[] = {56, 57, 58, 59, 60, 61, 62, 63};
         frame = runFireFrames[int(p.stride * 8) % 8];
       } else if (std::fabs(p.vx) > 1) {
-        static constexpr int runFrames[] = {0, 1, 2, 3, 4, 5, 6, 6};
+        static constexpr int runFrames[] = {0, 1, 2, 3, 4, 5, 6, 7};
         frame = runFrames[int(p.stride * 8) % 8];
       } else if (v.input.shoot || p.shot > 0) {
         frame = 12 + std::min(3, int(p.fireAge * 28));
       }
       if (frame >= 0) {
-        groundedSprite(hero, frame, px - w / 2, y, w, h, p.dir < 0, angle);
-        if (p.grounded) reflection(g, hero, frame, px, playerY, w, p.dir < 0, camera, time);
+        const auto &wp=tuning::weapons[std::clamp(p.firedWeapon,0,5)];
+        float kick=std::max(0.f,1-p.fireAge/wp.flashDuration)*wp.recoil;
+        if(!g.cinematicHero())px -= p.dir*kick;
+        if(g.cinematicHero() && (useHeroLocomotion(p) || useHeroAirFire(p,v.input)) && g.status==Status::Play) {
+          const auto &rig=tuning::heroLocomotion;
+          int pose=heroFirePhase(p)+(v.input.shoot || p.shot>0?8:0);
+          actorLight(heroLocomotion,px,playerY-30,p.hitFlash>0);
+          // Preserve the authored flight height. Per-cell bottom alignment
+          // would pull both airborne boots back down to the roof every cycle.
+          sprite(heroLocomotion,pose,px-rig.renderSize/2,
+                 playerY-rig.renderSize*rig.baseline/rig.cellSize,
+                 rig.renderSize,rig.renderSize,p.dir<0);
+          if(p.grounded)reflection(g,heroLocomotion,pose,px,playerY,rig.renderSize,p.dir<0,camera,time);
+          SDL_SetTextureColorMod(heroLocomotion.texture,255,255,255);
+        } else {
+          groundedSprite(hero, frame, px - w / 2, y, w, h, p.dir < 0, angle);
+          if (p.grounded) reflection(g, hero, frame, px, playerY, w, p.dir < 0, camera, time);
+        }
         SDL_SetTextureColorMod(hero.texture, 255, 255, 255);
       }
-      if (p.recoil > 0 && (v.input.shoot || p.shot > 0) && p.action <= 0) {
+      const auto &profile=tuning::weapons[std::clamp(p.firedWeapon,0,5)];
+      if (p.fireAge < profile.flashDuration && p.action <= 0 && p.ladder < 0) {
         auto muzzle = muzzlePoint(p, v.input);
-        float fx = muzzle.x - camera, fy = muzzle.y;
-        if (muzzle.vertical) {
-          rect(fx - 2, fy - 4, 4, 8, CREAM);
-          rect(fx - 1, fy + (v.input.down ? 3 : -7), 2, 4, GOLD);
-        } else {
-          rect(fx - 3, fy - 2, 7, 4, CREAM);
-          rect(fx + p.dir * 3 - 2, fy - 1, 4, 2, GOLD);
+        float fx=muzzle.x-camera, fy=muzzle.y;
+        float fade=1-p.fireAge/profile.flashDuration;
+        float length=profile.flashLength*(.65f+.35f*fade), width=profile.flashWidth*fade;
+        float dx=muzzle.vertical?0.f:float(p.dir), dy=muzzle.vertical?(v.input.down?1.f:-1.f):0.f;
+        for(int ray=-1;ray<=1;++ray) {
+          float spread=ray*width;
+          line(fx,fy,fx+dx*length-dy*spread,fy+dy*length+dx*spread,profile.flashColor);
         }
+        softLight(fx,fy,profile.flashLength,profile.flashWidth*2,profile.flashColor,Uint8(fade*100));
+      }
+      if (p.reloadTime>0 && !g.cinematicHero()) {
+        float f=1-p.reloadTime/profile.reload;
+        rect(px-10,playerY-49,20,2,0x142531FF);
+        rect(px-10,playerY-49,20*f,2,profile.tracerColor);
       }
     }
   }
   for (const auto *atlas : {&hero, &aim, &vehicle})
     SDL_SetTextureColorMod(atlas->texture, 255, 255, 255);
+  atmosphere(g, camera, time, true);
   // Cosmetic smoke is rendered before hostile projectiles so threats stay visible.
   for (const auto &source : g.particles) {
     auto part = source;
@@ -846,10 +977,31 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     part.y = between(source.prevY, source.y, alpha);
     if (part.life > 0 && part.x > camera - 100 && part.x < camera + W + 100) {
       float x = part.x - camera, age = 1 - part.life / part.maxlife;
-      if (part.kind == 3) {
-        int idx = 12 + std::min(3, int(age * 4));
-        float s = part.size * (.55f + age * .6f);
-        sprite(props, idx, x - s / 2, part.y - s / 2, s, s, false, 0,
+      if(part.kind==Particle::GuardSpark) {
+        const auto &c=tuning::guardImpact;
+        float speed=std::hypot(part.vx,part.vy);
+        float tail=std::min(c.sparkTrailTime,c.sparkTrailMax/std::max(1.f,speed));
+        uint32_t color=(part.color&0xFFFFFF00u)|uint32_t((1-age)*220);
+        line(x,part.y,x-part.vx*tail,part.y-part.vy*tail,color);
+      } else if(part.kind==Particle::BodyDust) {
+        float w=part.size*(1+age),h=part.size*.45f;
+        float y=std::min(part.y,part.floor-h);
+        softLight(x,y,w,h,part.color,Uint8((1-age)*tuning::guardImpact.dustOpacity),false);
+      } else if (part.kind >= 5) {
+        uint32_t color=(part.color&0xFFFFFF00u)|uint32_t((1-age)*255);
+        if(part.kind==5) {
+          float a=age*12; line(x,part.y,x+std::cos(a)*part.size*2,part.y+std::sin(a)*part.size*2,color);
+        } else if(part.kind==7) softLight(x,part.y,part.size*(1+age),part.size,part.color,Uint8((1-age)*45),false);
+        else {
+          line(x,part.y,x-part.vx*.02f,part.y-part.vy*.02f,color);
+          if(part.variant==5)line(x,part.y-part.size,x,part.y+part.size,color);
+          else if(part.variant==4)softLight(x,part.y,part.size*(1+age),part.size,part.color,Uint8((1-age)*70));
+          else if(part.variant>=0)rect(x,part.y,std::max(1.f,part.size*(1-age)),std::max(1.f,part.size*(1-age)),color);
+        }
+      } else if (part.kind == 3) {
+        int idx = std::min(7, int(age * tuning::effects.explosionFrames));
+        float s = part.size * tuning::effects.explosionSize * (1 + age * .25f);
+        sprite(effects, idx, x - s / 2, part.y - s / 2, s, s, false, 0,
                uint8_t(std::min(255.0f, part.life * 600)));
       } else if (part.kind == 1) {
         rect(x - part.size / 2, part.y - part.size / 2, part.size, part.size,
@@ -875,17 +1027,19 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       if (b.kind == 3) {
         rect(x - 3, b.y - 3, 6, 6, b.hostile ? RED : 0x9DB65AFF);
         rect(x - 1, b.y - 4, 2, 2, CREAM);
+      } else if (b.hostile && g.cinematicHero()) {
+        float length=4,angle=std::atan2(b.vy,b.vx);
+        line(x,b.y,x-std::cos(angle)*length,b.y-std::sin(angle)*length,0xFFE4B5FF);
+        softLight(x,b.y,4,2,0xFFB16AFF,65);
       } else if (b.hostile) {
         rect(x - 4, b.y - 4, 8, 8, INK);
         rect(x - 3, b.y - 3, 6, 6, b.kind == 5 ? TEAL : RED);
         rect(x - 1, b.y - 1, 2, 2, CREAM);
       } else if (b.kind == 7) {
-        bool vertical = std::fabs(b.vy) > std::fabs(b.vx);
-        float len = 13 + std::sin(time * 45 + b.x * .03f) * 3;
-        rect(x - (vertical ? 2 : len / 2), b.y - (vertical ? len / 2 : 2), vertical ? 4 : len,
-             vertical ? len : 4, 0xFF8B36FF);
-        rect(x - (vertical ? 1 : len / 2), b.y - (vertical ? len / 2 : 1), vertical ? 2 : len,
-             vertical ? len : 2, 0xFFE6A0FF);
+        float angle=std::atan2(b.vy,b.vx)*180/3.141593f;
+        int frame=8+int(time*tuning::effects.flameFps+b.x*.07f)%8;
+        sprite(effects,frame,x-tuning::effects.flameWidth*.5f,b.y-tuning::effects.flameHeight*.5f,
+               tuning::effects.flameWidth,tuning::effects.flameHeight,false,angle);
       } else if (b.kind == 8) {
         bool vertical = std::fabs(b.vy) > std::fabs(b.vx);
         float len = 17;
@@ -894,70 +1048,25 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         rect(x - (vertical ? 1 : len / 2), b.y - (vertical ? len / 2 : 1), vertical ? 2 : len,
              vertical ? len : 2, CREAM);
       } else {
-        float len = b.kind == 2 ? 9 : 5;
+        const auto &wp=tuning::weapons[std::clamp(b.weapon,0,5)];
+        float len = wp.tracerLength;
         bool vertical = std::fabs(b.vy) > std::fabs(b.vx);
         rect(x - (vertical ? 1 : len / 2), b.y - (vertical ? len / 2 : 1), vertical ? 2 : len,
-             vertical ? len : 2, CREAM);
-        rect(x - 1, b.y - 1, 2, 2, GOLD);
+             vertical ? len : 2, wp.tracerColor);
+        rect(x - 1, b.y - 1, 2, 2, wp.flashColor);
       }
     }
   }
-  foregroundDepth(g.levelIndex, camera, time);
+  // Foreground silhouettes are authored into the scene plate; no repeating fascia.
+
+  cinematicGrade(g);
+  SDL_RenderSetScale(r,baseScaleX,baseScaleY);
   offsetX = offsetY = 0;
-  rect(0, 0, 480, 27, 0x0B1828EC);
-  rect(0, 26, 480, 1, 0xC39449FF);
-  text("DENIZ", 10, 5, 1, TEAL);
-  text("LIVES " + std::to_string(p.lives), 10, 16, 1, CREAM);
-  text("HP", 58, 16, 1, CREAM);
-  for (int i = 0; i < p.maxHealth; i++)
-    rect(72 + i * 5, 16, 4, 5, i < p.health ? TEAL : 0x2C4856FF);
-  const char *weapon = p.vehicleHP     ? "SCRAP WALKER"
-                       : p.weapon == 0 ? "PISTOL"
-                       : p.weapon == 1 ? "HEAVY MG"
-                       : p.weapon == 2 ? "SHOTGUN"
-                       : p.weapon == 3 ? "ROCKET"
-                       : p.weapon == 4 ? "FLAME SHOT"
-                                       : "LASER";
-  text(weapon, 94, 5, 1, GOLD);
-  text(p.weapon == 0 || p.vehicleHP ? "AMMO --" : "AMMO " + std::to_string(p.ammo), 94, 16, 1,
-       CREAM);
-  text("GRENADES " + std::to_string(p.grenades), 205, 5, 1, CREAM);
-  text("RESCUE " + std::to_string(g.rescued) + "/3", 205, 16, 1, TEAL);
-  char score[30];
-  std::snprintf(score, sizeof(score), "%07d", g.score);
-  text(score, 310, 5, 2, CREAM);
-  text(std::to_string(g.levelIndex + 1) + "/6", 449, 5, 1, GOLD);
-  text("II", 456, 16, 1, CREAM);
-  rect(0, 269, 480, 3, 0x0A1525BB);
-  rect(0, 269, 480 * p.x / l.width, 2, TEAL);
-  if (p.vehicleHP) {
-    for (int i = 0; i < 3; i++)
-      rect(9 + i * 15, 32, 12, 4, i < p.vehicleHP ? TEAL : 0x2C4856FF);
-  }
-  if (g.boss.active && !g.boss.dead) {
-    rect(95, 35, 290, 16, 0x0A182CE6);
-    text(l.bossName, 103, 38, 1, CREAM);
-    rect(103, 48, 274, 3, 0x633F3AFF);
-    rect(103, 48, 274 * g.boss.hp / g.boss.maxhp, 3, g.boss.phase == 2 ? RED : GOLD);
-  } else if (time < 5) {
-    text(l.subtitle, 12, 35, 1, GOLD);
-    text(controlHint("MOVE: D-PAD  JUMP: CROSS  FIRE: SQUARE  GRENADE: R",
-                     "MOVE: ARROWS  JUMP: Z  FIRE: X  GRENADE: C"), 12, 249, 1, CREAM);
-  } else if (g.player.x > l.width * .45f && g.player.x < l.width * .55f) {
-    rect(7, 34, 466, 25, 0x071C29DC);
-    wrapped(l.radio, 14, 40, 1, 450, TEAL);
-  }
-  for (const auto &ladder : l.ladders)
-    if (std::fabs(p.x - ladder.x) < 20 && p.y >= ladder.top - 2 && p.y <= ladder.bottom + 2) {
-      text("UP / DOWN: CLIMB   JUMP: RELEASE", 118, 238, 1, TEAL);
-      break;
-    }
-  if (v.assist)
-    text("TRAINING", 10, 238, 1, TEAL);
-  if (g.flash > 0 && v.shake)
-    rect(0, 27, 480, 245, 0xF4D8A030);
+  contextualHud(g,v);
+  if (g.flash > 0 && v.shake) rect(0,0,W,H,0xF4D8A030);
 }
 void Renderer::render(const Game &g, const ViewState &v) {
+  backgroundMotion=0;
   SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
   SDL_SetRenderDrawColor(r, 8, 18, 28, 255);
   SDL_RenderClear(r);
@@ -968,6 +1077,8 @@ void Renderer::render(const Game &g, const ViewState &v) {
   } else
     background(v.selected, v.clock * 12, v.clock);
   if (v.screen == Screen::Title) {
+    loadWorkshop();
+    sprite(workshopPlate,0,0,0,W,H);
     rect(0, 0, 480, 272, 0x06132162);
     rect(0, 0, 480, 7, INK);
     rect(0, 265, 480, 7, INK);
@@ -977,8 +1088,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     text("COAST", 25, 92, 5, 0xA55531FF);
     text("COAST", 22, 88, 5, GOLD);
     text("ONE COAST. SIX FRONTS. ONE LAST SIGNAL.", 26, 135, 1, CREAM);
-    text("READY", 383, 30, 1, TEAL);
-    sprite(hero, 12 + int(v.clock * 5) % 4, 365, 123, 88, 91);
+    groundedSprite(workshopHero,8+int(v.clock*3)%4,330,96,100,100);
     const char *opts[] = {"START CAMPAIGN", "CAMPAIGN MAP", "SETTINGS", "CONTROLS", "EXIT"};
     for (int i = 0; i < 5; i++) {
       if (v.menu == i) {
@@ -989,7 +1099,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
            v.menu == i ? GOLD : CREAM);
     }
     text(controlHint("CROSS  SELECT", "ENTER / X  SELECT"), 26, 248, 1, TEAL);
-    text("PS VITA + DESKTOP", 337, 249, 1, CREAM);
+    text("PS VITA HOMEBREW", 337, 249, 1, CREAM);
   }
   if (v.screen == Screen::Map) {
     rect(0, 0, 480, 272, 0x061525E8);
@@ -1030,14 +1140,21 @@ void Renderer::render(const Game &g, const ViewState &v) {
     wrapped(l.brief1, 33, 91, 1, 405, CREAM);
     wrapped(l.brief2, 33, 132, 1, 405, CREAM);
     text("OBJECTIVE: " + l.bossName, 33, 185, 1, RED);
-    text("RESCUE 3 WORKERS / DESTROY THE COMMAND NODE", 33, 202, 1, TEAL);
+    static constexpr const char *routes[]={"UPPER GALLERIES / WORKER EXTRACTION",
+      "PUMP WALKWAYS / TOXIC VENT CYCLES","ROOF BOARDING / SHIELD FLANKS",
+      "COOLING GANTRIES / PRESS TIMING","VERTICAL ASCENT / DRONE AMBUSHES",
+      "ARMORED DECKS / FINAL GRID SHUTDOWN"};
+    text(routes[v.selected], 33, 202, 1, TEAL);
     text(controlHint("CROSS  DEPLOY", "ENTER / X  DEPLOY"), 33, 231, 1, GOLD);
   }
   if (v.screen == Screen::Pause) {
     rect(0, 0, 480, 272, 0x071320C8);
     text("PAUSED", 167, 79, 4, CREAM);
     text(controlHint("CROSS / START  RESUME", "ENTER / START   RESUME"), 149, 131, 1, GOLD);
-    text("M   TOGGLE SOUND", 149, 152, 1, CREAM);
+    text(controlHint("SOUND: MAIN MENU SETTINGS","M   TOGGLE SOUND"), 149, 152, 1, CREAM);
+    text("LIVES "+std::to_string(g.player.lives)+"  HEALTH "+std::to_string(g.player.health)+"  SCORE "+std::to_string(g.score),90,210,1,CREAM);
+    text("AMMO "+(g.player.weapon?std::to_string(g.player.ammo):std::string("UNLIMITED"))+"  GRENADES "+std::to_string(g.player.grenades)+"  RESCUED "+std::to_string(g.rescued)+"/3",90,224,1,CREAM);
+    text(g.level().name,90,238,1,GOLD);
     text(controlHint("CIRCLE  MAIN MENU", "ESC / O   MAIN MENU"), 149, 173, 1, CREAM);
   }
   if (v.screen == Screen::Play && g.status == Status::GameOver) {
@@ -1053,7 +1170,8 @@ void Renderer::render(const Game &g, const ViewState &v) {
     text("SCORE  " + std::to_string(g.score), 35, 128, 2, CREAM);
     text("RESCUED  " + std::to_string(g.rescued) + " / 3", 35, 153, 1, TEAL);
     text("ENEMIES  " + std::to_string(g.kills), 35, 172, 1, CREAM);
-    text(controlHint("CROSS  NEXT MISSION", "ENTER / X  NEXT MISSION"), 35, 228, 1, GOLD);
+    text(g.levelIndex==5?controlHint("CROSS  EPILOGUE","ENTER / X  EPILOGUE"):
+         controlHint("CROSS  NEXT MISSION", "ENTER / X  NEXT MISSION"), 35, 228, 1, GOLD);
   }
   if (v.screen == Screen::Ending) {
     rect(0, 0, 480, 272, 0x071A27E8);
@@ -1076,7 +1194,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     std::vector<std::string> opts = {
         std::string("SOUND: ") + (v.muted ? "OFF" : "ON"),
         std::string("SCREEN SHAKE: ") + (v.shake ? "ON" : "OFF"),
-        std::string("MODE: ") + (v.assist ? "TRAINING / NO DAMAGE" : "ARCADE / 3 HP"),
+        std::string("MODE: ") + (v.assist ? "TRAINING / NO DAMAGE" : "ARCADE / "+std::to_string(int(tuning::campaignPresentation.health))+" HP"),
         std::string("FULLSCREEN: ") + (v.fullscreen ? "ON" : "OFF"), "BACK"};
     for (int i = 0; i < 5; i++)
       text((v.menu == i ? "> " : "  ") + opts[i], 30, 91 + i * 25, 1, i == v.menu ? GOLD : CREAM);
@@ -1090,7 +1208,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
                          "JUMP         CROSS",
                          "FIRE         SQUARE",
                          "GRENADE      CIRCLE / R",
-                         "VEHICLE      TRIANGLE",
+                         "INTERACT     TRIANGLE / RELOAD L",
                          "AIM UP       UP + SQUARE",
                          "AIM DOWN     AIR DOWN + SQUARE",
                          "PAUSE        START"};
@@ -1099,7 +1217,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
                           "JUMP         Z / SPACE          X (CROSS)",
                           "FIRE         X / J              SQUARE",
                           "GRENADE      C / K              CIRCLE / R",
-                          "VEHICLE      E                  TRIANGLE",
+                          "INTERACT E / TRIANGLE  RELOAD R / L",
                           "AIM UP       UP + FIRE          UP + SQUARE",
                           "AIM DOWN     AIR DOWN + FIRE     AIR DOWN + SQUARE",
                           "PAUSE        ESC                START"};
@@ -1113,10 +1231,10 @@ void Renderer::render(const Game &g, const ViewState &v) {
     // Keep small character details clear; only the frame edges are shaded.
     for (int i = 0; i < 8; i++) {
       uint32_t shade = 0x020A1014 | uint32_t((18 - i * 2) & 255);
-      rect(0, 27 + i, 480, 1, shade);
+      rect(0, i, 480, 1, shade);
       rect(0, 264 - i, 480, 1, shade);
-      rect(i, 27, 1, 237, shade);
-      rect(479 - i, 27, 1, 237, shade);
+      rect(i, 0, 1, 272, shade);
+      rect(479 - i, 0, 1, 272, shade);
     }
   }
 }

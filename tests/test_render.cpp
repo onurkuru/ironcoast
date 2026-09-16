@@ -10,11 +10,43 @@ using namespace kh;
 
 namespace kh {
 struct RendererAudit {
+  static void railBackdrop(Renderer &renderer,const Game &game,float time) {
+    renderer.offsetX=renderer.offsetY=0;renderer.ironlineScene(game,0,time);
+  }
+  static void depthPlate(Renderer &renderer,const Game &game,float camera,float time=0) {
+    renderer.loadWorkshop();
+    renderer.offsetY=-26; // same workshop camera lift as drawGame
+    renderer.cinematicHarbor(game,camera,time);
+    renderer.offsetY=0;
+  }
   static std::vector<std::pair<std::string, const Atlas *>> atlases(const Renderer &r) {
     std::vector<std::pair<std::string, const Atlas *>> result = {
         {"hero", &r.hero}, {"climb", &r.climb}, {"enemies", &r.enemies}, {"aim", &r.aim}, {"vehicle", &r.vehicle}};
     for (int i = 0; i < 6; ++i) result.push_back({"boss" + std::to_string(i), &r.bosses[i]});
     return result;
+  }
+  static void surfaceResponse(Renderer &renderer) {
+    auto energy=[&](int x,int y) {
+      Uint8 pixel[4]{};SDL_Rect area{x*2,y*2,1,1};
+      if(SDL_RenderReadPixels(renderer.r,&area,SDL_PIXELFORMAT_RGBA32,pixel,4))throw std::runtime_error(SDL_GetError());
+      return int(pixel[0])+int(pixel[1])+int(pixel[2]);
+    };
+    auto clear=[&](){SDL_SetRenderDrawColor(renderer.r,0,0,0,255);SDL_RenderClear(renderer.r);};
+    int responses[3]{};
+    for(int theme=0;theme<3;++theme) {
+      Game g;g.load(theme);clear();renderer.lights={{80,155,232,130,1,0xFFD09000,true}};
+      renderer.surfaceLights(g,0);responses[theme]=energy(80,234);
+      if(responses[theme]<=0)throw std::runtime_error("A floor material does not receive light");
+    }
+    if(responses[0]==responses[1] && responses[1]==responses[2])throw std::runtime_error("Material light response is identical");
+    Game g;g.load(0);clear();
+    const auto &roof=g.level().platforms.at(1).box;
+    float coveredX=roof.x+roof.w*.5f;
+    renderer.lights={{coveredX,roof.y-30,232,400,1,0xFFD09000,true}};
+    renderer.surfaceLights(g,0);
+    if(energy(int(coveredX),234)!=0)throw std::runtime_error("Lamp light leaked through a solid roof");
+    clear();renderer.lights={{365,185,232,100,1,0xFFD09000,true}};renderer.wallLights(g,0);
+    if(energy(365,210)<=0)throw std::runtime_error("Wall failed to receive local light");
   }
   static void reflect(Renderer &r, const Game &g, bool flip) {
     const auto &wet = g.level().puddles.front();
@@ -27,10 +59,19 @@ struct RendererAudit {
     p.y = between(p.prevY, p.y, alpha);
     const auto muzzle = muzzlePoint(p, input);
     if (p.recoil > 0 && p.action <= 0) {
-      auto it = std::find_if(r.lights.begin(), r.lights.end(), [](const auto &l) { return !l.fixture; });
+      auto it = std::find_if(r.lights.begin(), r.lights.end(), [&](const auto &l) { return !l.fixture && std::fabs(l.x-(muzzle.x-camera))<.01f && std::fabs(l.y-muzzle.y)<.01f; });
       if (it == r.lights.end() || std::fabs(it->x - (muzzle.x - camera)) > .01f ||
           std::fabs(it->y - muzzle.y) > .01f)
         throw std::runtime_error("Muzzle light detached from the interpolated shot origin");
+    }
+    if(g.cinematicReview())for(const auto &source:g.enemies) {
+      auto e=interpolatedEnemy(source,alpha);
+      if(!guardFlashVisible(e))continue;
+      auto muzzle=guardMuzzle(e);
+      auto it=std::find_if(r.lights.begin(),r.lights.end(),[&](const auto &l){
+        return !l.fixture && std::fabs(l.x-(muzzle.x-camera))<.001f && std::fabs(l.y-muzzle.y)<.001f;
+      });
+      if(it==r.lights.end())throw std::runtime_error("Enemy flash light detached from barrel pose");
     }
     for (const auto &l : r.lights)
       if (!std::isfinite(l.strength) || l.strength < 0 || l.strength > 1.1f)
@@ -70,7 +111,84 @@ int main(int argc, char **argv) {
     ViewState view;
     view.screen = Screen::Play;
     view.interpolation = 1;
+    {
+      Game room;room.load(0,false,205,true);
+      RendererAudit::depthPlate(renderer,room,0);auto a=pixels();
+      RendererAudit::depthPlate(renderer,room,80);auto b=pixels();
+      int nearChanges=0;
+      for(int x=80;x<780;++x) {
+        if(a[300*960+x+160]!=b[300*960+x])
+          throw std::runtime_error("Perspective moved the wall/contact plane independently");
+        nearChanges+=a[530*960+x+160]!=b[530*960+x];
+      }
+      if(nearChanges<10)throw std::runtime_error("Near plane has no independent perspective movement");
+      int distanceChanges=0;
+      // Compare the same world-space glass region under an 80-unit pan.
+      // The wall must match above, while the transmitted harbor must move.
+      for(int x=660;x<740;++x)
+        distanceChanges+=a[120*960+x+160]!=b[120*960+x];
+      if(distanceChanges<10)throw std::runtime_error("Distant harbor is attached to the wall");
+      RendererAudit::depthPlate(renderer,room,80,4);auto movingFog=pixels();
+      if(movingFog==b)throw std::runtime_error("Window atmosphere has no independent motion");
+      RendererAudit::depthPlate(renderer,room,80);auto repeated=pixels();
+      if(repeated!=b)throw std::runtime_error("Window composite accumulates frame history");
+    }
+    // The recovered room must animate without accumulating old actor pixels.
+    Game workshop;workshop.load(0,false,205,true);workshop.player.inv=0;
+    workshop.player.grounded=true;workshop.syncPresentation();
+    renderer.render(workshop,view);auto quiet=pixels();
+    Game later=workshop;later.time=1.25f;later.syncPresentation();
+    renderer.render(later,view);
+    if(pixels()==quiet)throw std::runtime_error("Workshop environment is static");
+    renderer.render(workshop,view);
+    if(pixels()!=quiet)throw std::runtime_error("Workshop animation leaked previous frame state");
+    {
+      Game hit=workshop;hit.enemies.clear();
+      Enemy e;e.active=true;e.x=e.prevX=325;e.y=e.prevY=232;
+      e.flinch=e.flinchDuration=.34f;e.hitZone=HitZone::Head;
+      hit.enemies.push_back(e);renderer.render(hit,view);auto impact=pixels();
+      hit.enemies.front().flinch=.14f;renderer.render(hit,view);auto recovery=pixels();
+      if(recovery==impact)throw std::runtime_error("Guard reaction does not change its rendered pose");
+      auto &corpse=hit.enemies.front();corpse.dead=true;corpse.deathDuration=1.52f;corpse.death=.2f;
+      renderer.render(hit,view);
+      hit.enemies.front()=e;renderer.render(hit,view);
+      if(pixels()!=impact)throw std::runtime_error("Faded corpse leaks alpha or pixels into next guard pose");
+      auto &firing=hit.enemies.front();firing.flinch=0;firing.state=2;firing.fireAge=0;firing.prevFireAge=1;
+      RendererAudit::lights(renderer,hit,{},0,.5f);
+      renderer.render(hit,view);auto shot=pixels();
+      firing.fireAge=firing.prevFireAge=.2f;renderer.render(hit,view);
+      if(pixels()==shot)throw std::runtime_error("Enemy muzzle flash never expires");
+      firing.fireAge=0;firing.prevFireAge=1;renderer.render(hit,view);
+      if(pixels()!=shot)throw std::runtime_error("Enemy flash light retains frame history");
+    }
+    {
+      Game gallery;gallery.load(0,false,40,true);gallery.enemies.clear();gallery.player.inv=0;
+      Input up;up.up=true;
+      for(int frame=0;frame<230;++frame)gallery.update(up);
+      gallery.syncPresentation();renderer.render(gallery,view);
+      if(gallery.workshopShot!=WorkshopShot::Gallery)throw std::runtime_error("Gallery capture did not reach upper framing");
+      if(argc>2)renderer.screenshot(std::string(argv[2])+"/workshop-gallery-camera.png");
+    }
     Game original;
+    {
+      Game rail;rail.load(2,false,145,false,true);
+      RendererAudit::railBackdrop(renderer,rail,0);auto start=pixels();
+      for(Uint32 packed:start) {
+        const auto *p=reinterpret_cast<const Uint8*>(&packed);
+        if(p[1]>p[0]+40 && p[1]>p[2]+40)
+          throw std::runtime_error("Chroma green leaked into train composite");
+      }
+      RendererAudit::railBackdrop(renderer,rail,2);auto travel=pixels();
+      int distantMovement=0;
+      for(int x=20;x<640;++x) {
+        distantMovement+=start[80*960+x]!=travel[80*960+x];
+        if(start[400*960+x]!=travel[400*960+x])
+          throw std::runtime_error("Train body moved with the landscape");
+      }
+      if(distantMovement<50)throw std::runtime_error("Train landscape is stationary while player is idle");
+      RendererAudit::railBackdrop(renderer,rail,0);
+      if(pixels()!=start)throw std::runtime_error("Train parallax leaves previous frame artifacts");
+    }
     original.load(0);
     original.player.inv = 0;
     original.player.grounded = true;
@@ -222,7 +340,7 @@ int main(int argc, char **argv) {
         if (image[y*960+x] != image[0]) {
           ++reflected;
           if (x < wet.x*2 || x >= (wet.x+wet.w)*2 || y <= wet.y*2 || y >= (wet.y+wet.h)*2)
-            throw std::runtime_error("Reflection escaped wet-surface mask");
+            throw std::runtime_error("Reflection escaped wet-surface mask at " + std::to_string(x) + "," + std::to_string(y) + " bounds " + std::to_string(wet.x*2) + "," + std::to_string(wet.y*2) + ".." + std::to_string((wet.x+wet.w)*2) + "," + std::to_string((wet.y+wet.h)*2));
         }
       if (!reflected) throw std::runtime_error("Missing character reflection");
     }
@@ -350,6 +468,23 @@ int main(int argc, char **argv) {
       if (argc > 2)
         renderer.screenshot(std::string(argv[2]) + "/boss-death-" + std::to_string(stage) + ".png");
     }
+    for(int stage=0;stage<6;++stage) {
+      Game scene;scene.load(stage,false,900);scene.time=6;scene.player.inv=0;scene.syncPresentation();
+      view.screen=Screen::Play;view.interpolation=1;view.input={};
+      renderer.render(scene,view);
+      if(argc>2)renderer.screenshot(std::string(argv[2])+"/cinematic-map-"+std::to_string(stage)+".png");
+    }
+    for(int weapon=0;weapon<6;++weapon) {
+      Game scene;scene.load(0,false,450);scene.player.weapon=scene.player.firedWeapon=weapon;scene.player.inv=0;
+      scene.player.fireAge=.01f;scene.player.recoil=.1f;scene.syncPresentation();view.input.shoot=true;
+      renderer.render(scene,view);
+      if(argc>2)renderer.screenshot(std::string(argv[2])+"/weapon-"+std::to_string(weapon)+".png");
+    }
+    RendererAudit::surfaceResponse(renderer);
+    Game framed=original;framed.cameraZoom=framed.prevCameraZoom=1.025f;
+    float sx,sy,afterX,afterY;SDL_RenderGetScale(device,&sx,&sy);
+    renderer.render(framed,view);SDL_RenderGetScale(device,&afterX,&afterY);
+    if(sx!=afterX || sy!=afterY)throw std::runtime_error("Cinematic framing leaked scale into HUD or next frame");
     view.input = Input{};
     view.screen = Screen::Pause;
     renderer.render(original, view);

@@ -134,6 +134,9 @@ def prepare_mapped(source_dir: Path, target_dir: Path, actor: str,
             for cx, cy in manifest["cores"][:12]:
                 draw.ellipse((cx - 12, cy - 12, cx + 12, cy + 12), fill=255)
             source.paste(original, (0, 0), protected)
+    if manifest.get("alpha_cutoff", 0):
+        cutoff = manifest["alpha_cutoff"]
+        source.putalpha(source.getchannel("A").point(lambda a: a if a >= cutoff else 0))
     if list(source.size) != manifest["source_size"]:
         raise ValueError(f"{actor} source dimensions changed; review the explicit pose map")
     size = manifest["cell_size"]
@@ -145,6 +148,9 @@ def prepare_mapped(source_dir: Path, target_dir: Path, actor: str,
             pose = source.crop(tuple(poses[min(col, len(poses) - 1)]))
             if manifest.get("clean_edges", False):
                 pose = remove_boundary_bleed(pose, min_area=1)
+            if manifest.get("reanchor_cleaned", False):
+                visible = pose.getchannel("A").getbbox()
+                if visible: pose = pose.crop((0,0,pose.width,visible[3]))
             width = round(pose.width * manifest["scale"])
             height = round(pose.height * manifest["scale"])
             if width > size - 4 or height > manifest["baseline"] - 2:

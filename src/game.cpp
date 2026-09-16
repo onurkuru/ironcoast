@@ -1,4 +1,5 @@
 #include "game.h"
+#include "presentation_config.h"
 #include "animation.h"
 #include <algorithm>
 #include <cmath>
@@ -23,7 +24,9 @@ bool segmentRect(float ax, float ay, float bx, float by, Rect r) {
   };
   return slab(ax, dx, r.x, r.x + r.w) && slab(ay, dy, r.y, r.y + r.h);
 }
-const Level &Game::level() const { return campaign().at(levelIndex); }
+const Level &workshopLevel();
+const Level &ironlineLevel();
+const Level &Game::level() const { return ironlineReview ? ironlineLevel() : workshopReview ? workshopLevel() : campaign().at(levelIndex); }
 float Game::random() {
   randomState ^= randomState << 13;
   randomState ^= randomState >> 17;
@@ -32,14 +35,26 @@ float Game::random() {
 }
 Rect Game::playerBox() const {
   float h = player.vehicleHP ? 44 : (player.crouch ? 19 : 34), w = player.vehicleHP ? 43 : 18;
+  if(!player.vehicleHP){w*=player.presentationScale;h*=player.presentationScale;}
   return {player.x - w / 2, player.y - h, w, h};
 }
 Rect Game::enemyBox(const Enemy &e) const {
   float h = e.kind == 3 ? 26 : (e.kind == 4 ? 27 : 35),
         w = e.kind == 3 ? 30 : (e.kind == 2 ? 25 : 20);
+  w*=enemyBodyScale(e);h*=enemyBodyScale(e);
   return {e.x - w / 2, e.y - h, w, h};
 }
-Rect Game::bossBox() const { return {boss.x - 57, boss.y - 102, 114, 99}; }
+Rect Game::bossBox() const {
+  if(level().bossKind==3)return {boss.x-tuning::forgeTitan.collisionWidth/2,
+    boss.y-tuning::forgeTitan.collisionHeight,tuning::forgeTitan.collisionWidth,tuning::forgeTitan.collisionHeight};
+  return {boss.x - 57, boss.y - 102, 114, 99};
+}
+Rect Game::propBox(const Prop &p) const {
+  const auto &rig=tuning::productionProps;
+  float w=p.kind==7?rig.crateCollisionWidth:rig.barrelCollisionWidth;
+  float h=p.kind==7?rig.crateCollisionHeight:rig.barrelCollisionHeight;
+  return {p.x-w/2,p.y-h,w,h};
+}
 float Game::floorAt(float x, float fromY) const {
   float y = 999;
   for (auto &p : level().platforms)
@@ -70,12 +85,18 @@ Sound Game::footstep() const {
 bool Game::hazardOn(const Hazard &h) const {
   return h.period <= 0 || std::fmod(time + h.offset, h.period) < h.on;
 }
-void Game::load(int index, bool keepScore, float startX) {
+void Game::load(int index, bool keepScore, float startX, bool review, bool railReview) {
+  const auto oldDiscoveries=discoveries;
   const int oldScore = score, oldTotal = totalRescued, oldContinues = continues,
             oldLives = player.lives;
   *this = Game{};
+  workshopReview=review;
+  ironlineReview=railReview;
+  player.presentationScale=cinematicHero()?tuning::workshop.bodyScale:1.f;
+  if(cinematicHero())player.health=player.maxHealth=int(tuning::campaignPresentation.health);
   levelIndex = std::max(0, std::min(index, int(campaign().size() - 1)));
   if (keepScore) {
+    discoveries=oldDiscoveries;
     score = oldScore;
     totalRescued = oldTotal;
     continues = oldContinues;
@@ -83,7 +104,7 @@ void Game::load(int index, bool keepScore, float startX) {
   }
   randomState = 12345 + levelIndex * 891;
   player.x = startX;
-  player.y = floorAt(startX, 200);
+  player.y = floorAt(startX, ironlineReview?-100.f:200.f);
   if (player.y > 500)
     player.y = 232;
   player.prevX = player.x;
@@ -92,6 +113,7 @@ void Game::load(int index, bool keepScore, float startX) {
   player.inv = 1.5f;
   checkpoint = startX;
   camera = clamp(startX - 120, 0, level().width - W);
+  if(cinematicReview())camera=clamp(startX-tuning::camera.anchorX,0,level().width-W);
   vehicleX = level().vehicleX;
   vehicleAvailable = vehicleX > 0;
   entranceAges.assign(level().entrances.size(), -1);
@@ -112,7 +134,7 @@ void Game::load(int index, bool keepScore, float startX) {
   }
   for (auto &s : level().items) {
     if (s.kind == 7 || s.kind == 8)
-      props.push_back({s.x, s.y, s.kind, s.kind == 7 ? 3 : 2, false});
+      props.push_back({s.x, floorAt(s.x,s.y), s.kind, s.kind == 7 ? 3 : 2, false});
     else
       items.push_back({s.x, s.y, s.kind, s.x < startX - 50, 0});
   }
@@ -125,15 +147,22 @@ void Game::load(int index, bool keepScore, float startX) {
   syncPresentation();
 }
 void Game::syncPresentation() {
+  player.prevStride=player.stride;
+  player.prevAnim=player.anim;
+  player.prevClimbCycle=player.climbCycle;
+  player.prevFireAge=player.fireAge;
   player.prevX = player.x;
   player.prevY = player.y;
   player.prevVehicleDeathY = player.vehicleDeathY;
   boss.prevX = boss.x;
   boss.prevY = boss.y;
+  prevCameraZoom=cameraZoom;
   prevCamera = camera;
   prevCameraY = cameraY;
   prevTime = time;
   for (auto &e : enemies) {
+    e.prevGait=e.gait;
+    e.prevFireAge=e.fireAge;
     e.prevX = e.x;
     e.prevY = e.y;
   }
@@ -147,12 +176,14 @@ void Game::syncPresentation() {
   }
 }
 void Game::retry() {
+  const bool sequence = chapterSequence;
   int c = continues + 1;
   int savedRescues = rescued;
   std::vector<Item> savedWorkers;
   for (const auto &item : items)
     if (item.kind == 0 && item.used) savedWorkers.push_back(item);
-  load(levelIndex, true, checkpoint);
+  load(levelIndex, true, checkpoint, workshopReview, ironlineReview);
+  chapterSequence = sequence;
   rescued = savedRescues;
   for (auto &item : items)
     if (item.kind == 0)
@@ -167,6 +198,7 @@ void Game::fire(float x, float y, float vx, float vy, float damage, int kind, bo
     if (!b.alive) {
       b = {x,      y,    x,       y,   vx, vy, life, kind == 2 || kind == 3 ? 4.0f : 2.0f,
            damage, kind, hostile, true};
+      b.weapon = hostile ? 0 : std::clamp(player.vehicleHP ? 1 : player.weapon,0,5);
       return;
     }
 }
@@ -204,7 +236,7 @@ void Game::burst(float x, float y, int kind, int count, float power) {
         break;
       }
 }
-void Game::damageEnemy(Enemy &e, float amount, bool explosive, int approach) {
+void Game::damageEnemy(Enemy &e, float amount, bool explosive, int approach, HitZone zone) {
   if (e.dead || !e.active)
     return;
   if (e.kind == 2 && !explosive && e.state != 2 && approach == -e.dir) {
@@ -213,17 +245,41 @@ void Game::damageEnemy(Enemy &e, float amount, bool explosive, int approach) {
     return;
   }
   e.hp -= int(std::ceil(amount));
-  e.hurt = .09f;
-  burst(e.x, e.y - 22, 0, 3);
+  const auto &c=tuning::combat;
+  e.hitZone=zone; e.hitDir=approach?approach:(e.x>=player.x?1:-1);
+  e.flinchDuration=zone==HitZone::Head?c.headFlinch:zone==HitZone::Legs?c.legFlinch:c.torsoFlinch;
+  if(cinematicGuard(e) && tuning::guardReactions.enabled>0) {
+    const auto &rig=tuning::guardReactions;
+    e.flinchDuration=zone==HitZone::Head?rig.headDuration:zone==HitZone::Legs?rig.legDuration:rig.torsoDuration;
+  }
+  e.flinch=e.flinchDuration; e.hurt=e.flinchDuration;
+  if(cinematicGuard(e) && tuning::guardReactions.enabled>0)e.hurt=tuning::guardReactions.flashDuration;
+  if (hitCooldown<=0) {hitStop=explosive?c.heavyHitStop:c.hitStop;hitCooldown=c.hitCooldown;}
+  shake=std::max(shake,c.hitShake);
+  const Rect body=enemyBox(e);
+  float impactY=body.y+body.h*(zone==HitZone::Head?.12f:zone==HitZone::Legs?.84f:.47f);
+  if(cinematicGuard(e))guardImpact(e.x,impactY,e.y,e.hitDir);
+  else for (int i=0;i<int(c.impactParticles);++i) for(auto &p:particles) if(p.life<=0) {
+    p=Particle{};p.x=p.prevX=e.x;p.y=p.prevY=impactY;
+    p.kind=6;p.color=e.kind>=3?c.dustColor:c.bloodColor;
+    p.life=p.maxlife=c.impactLife;p.size=2;
+    p.vx=e.hitDir*c.impactSpeed*(.3f+random()*.7f);p.vy=(random()-.6f)*c.impactSpeed;
+    break;
+  }
+  audioEvents.push_back({Sound::Hit,e.x,impactY,player.weapon});
   if (e.hp <= 0) {
     e.dead = true;
-    e.death = .45f;
+    e.deathDuration=tuning::combat.deathDuration;
+    if(cinematicGuard(e) && tuning::guardReactions.enabled>0) {
+      const auto &rig=tuning::guardReactions;
+      e.deathDuration=rig.collapseDuration+rig.corpseHold+rig.fadeDuration;
+    }
+    e.death=e.deathDuration;
     score += e.kind == 4 ? 200 : 100;
     kills++;
-    burst(e.x, e.y - 18, 0, 10);
-    if (e.kind >= 3)
+    if(!cinematicGuard(e))burst(e.x, e.y - 18, 0, 10);
+    if (!cinematicGuard(e) && e.kind >= 3)
       burst(e.x, e.y - 16, 3, 1, 45);
-    sounds.push_back(Sound::Hit);
   }
 }
 void Game::damageBoss(float amount) {
@@ -260,7 +316,7 @@ void Game::explosion(float x, float y, float radius, float damage, bool hostile)
     if (boss.active && !boss.dead && std::hypot(boss.x - x, boss.y - 50 - y) < radius + 65)
       damageBoss(damage);
     for (auto &p : props)
-      if (!p.dead && std::hypot(p.x - x, p.y - 12 - y) < radius) {
+      if (!p.dead && std::hypot(p.x - x, p.y - propBox(p).h*.5f - y) < radius) {
         p.hp = 0;
       }
   }
@@ -272,6 +328,7 @@ void Game::hitPlayer() {
     player.vehicleHP--;
     player.inv = 1.1f;
     player.hitFlash = .16f;
+    player.healthNotice=tuning::hud.healthDuration;
     shake = 4;
     burst(player.x, player.y - 20, 0, 20);
     sounds.push_back(Sound::Hurt);
@@ -291,6 +348,7 @@ void Game::hitPlayer() {
   player.health = std::max(0, player.health - 1);
   player.inv = .82f;
   player.hitFlash = .16f;
+  player.healthNotice=tuning::hud.healthDuration;
   player.vx = -player.dir * 78;
   player.vy = -92;
   shake = std::max(shake, 2.5f);
@@ -498,10 +556,14 @@ void Game::updateBoss(float dt) {
 }
 void Game::update(Input in, float dt) {
   sounds.clear();
+  audioEvents.clear();
   // Save the last fixed-step position so the renderer can interpolate between
   // 60 Hz simulation ticks when the desktop window is refreshed more often.
   syncPresentation();
+  hitCooldown=std::max(0.f,hitCooldown-dt);
+  if (hitStop>0) {hitStop=std::max(0.f,hitStop-dt);return;}
   time += dt;
+  updateDiscoveries(dt);
   vehicleHatch = std::max(0.0f, vehicleHatch - dt);
   if (player.vehicleDeath > 0) {
     player.vehicleDeath = std::max(0.0f, player.vehicleDeath - dt);
@@ -517,12 +579,31 @@ void Game::update(Input in, float dt) {
       p.life -= dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      if (p.kind == 0 || p.kind == 4)
+      if (p.kind == 0 || p.kind == 4 || p.kind == 5 || p.kind == 6)
         p.vy += 180 * dt;
+      if(p.kind==Particle::GuardSpark || p.kind==Particle::BodyDust) {
+        p.vx*=std::exp(-tuning::guardImpact.drag*dt);
+        if(p.kind==Particle::GuardSpark) {
+          p.vy+=tuning::guardImpact.sparkGravity*dt;
+          if(p.y>=p.floor){p.y=p.floor;p.life=0;}
+        } else {
+          p.vy*=std::exp(-tuning::guardImpact.drag*dt);
+          p.y=std::min(p.y,p.floor);
+        }
+      }
     }
   for (auto &e : enemies) {
     e.hurt = std::max(0.0f, e.hurt - dt);
+    e.fireAge=std::min(10.f,e.fireAge+dt);
+    e.flinch = std::max(0.f,e.flinch-dt);
     e.death = std::max(0.0f, e.death - dt);
+    if(cinematicGuard(e) && tuning::guardReactions.enabled>0 && e.dead && !e.landingEffectPlayed &&
+       enemyDeathElapsed(e)>=tuning::guardReactions.collapseDuration*tuning::guardImpact.landingPhase) {
+      e.landingEffectPlayed=true;
+      float progress=enemyDeathElapsed(e)/tuning::guardReactions.collapseDuration;
+      float x=e.x+e.hitDir*ease(progress)*tuning::guardReactions.deathTravel;
+      guardImpact(x,e.y,e.y,e.hitDir,true);
+    }
   }
   if (status == Status::GameOver)
     return;
@@ -550,7 +631,7 @@ void Game::update(Input in, float dt) {
       } else {
         status = Status::Play;
         player.x = checkpoint;
-        player.y = floorAt(checkpoint, 200);
+        player.y = floorAt(checkpoint, ironlineReview?-100.f:200.f);
         player.vx = player.vy = 0;
         player.inv = 2;
         player.health = player.maxHealth;
@@ -576,6 +657,7 @@ void Game::update(Input in, float dt) {
   player.action = std::max(0.0f, player.action - dt);
   player.land = std::max(0.0f, player.land - dt);
   player.recoil = std::max(0.0f, player.recoil - dt);
+  player.healthNotice=std::max(0.f,player.healthNotice-dt);
   player.hitFlash = std::max(0.0f, player.hitFlash - dt);
   player.fireAge += dt;
   const bool wasGrounded = player.grounded;
@@ -628,9 +710,15 @@ void Game::update(Input in, float dt) {
   const float strideStartX = player.x;
   if (!climbing) {
   player.crouch = in.down && player.grounded && player.vehicleHP == 0;
-  player.vx = player.crouch ? 0 : in.move * (player.vehicleHP ? 125.0f : 145.0f);
-  if (std::fabs(in.move) > .1f)
-    player.dir = in.move > 0 ? 1 : -1;
+  float targetVX=player.crouch ? 0 : in.move * (player.vehicleHP ? 125.0f : 145.0f);
+  if(cinematicHero() && !player.vehicleHP && !player.crouch) {
+    float rate=std::fabs(in.move)>.1f?tuning::heroLocomotion.acceleration:tuning::heroLocomotion.braking;
+    player.vx+=clamp(targetVX-player.vx,-rate*dt,rate*dt);
+    if(std::fabs(in.move)>.1f && std::fabs(player.vx)>1)player.dir=player.vx>0?1:-1;
+  } else {
+    player.vx=targetVX;
+    if(std::fabs(in.move)>.1f)player.dir=in.move>0?1:-1;
+  }
   // Keep one continuous animation clock so stopping and starting never snaps
   // the sprite back to frame zero.
   player.anim += dt;
@@ -644,7 +732,7 @@ void Game::update(Input in, float dt) {
   player.x += player.vx * dt;
   for (auto &p : level().platforms)
     if (!p.oneWay && overlap(playerBox(), p.box)) {
-      float half = player.vehicleHP ? 21.5f : 9.0f;
+      float half = player.vehicleHP ? 21.5f : 9.0f*player.presentationScale;
       if (oldx <= p.box.x)
         player.x = p.box.x - half;
       else if (oldx >= p.box.x + p.box.w)
@@ -654,7 +742,7 @@ void Game::update(Input in, float dt) {
   player.vy += 1000 * dt;
   player.y += player.vy * dt;
   player.grounded = false;
-  float hh = player.crouch ? 19 : 34;
+  float hh = (player.crouch ? 19 : 34)*player.presentationScale;
   if (player.vehicleHP)
     hh = 44;
   for (auto &p : level().platforms)
@@ -676,8 +764,9 @@ void Game::update(Input in, float dt) {
   }
   player.x = clamp(player.x, 12, level().width - 18);
   if (player.grounded)
-    player.stride += std::fabs(player.x - strideStartX) / 88.0f;
-  if ((player.grounded && int(player.stride * 4) != int(oldStride * 4)) ||
+    player.stride += std::fabs(player.x - strideStartX) / (cinematicHero()?tuning::heroLocomotion.strideLength:88.f);
+  const int contactsPerCycle=cinematicHero()?2:4;
+  if ((player.grounded && int(player.stride * contactsPerCycle) != int(oldStride * contactsPerCycle)) ||
       (player.ladder >= 0 && int(player.climbCycle * 2) != int(oldClimbCycle * 2))) {
     sounds.push_back(footstep());
     if (player.grounded && footstep() == Sound::WaterStep) burst(player.x, player.y - 1, 4, 3, .3f);
@@ -686,7 +775,7 @@ void Game::update(Input in, float dt) {
     player.inv = 0;
     if (debugInvincible) {
       player.x = checkpoint;
-      player.y = floorAt(checkpoint, 200);
+      player.y = floorAt(checkpoint, ironlineReview?-100.f:200.f);
       player.vy = 0;
     } else
       hitPlayer();
@@ -694,23 +783,44 @@ void Game::update(Input in, float dt) {
   for (float cp : level().checkpoints)
     if (player.x >= cp && checkpoint < cp && !boss.active)
       checkpoint = cp;
-  if (player.x > level().width - 510 && !boss.active) {
+  if (!cinematicReview() && player.x > level().width - W + tuning::campaignPresentation.bossArenaInset && !boss.active) {
     boss.active = true;
     checkpoint = level().width - 440;
     sounds.push_back(Sound::Boss);
   }
+  if(workshopReview && in.interact && player.x>tuning::workshop.exitX &&
+      std::all_of(enemies.begin(),enemies.end(),[](const Enemy&e){return e.dead;}))workshopSecured=true;
+  if(ironlineReview && in.interact && player.x>tuning::ironlineReview.exitX &&
+      std::all_of(enemies.begin(),enemies.end(),[](const Enemy&e){return e.dead;}))workshopSecured=true;
+  if(workshopSecured && chapterSequence)sectionExitAge+=dt;
+  const auto &framing=tuning::camera;
+  if(workshopReview)updateWorkshopCamera(in,dt);
+  else if(ironlineReview)updateIronlineCamera(dt);
+  else {
   if (boss.active) {
-    player.x = std::max(player.x, level().width - W + 12);
-    camera = level().width - W;
-    if (std::fabs(camera - prevCamera) > 32)
-      prevCamera = camera;
-  prevCameraY = cameraY;
+    // Close the arena at the same boundary that triggered the encounter.
+    // Never shove the actor forward or cut the camera to the far wall.
+    player.x = std::max(player.x, level().width - W + tuning::campaignPresentation.bossArenaInset);
+    const auto &motion=tuning::campaignPresentation;
+    camera += clamp((level().width-W-camera)*(1-std::exp(-dt*motion.cameraPanResponse)),
+                    -dt*motion.cameraMaxSpeed,dt*motion.cameraMaxSpeed);
   } else {
-    float target = clamp(player.x - 155, 0, level().width - W);
-    camera += (target - camera) * std::min(1.0f, dt * 7);
+    const auto &motion=tuning::campaignPresentation;
+    float ahead=framing.lookAhead*clamp(player.vx/145.f,-1,1);
+    cameraLead+=(ahead-cameraLead)*(1-std::exp(-dt*motion.cameraLeadResponse));
+    float target = clamp(player.x - framing.anchorX + cameraLead, 0, level().width - W);
+    float travel=clamp((target-camera)*(1-std::exp(-dt*motion.cameraPanResponse)),
+                       -dt*motion.cameraMaxSpeed,dt*motion.cameraMaxSpeed);
+    camera += travel;
   }
-  float targetY = boss.active ? 0 : clamp(player.y - 145, level().minY, 0);
-  cameraY += (targetY - cameraY) * std::min(1.0f, dt * 6);
+  float reveal=boss.active?std::max(0.f,1-boss.age/framing.bossIntroDuration):0.f;
+  float climbLook=player.ladder>=0 && in.up?framing.climbLook:0;
+  float targetY = boss.active ? -reveal*framing.bossLift : clamp(player.y - 145-climbLook, level().minY, 0);
+  cameraY += (targetY - cameraY) * std::min(1.0f, dt * framing.verticalSpeed);
+  float targetZoom=1+reveal*(framing.bossZoom-1);
+  if(!boss.active && player.ladder>=0)targetZoom=framing.climbZoom;
+  cameraZoom+=(targetZoom-cameraZoom)*std::min(1.f,dt*framing.zoomSpeed);
+  }
   if (in.interact && player.ladder < 0) {
     if (player.vehicleHP > 0) {
       float exitX = player.x - player.dir * 30;
@@ -731,7 +841,22 @@ void Game::update(Input in, float dt) {
       sounds.push_back(Sound::Pickup);
     }
   }
-  if (in.shoot && player.shot <= 0 && player.ladder < 0) {
+  if (player.magazineWeapon != player.weapon) {
+    player.magazineWeapon = player.weapon;
+    player.magazine = int(tuning::weapons[player.weapon].magazine);
+    player.reloadTime = 0;
+  }
+  if (player.reloadTime > 0) {
+    player.reloadTime = std::max(0.f, player.reloadTime-dt);
+    if (player.reloadTime <= 0) player.magazine = int(tuning::weapons[player.weapon].magazine);
+  }
+  if (!player.vehicleHP && player.ladder < 0 && player.reloadTime <= 0 &&
+      ((in.reload && player.magazine < int(tuning::weapons[player.weapon].magazine)) ||
+       (in.shoot && player.magazine <= 0))) {
+    player.reloadTime = tuning::weapons[player.weapon].reload;
+    audioEvents.push_back({Sound::Reload,player.x,player.y,player.weapon});
+  }
+  if (in.shoot && player.shot <= 0 && player.ladder < 0 && player.reloadTime <= 0) {
     bool melee = false;
     if (!in.up && !player.vehicleHP)
       for (auto &e : enemies)
@@ -749,6 +874,7 @@ void Game::update(Input in, float dt) {
     if (!melee) {
       player.fireAge = 0;
       int w = player.vehicleHP ? 1 : player.weapon;
+      player.firedWeapon=w;
       const auto muzzle = muzzlePoint(player, in);
       float vx = player.dir * 500.0f, vy = 0, ox = muzzle.x, oy = muzzle.y;
       if (in.up) {
@@ -762,13 +888,13 @@ void Game::update(Input in, float dt) {
         fire(ox, oy, vx, vy, 1, 0);
         player.shot = .18f;
         player.recoil = .08f;
-        sounds.push_back(Sound::Shot);
+        audioEvents.push_back({Sound::Shot, ox, oy, w});
       }
       if (w == 1) {
         fire(ox, oy, vx, vy, 1.1f, 1);
         player.shot = .082f;
         player.recoil = .1f;
-        sounds.push_back(Sound::Heavy);
+        audioEvents.push_back({Sound::Heavy, ox, oy, w});
       }
       if (w == 2) {
         float a = std::atan2(vy, vx);
@@ -777,14 +903,14 @@ void Game::update(Input in, float dt) {
                .34f);
         player.shot = .48f;
         player.recoil = .14f;
-        sounds.push_back(Sound::Shotgun);
+        audioEvents.push_back({Sound::Shotgun, ox, oy, w});
         shake = 1;
       }
       if (w == 3) {
         fire(ox, oy, vx * .5f, vy * .5f, 9, 2, false, 2.4f);
         player.shot = .7f;
         player.recoil = .16f;
-        sounds.push_back(Sound::Rocket);
+        audioEvents.push_back({Sound::Rocket, ox, oy, w});
         shake = 1.5f;
       }
       if (w == 4) {
@@ -795,7 +921,7 @@ void Game::update(Input in, float dt) {
                false, .42f);
         player.shot = .24f;
         player.recoil = .11f;
-        sounds.push_back(Sound::Flame);
+        audioEvents.push_back({Sound::Flame, ox, oy, w});
         shake = .5f;
       }
       if (w == 5) {
@@ -803,14 +929,17 @@ void Game::update(Input in, float dt) {
         fire(ox, oy, vx * 1.9f, vy * 1.9f, 3.5f, 8, false, .24f);
         player.shot = .32f;
         player.recoil = .12f;
-        sounds.push_back(Sound::Laser);
+        audioEvents.push_back({Sound::Laser, ox, oy, w});
         shake = .8f;
       }
-      burst(ox, oy, 2, 2);
+      weaponEffect(ox, oy, w);
+      if (!player.vehicleHP) --player.magazine;
       if (w > 0 && !player.vehicleHP) {
         player.ammo--;
-        if (player.ammo <= 0)
+        if (player.ammo <= 0) {
+          audioEvents.push_back({Sound::Empty,player.x,player.y,w});
           player.weapon = 0;
+        }
       }
     }
   }
@@ -820,7 +949,8 @@ void Game::update(Input in, float dt) {
     player.actionKind = 2;
     player.recoil = .12f;
     float v = player.vehicleHP ? 250 : 155;
-    fire(player.x + player.dir * 10, player.y - 26, player.dir * v, -220, 8, 3, false, .95f);
+    const float throwScale=player.vehicleHP?1.f:player.presentationScale;
+    fire(player.x + player.dir * 10*throwScale, player.y - 26*throwScale, player.dir * v, -220, 8, 3, false, .95f);
     sounds.push_back(Sound::Grenade);
   }
   for (size_t i = 0; i < entranceAges.size(); ++i) {
@@ -842,20 +972,27 @@ void Game::update(Input in, float dt) {
       e.entryAge += dt;
       // Walk out of the doorway before aiming or firing. No extra spawns.
       e.x += (player.x < e.x ? -1 : 1) * 24 * dt;
+      if(cinematicGuard(e))e.gait+=24*dt/tuning::guardAction.strideLength;
       continue;
     }
     if (!e.active || e.x < camera - 180 || e.x > camera + W + 130)
       continue;
     float distance = std::fabs(player.x - e.x);
     e.dir = player.x < e.x ? -1 : 1;
+    if (e.flinch>0) continue;
     e.timer -= dt;
+    const auto &behavior=tuning::enemyTypes[std::clamp(e.kind,0,4)];
+    float oldX=e.x;
     if (e.kind == 3) {
-      e.y = e.baseY + std::sin(time * 2 + e.origin) * 9;
-      if (distance > 120)
-        e.x += e.dir * 22 * dt;
+      e.y = e.baseY + std::sin(time * 2 + e.origin) * behavior.bob;
+      if (distance > behavior.standOff)
+        e.x += e.dir * behavior.speed * dt;
+      else if(behavior.strafe>0 && e.state==0)
+        e.x += std::sin(time*1.5f+e.origin)*behavior.speed*.4f*dt;
     } else {
-      if (e.kind != 4 && e.state == 0 && distance > 110 && std::fabs(e.x - e.origin) < 90) {
-        float nx = e.x + e.dir * (e.kind == 2 ? 18 : 26) * dt;
+      if (e.kind != 4 && e.state == 0 && (distance > behavior.standOff || (behavior.strafe>0 && distance<behavior.standOff*.6f)) && std::fabs(e.x - e.origin) < behavior.patrol) {
+        float direction=(behavior.strafe>0 && distance<behavior.standOff*.6f)?-e.dir:e.dir;
+        float nx = e.x + direction * behavior.speed * dt;
         if (floorAt(nx, e.y - 2) < e.y + 20)
           e.x = nx;
       }
@@ -866,29 +1003,38 @@ void Game::update(Input in, float dt) {
       } else
         e.vy = 0;
     }
+    e.gait += std::fabs(e.x-oldX)/(cinematicGuard(e)?tuning::guardAction.strideLength:std::max(1.f,behavior.speed));
+    if(behavior.speed==0)e.gait=0;
     if (e.timer <= 0) {
       if (e.state == 0) {
         e.state = 1;
-        e.timer = .5f;
+        e.timer = behavior.windup;
       } else if (e.state == 1) {
         e.state = 2;
         e.timer = .3f;
         if (distance < 27 && e.kind < 3 && std::fabs(e.y - player.y) < 26)
           hitPlayer();
         else if (e.kind == 1)
-          fire(e.x, e.y - 30, e.dir * (65 + distance * .25f), -205, 1, 3, true, 1.25f);
+          fire(e.x, e.y - 30*enemyBodyScale(e), e.dir * (65 + distance * .25f), -205, 1, 3, true, 1.25f);
         else {
-          float ox = e.x + e.dir * 15, oy = e.y - (e.kind == 4 ? 16 : 24),
-                a = std::atan2(player.y - 20 - oy, player.x - ox);
-          float speed = e.kind == 4 ? 135 : 100;
+          e.fireAge=0;
+          float ox = e.x + e.dir * 15*enemyBodyScale(e), oy = e.y - (e.kind == 4 ? 16 : 24)*enemyBodyScale(e),
+                a = std::atan2(player.y - 20*player.presentationScale - oy, player.x - ox);
+          if(cinematicGuard(e)) {
+            e.timer=tuning::guardAction.attackDuration;
+            auto muzzle=guardMuzzle(e);ox=muzzle.x;oy=muzzle.y;
+            a=std::atan2(player.y-20*player.presentationScale-oy,player.x-ox);
+          }
+          float speed = behavior.projectileSpeed;
           fire(ox, oy, std::cos(a) * speed, std::sin(a) * speed, 1, 4, true, 4);
           if (e.kind == 4)
             fire(ox, oy, std::cos(a + .13f) * speed, std::sin(a + .13f) * speed, 1, 4, true, 4);
-          burst(ox, oy, 2, 2);
+          if(!cinematicGuard(e))burst(ox, oy, 2, 2);
+          audioEvents.push_back({e.kind == 4 ? Sound::Heavy : Sound::Shot,ox,oy,e.kind == 4 ? 1 : 0});
         }
       } else {
         e.state = 0;
-        e.timer = .9f + random() * .9f - (levelIndex * .06f);
+        e.timer = behavior.recovery + random() * .5f;
       }
     }
   }
@@ -906,7 +1052,7 @@ void Game::update(Input in, float dt) {
     b.y += b.vy * dt;
     if (b.kind == 2 && int(time * 35) != int((time - dt) * 35))
       burst(b.x, b.y, 1, 1);
-    bool collision = false;
+    bool collision = false, enemyImpact = false;
     for (auto &p : level().platforms) {
       if (p.oneWay && b.kind != 3)
         continue;
@@ -935,8 +1081,11 @@ void Game::update(Input in, float dt) {
     } else if (!b.hostile && !collision) {
       for (auto &e : enemies)
         if (!e.dead && e.active && segmentRect(b.px, b.py, b.x, b.y, enemyBox(e))) {
-          if (b.kind != 2)
-            damageEnemy(e, b.damage, false, b.vx > 0 ? 1 : b.vx < 0 ? -1 : 0);
+          if (b.kind != 2) {
+            enemyImpact=true;
+            damageEnemy(e, b.damage, false, b.vx > 0 ? 1 : b.vx < 0 ? -1 : 0, hitZone(e,b));
+            if(!cinematicGuard(e))weaponEffect(b.x,b.y,b.weapon,true,false);
+          }
           collision = true;
           break;
         }
@@ -948,7 +1097,7 @@ void Game::update(Input in, float dt) {
       }
       if (!collision)
         for (auto &p : props)
-          if (!p.dead && segmentRect(b.px, b.py, b.x, b.y, {p.x - 13, p.y - 25, 26, 25})) {
+          if (!p.dead && segmentRect(b.px, b.py, b.x, b.y, propBox(p))) {
             p.hp -= int(std::ceil(b.damage));
             collision = true;
             break;
@@ -959,8 +1108,10 @@ void Game::update(Input in, float dt) {
       b.alive = false;
       if (b.kind == 2)
         explosion(b.x, b.y, 45, b.damage, b.hostile);
-      else if (collision)
-        burst(b.x, b.y, 0, 3);
+      else if (collision) {
+        if (!b.hostile && !enemyImpact) weaponEffect(b.x,b.y,b.weapon,true);
+        else if(!enemyImpact)burst(b.x,b.y,0,3);
+      }
     }
   }
   // Mark before exploding so chained barrels cannot recursively trigger themselves.
@@ -969,9 +1120,9 @@ void Game::update(Input in, float dt) {
       p.dead = true;
       score += 50;
       if (p.kind == 8)
-        explosion(p.x, p.y - 12, 65, 7);
+        explosion(p.x, p.y - propBox(p).h*.5f, 65, 7);
       else {
-        burst(p.x, p.y - 12, 0, 14);
+        burst(p.x, p.y - propBox(p).h*.5f, 0, 14);
         items.push_back({p.x, p.y - 13, levelIndex % 3 + 1, false, 0});
       }
     }

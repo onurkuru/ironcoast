@@ -50,8 +50,10 @@ int main() {
     Input up;up.up=true;ticks(g,up,20+int((232-b.box.y)/72*60));
     check(std::fabs(g.player.y-b.box.y)<.1f,"roof route ascent");
     float target=b.box.x+b.box.w-26;
-    for (int n=0;n<600 && g.player.x<target-.01f;++n) {
-      Input move;move.move=std::min(1.0f,(target-g.player.x)/(145*DT));move.shoot=true;
+    for (int n=0;n<600 && std::fabs(g.player.x-target)>.01f;++n) {
+      // The production rig accelerates and brakes. A proportional controller
+      // approaches either side of the marker without assuming instant velocity.
+      Input move;move.move=std::clamp((target-g.player.x)*.12f,-1.f,1.f);move.shoot=true;
       ticks(g,move,1);check(std::fabs(g.player.y-b.box.y)<.1f,"roof route loses support");
     }
     check(std::fabs(g.player.x-target)<.1f,"roof route traversal stuck");

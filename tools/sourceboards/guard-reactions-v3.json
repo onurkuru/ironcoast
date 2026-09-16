@@ -1,0 +1,15 @@
+{
+  "sourceSize": [1374,1145],
+  "poses": [
+    {"rootX":185,"groundY":223},{"rootX":515,"groundY":222},
+    {"rootX":865,"groundY":222},{"rootX":1208,"groundY":222},
+    {"rootX":185,"groundY":454},{"rootX":515,"groundY":454},
+    {"rootX":865,"groundY":454},{"rootX":1208,"groundY":454},
+    {"rootX":185,"groundY":685},{"rootX":515,"groundY":684},
+    {"rootX":865,"groundY":684},{"rootX":1208,"groundY":685},
+    {"rootX":185,"groundY":914},{"rootX":515,"groundY":914},
+    {"rootX":865,"groundY":914},{"rootX":1208,"groundY":914},
+    {"rootX":171,"groundY":1105},{"rootX":510,"groundY":1109},
+    {"rootX":855,"groundY":1100},{"rootX":1196,"groundY":1099}
+  ]
+}

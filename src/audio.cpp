@@ -1,9 +1,12 @@
 #include "audio.h"
+#include "presentation_config.h"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <stdexcept>
 namespace kh {
-Audio::Audio() {
+Audio::Audio(bool openDevice) {
+  if (!openDevice) return;
   SDL_AudioSpec want{}, have{};
   // 32 kHz keeps the low-frequency arcade punch while giving laser and
   // metallic transients enough headroom on both desktop and Vita audio.
@@ -24,19 +27,15 @@ Audio::~Audio() {
     SDL_CloseAudioDevice(device);
 }
 void Audio::settings(int t, bool m, bool p, bool b) {
-  if (!device)
-    return;
-  SDL_LockAudioDevice(device);
+  if (device) SDL_LockAudioDevice(device);
   theme = t;
   muted = m;
   paused = p;
   boss = b;
-  SDL_UnlockAudioDevice(device);
+  if (device) SDL_UnlockAudioDevice(device);
 }
-void Audio::play(Sound s) {
-  if (!device)
-    return;
-  SDL_LockAudioDevice(device);
+void Audio::play(Sound s, float distance, int weapon) {
+  if (device) SDL_LockAudioDevice(device);
   Voice *v = nullptr;
   for (auto &vv : voices)
     if (vv.remaining <= 0) {
@@ -44,11 +43,12 @@ void Audio::play(Sound s) {
       break;
     }
   if (!v) {
-    SDL_UnlockAudioDevice(device);
+    if (device) SDL_UnlockAudioDevice(device);
     return;
   }
   *v = {0, 300, 0, .22f, .1f, .1f, 0, .35f};
   switch (s) {
+  case Sound::Reload: case Sound::Empty: case Sound::Discovery: break;
   case Sound::Shot:
     v->freq = 760;
     v->slide = -5200;
@@ -171,12 +171,45 @@ void Audio::play(Sound s) {
     v->noiseMix = .18f;
     v->volume = .22f;
     break;
+  case Sound::BodyLand: {
+    const auto &c=tuning::guardImpact;
+    v->freq=c.landingFrequency;v->slide=c.landingPitchDrop;v->remaining=c.landingDuration;
+    v->wave=2;v->noiseMix=c.landingNoise;
+    v->event=4;
+    float d=std::max(0.f,distance)/tuning::audio.falloff;
+    v->volume=c.landingGain/(1+d*d);
+    break;
   }
+  }
+  if (int(s) <= int(Sound::Laser) || s == Sound::Reload || s == Sound::Empty || s == Sound::Hit) {
+    int id=std::clamp(weapon < 0 ? (int(s)<=int(Sound::Laser)?int(s):0) : weapon,0,5);
+    const auto &w=tuning::weapons[id];
+    v->model=id; v->freq=w.frequency; v->slide=w.pitchDrop;
+    v->volume=w.gain; v->remaining=w.fireDuration+tuning::audio.tail;
+    v->noiseMix=w.noise; v->filter=w.lowpass; v->decay=w.decay;
+    v->distance=std::max(0.f,distance)/tuning::audio.falloff;
+    v->volume /= 1+v->distance*v->distance;
+    if (s==Sound::Reload) {
+      v->event=1; v->freq=w.reloadPitch; v->slide=0;
+      v->remaining=w.reload; v->volume=tuning::audio.reloadGain;
+    } else if (s==Sound::Empty) {
+      v->event=2; v->freq=w.reloadPitch*1.5f; v->slide=0;
+      v->remaining=tuning::audio.emptyDuration; v->volume=tuning::audio.emptyGain;
+    } else if (s==Sound::Hit) {
+      v->event=3;v->remaining=tuning::combat.impactLife;v->volume=tuning::audio.impactGain/(1+v->distance*v->distance);
+    }
+  }
+  if (s==Sound::Discovery) {v->freq=tuning::audio.discoveryFrequency;v->slide=tuning::audio.discoveryPitchRise;v->remaining=tuning::audio.discoveryDuration;v->volume=tuning::audio.discoveryGain;v->wave=0;}
   v->total = v->remaining;
-  SDL_UnlockAudioDevice(device);
+  if (device) SDL_UnlockAudioDevice(device);
 }
 void Audio::callback(void *user, Uint8 *data, int len) {
   static_cast<Audio *>(user)->mix(reinterpret_cast<int16_t *>(data), len / 2);
+}
+void Audio::renderOffline(int16_t *output,int count) {
+  if(device)throw std::logic_error("Offline audio requires a closed output device");
+  if(count<0 || (!output && count))throw std::invalid_argument("Invalid offline audio buffer");
+  mix(output,count);
 }
 void Audio::mix(int16_t *out, int count) {
   static const int motifs[6][16] = {{0, 7, 12, 7, 3, 10, 15, 10, 5, 12, 17, 12, 7, 14, 19, 14},
@@ -193,7 +226,7 @@ void Audio::mix(int16_t *out, int count) {
     noise ^= noise << 5;
     float n = float(noise & 65535) / 32768 - 1;
     float sum = 0;
-    if (!paused && !muted) {
+    if (!paused && !muted && musicEnabled) {
       int step = int(sample / stepSamples) % 16;
       float f = float(std::fmod(double(sample), double(stepSamples)) / stepSamples),
             t = float(sample) / sampleRate;
@@ -231,7 +264,9 @@ void Audio::mix(int16_t *out, int count) {
       float alarm = boss ? std::sin(6.283185f * (190 + 28 * std::sin(t * .8f)) * t) *
                                std::exp(-f * 3) * .012f
                          : 0;
-      sum = lead + accent + pad + bass + kick + snare + hat + ghost + tom + alarm;
+      float duck=1;
+      for (const auto &v:voices) if(v.model>=0 && v.remaining>0 && v.event==0) {duck=tuning::audio.duck;break;}
+      sum = (lead + accent + pad + bass + kick + snare + hat + ghost + tom + alarm)*tuning::audio.musicGain*duck;
       sample++;
     }
     for (auto &v : voices)
@@ -242,14 +277,40 @@ void Audio::mix(int16_t *out, int count) {
         v.phase -= std::floor(v.phase);
         float osc = v.wave == 2   ? n * v.noiseMix + std::sin(v.phase * 6.283185f) * (1.0f - v.noiseMix)
                     : v.wave == 3 ? ((4.0f * std::fabs(v.phase - .5f) - 1.0f) * .72f +
-                                     std::sin(v.phase * 12.56637f) * .28f)
+                                     std::sin(v.phase * 12.56637f) * .28f)*(1-v.noiseMix)+n*v.noiseMix
                     : v.wave == 1 ? (v.phase < .5f ? .6f : -.6f)
                                   : std::sin(v.phase * 6.283185f);
+        if (v.model>=0) {
+          v.age += dt;
+          float filter=std::max(tuning::audio.distantLowpass,v.filter/(1+v.distance));
+          v.low += filter*(n-v.low);
+          float body=std::sin(v.phase*6.283185f);
+          float crack=n-v.low;
+          float envelope=std::exp(-v.age*v.decay);
+          float tailAge=std::max(0.f,v.age-tuning::audio.tailDelay*(1+std::min(2.f,v.distance)));
+          if (v.event==1) {
+            // Latch, insertion and closure; gas valve / laser charge use a continuous body.
+            float f=v.age/v.total;
+            float tick=std::exp(-f*70)+std::exp(-std::fabs(f-tuning::audio.reloadLatch)*100)+std::exp(-std::fabs(f-tuning::audio.reloadClose)*120);
+            osc=(body*.32f+crack*.68f)*tick;
+            if(v.model>=4) osc+=body*std::sin(f*3.14159f)*.2f;
+          } else if (v.event==2) osc=(body*.25f+crack*.75f)*std::exp(-v.age*tuning::audio.clickDecay);
+          else if(v.event==3) osc=(v.low*.8f+body*.2f)*std::exp(-v.age*tuning::audio.impactDecay);
+          else {
+            osc=(v.low*v.noiseMix+body*(1-v.noiseMix))*envelope;
+            osc+=crack*std::exp(-v.age*tuning::audio.crackDecay)*(.75f/(1+v.distance));
+            if(v.age>tuning::audio.tailDelay*(1+std::min(2.f,v.distance)))
+              osc+=v.low*std::exp(-tailAge*tuning::audio.tailDecay)*tuning::audio.tailGain;
+            if(v.model==4) osc=v.low*(.65f+.35f*std::sin(v.age*tuning::audio.flamePulse))*std::exp(-v.age*tuning::audio.flameDecay);
+            if(v.model==5) osc=(body*.8f+std::sin(v.phase*18.84955f)*.2f)*envelope;
+          }
+        }
         // A short attack and release prevents zipper clicks while retaining
         // the sharp arcade transients at the start of each effect.
         float age = std::max(0.0f, v.total - v.remaining);
-        float attack = std::min(1.0f, age / .004f);
-        float releaseWindow = std::max(.008f, std::min(.035f, v.total * .45f));
+        if(v.event==4)osc*=std::exp(-age*tuning::guardImpact.landingDecay);
+        float attack = std::min(1.0f, age / tuning::audio.attack);
+        float releaseWindow = std::min(tuning::audio.release, v.total * .45f);
         float release = std::min(1.0f, std::max(0.0f, v.remaining) / releaseWindow);
         float env = attack * release;
         sum += osc * v.volume * env;

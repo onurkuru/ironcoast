@@ -248,28 +248,28 @@ int main() {
     if (b.alive && b.kind == 8)
       laserShot = true;
   check(laserShot && g.player.ammo == 35, "laser fires a precision projectile");
-  auto pickupX = [](int kind) {
-    for (const auto &item : campaign()[0].items) if (item.kind == kind) return item.x;
+  auto collectPickup = [&](int kind) {
+    for (const auto &item : campaign()[0].items) if (item.kind == kind) {
+      g.load(0,false,item.x);
+      // Pickups can be on the gallery; approach on their supporting surface.
+      g.player.y=g.floorAt(item.x,item.y);g.player.grounded=true;
+      g.update({});return;
+    }
     throw std::runtime_error("missing weapon pickup");
   };
-  g.load(0, false, pickupX(6));
-  g.update({});
+  collectPickup(6);
   check(g.player.weapon == 4 && g.player.ammo == 80, "flame pickup equips the weapon");
-  g.load(0, false, pickupX(9));
-  g.update({});
+  collectPickup(9);
   check(g.player.weapon == 5 && g.player.ammo == 36, "laser pickup equips the weapon");
   g.load(0);
   g.player.inv = 0;
   g.hitPlayer();
-  check(g.player.health == 2 && g.player.lives == 3 && g.status == Status::Play,
+  check(g.player.health == g.player.maxHealth-1 && g.player.lives == 3 && g.status == Status::Play,
         "first hit consumes health before a life");
   g.hitPlayer();
-  check(g.player.health == 2 && g.player.lives == 3, "damage cooldown prevents repeated hits");
-  g.player.inv = 0;
-  g.hitPlayer();
-  g.player.inv = 0;
-  g.hitPlayer();
-  check(g.player.lives == 2 && g.status == Status::Dying, "three hits lose one life");
+  check(g.player.health == g.player.maxHealth-1 && g.player.lives == 3, "damage cooldown prevents repeated hits");
+  for(int hit=1;hit<g.player.maxHealth;++hit){g.player.inv=0;g.hitPlayer();}
+  check(g.player.lives == 2 && g.status == Status::Dying, "depleted health loses exactly one life");
   ticks(g, {}, 70);
   check(g.player.inv > 0 && g.player.health == g.player.maxHealth && g.status == Status::Play,
         "respawn protection and full health");

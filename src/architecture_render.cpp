@@ -1,117 +1,70 @@
 #include "render.h"
 #include "animation.h"
+#include "presentation_config.h"
 #include <algorithm>
 #include <cmath>
 
 namespace kh {
 void Renderer::architecture(const Game &g, float camera, float time) {
-  const uint32_t warm = g.levelIndex == 3 ? 0xF4A566FF : 0xCDAA75FF;
-  for (const auto &b : g.level().buildings) {
-    float x = b.box.x - camera, y = b.box.y, w = b.box.w, h = b.box.h;
-    if (x + w < -30 || x > W + 30) continue;
-    if (b.style == 7) {
-      // Elevated pipe bridges have supports down to the service road.
-      if (y < 232) {
-        for (float k = 10; k < w; k += 70) {
-          rect(x + k, y + 8, 5, 232 - y - 8, 0x2A424AFF);
-          line(x + k, y + 8, x + std::min(k + 60, w), y + 27, 0x627C7FFF);
-        }
-        line(x, y - 13, x + w, y - 13, 0x70858BCC);
-      }
-      continue;
-    }
-    // A shallow side face and foundation anchor the front elevation in depth.
-    rect(x + w, y + 7, 13, h - 7, 0x08141DFF);
-    line(x + w, y, x + w + 13, y + 7, 0x678089FF);
-    rect(x - 3, 231, w + 18, 3, 0x020810EE);
-    int tile = b.style < 6 ? b.style : b.style == 8 ? g.levelIndex : 2;
-    SDL_SetTextureColorMod(architectureTiles.texture, 160, 181, 195);
-    const auto cell = architectureTiles.cells.at(tile);
-    for (float tx = 0; tx < w; tx += 96)
-      for (float ty = 8; ty < h; ty += 96) {
-        float dw = std::min(96.0f, w - tx), dh = std::min(96.0f, h - ty);
-        SDL_Rect source{cell.x, cell.y, int(cell.w * dw / 96), int(cell.h * dh / 96)};
-        SDL_FRect dest{x + tx + offsetX, y + ty + offsetY, dw, dh};
-        SDL_RenderCopyF(r, architectureTiles.texture, &source, &dest);
-      }
-    SDL_SetTextureColorMod(architectureTiles.texture, 255, 255, 255);
-    // Lower level is an open cutaway arcade: no wall lies across the route.
-    const float ceiling = std::max(y + 22, 171.0f);
-    rect(x + 7, ceiling, w - 14, 232 - ceiling, 0x040B12F4);
-    for (int row = 0; row < 7; ++row)
-      rect(x + 8, ceiling + row * 3, w - 16, 3, 0x00000000u | uint32_t(82 - row * 10));
-    // Receding beams and wall seams provide interior scale without colliders.
-    for (float k = 12; k < w - 15; k += 64) {
-      line(x + k, ceiling + 5, x + k + 16, ceiling + 14, 0x364552FF);
-      rect(x + k + 16, ceiling + 14, 3, 232 - ceiling - 14, 0x243541FF);
-      line(x + k + 20, 226, x + k + 58, 226, 0x243843FF);
-    }
-    // Windows are recessed into the upper facade; mullions cast dark bars.
-    for (float wx = x + 65; wx < x + w - 42; wx += 77) {
-      for (float wy = y + 23; wy + 21 < ceiling - 4; wy += 49) {
-        rect(wx - 3, wy - 3, 34, 24, 0x070F17FF);
-        rect(wx, wy, 27, 16, 0x273A43FF);
-        rect(wx + 1, wy + 1, 24, 13, (warm & 0xFFFFFF00u) | 85);
-        line(wx + 13, wy, wx + 13, wy + 17, 0x061017FF);
-        line(wx, wy + 8, wx + 27, wy + 8, 0x061017FF);
-        line(wx - 3, wy + 21, wx + 31, wy + 21, 0x758387FF);
+  if(g.levelIndex==0 && !g.cinematicReview()) {
+    // The frame, lintel, ladders, gallery and wall are one authored painting.
+    // Animate only its measured door panel; no foreign kit is overlaid here.
+    const auto &rig=tuning::harborBuiltScene;
+    const float width=g.level().width,height=width/rig.sourceAspect;
+    const float top=232-height*rig.sourceFloor;
+    for(size_t i=0;i<tuning::harborDoors.size();++i) {
+      float age=i<g.entranceAges.size()?g.entranceAges[i]:-1;
+      if(age<0)continue;
+      const auto &door=tuning::harborDoors[i];
+      float x=door.u*width-camera,y=top+door.v*height,w=door.w*width,h=door.h*height;
+      if(x+w<0 || x>W)continue;
+      float opening=ease(age/rig.doorOpenDuration);
+      rect(x,y,w,h,rig.doorInterior);
+      rect(x+3,y+3,w-6,h-3,rig.doorShade);
+      if(opening<1 && scenePlate.texture) {
+        SDL_Rect source{int(door.u*scenePlate.width),int(door.v*scenePlate.height+door.h*scenePlate.height*opening),
+          std::max(1,int(door.w*scenePlate.width)),std::max(1,int(door.h*scenePlate.height*(1-opening)))};
+        SDL_FRect dest{x+offsetX,y+offsetY,w,h*(1-opening)};
+        SDL_RenderCopyF(r,scenePlate.texture,&source,&dest);
       }
     }
-    // Structural columns frame the route; their dark base stays behind feet.
-    for (float cx : {x, x + w - 6}) {
-      rect(cx, y + 8, 6, h - 8, 0x263843FF);
-      line(cx, y + 8, cx, 231, 0x6A7A7EFF);
-      rect(cx - 2, 226, 10, 5, 0x36454AFF);
-    }
-    if (b.style == 2) {
-      // Freight cars: recessed windows above a continuous service catwalk.
-      for (float k = 34; k < w - 28; k += 87) {
-        ring(x + k, 244, 11, 11, 0x15232BFF);
-        ring(x + k, 244, 5, 5, 0x58646CFF);
-      }
-      rect(x + 7, 229, w - 14, 3, 0x60717CFF);
-    }
-    if (b.style == 3) {
-      rect(x + w - 35, y + 19, 12, 32, 0xEE8A4333);
-      for (int bar = 0; bar < 5; ++bar)
-        line(x + w - 34, y + 21 + bar * 6, x + w - 24, y + 21 + bar * 6, 0xF0A46E88);
-    }
-    // Roof thickness and supports share the platform's exact top coordinate.
-    rect(x - 2, y, w + 4, 8, 0x293F4AFF);
-    line(x - 2, y, x + w + 2, y, 0xA4B3AFFF);
-    line(x, y + 7, x + w, y + 7, 0x061019FF);
-    for (float rx = x + 6; rx < x + w; rx += 40) {
-      line(rx, y - 12, rx, y - 2, 0x41555DCC);
-      line(rx, y - 12, std::min(rx + 40, x + w), y - 12, 0x60747D99);
-    }
-    if (w > 240) text(b.style == 2 ? "FREIGHT" : b.style == 4 ? "RELAY" : "SERVICE", x + 62, ceiling - 10, 1, 0xA7AEA9FF);
+    return;
   }
+  // The scene paintings provide architecture. Only interactive doors and
+  // climbable rails are composited here, using the exact collision geometry.
   for (size_t i = 0; i < g.level().entrances.size(); ++i) {
     const auto &door = g.level().entrances[i];
     float x = door.x - camera, y = door.y;
     if (x < -40 || x > W + 40) continue;
     float age = i < g.entranceAges.size() ? g.entranceAges[i] : -1;
-    float opening = age < 0 ? 0 : ease(age / .6f);
-    rect(x - 22, y - 49, 44, 49, 0x314654FF);
-    rect(x - 19, y - 46, 38, 46, 0x010509FF);
-    rect(x - 18, y - 45, 36, 44 * (1 - opening), 0x48565DFF);
-    for (int row = 0; row < int(44 * (1 - opening)); row += 5)
-      line(x - 17, y - 45 + row, x + 17, y - 45 + row, 0x1D2B35FF);
+    const auto &rig=tuning::productionProps;
+    float opening=age<0?0:ease(age/rig.doorOpenDuration);
+    const float width=rig.doorWidth,height=rig.doorHeight;
+    groundedSprite(productionProps,5,x-width/2,y-height,width,height);
+    SDL_Rect prior{};bool clipped=SDL_RenderIsClipEnabled(r);SDL_RenderGetClipRect(r,&prior);
+    SDL_Rect shutter{int(std::floor(x-width/2+offsetX)),int(std::floor(y-height+offsetY)),
+                    int(std::ceil(width)),int(std::ceil(height*(1-opening)))};
+    if(clipped)SDL_IntersectRect(&shutter,&prior,&shutter);
+    SDL_RenderSetClipRect(r,&shutter);
+    if(opening<1)groundedSprite(productionProps,4,x-width/2,y-height,width,height);
+    SDL_RenderSetClipRect(r,clipped?&prior:nullptr);
     uint32_t warning = age >= 0 && age < 2.2f && int(time * 8) % 2 ? 0xFFC378FF : 0x796443FF;
-    rect(x - 4, y - 53, 8, 3, warning);
-    line(x - 18, y - 1, x + 18, y - 1, 0x899991FF);
+    if(age>=0 && age<2.2f)softLight(x,y-height+8,7,3,warning,50);
   }
   for (const auto &ladder : g.level().ladders) {
     float x = ladder.x - camera;
     if (x < -16 || x > W + 16) continue;
-    // Cast shadow behind both rails; rungs remain visible behind climbing hands.
-    rect(x - 6, ladder.top - 9, 2, ladder.bottom - ladder.top + 9, 0x03090CE0);
+    // A traversable structure must stay visible; proximity must not make
+    // collision geometry appear out of an otherwise empty wall.
+    // Keep traversal readable without the bright debug-like ladder lines that
+    // previously dominated the cinematic plates.
+    rect(x - 5, ladder.top - 9, 2, ladder.bottom - ladder.top + 9, 0x02070BC0);
     for (float rail : {-8.0f, 8.0f}) {
-      line(x + rail + 2, ladder.top - 10, x + rail + 2, ladder.bottom, 0x071019FF);
-      line(x + rail, ladder.top - 10, x + rail, ladder.bottom, 0x9AA79FFF);
+      line(x + rail + 2, ladder.top - 10, x + rail + 2, ladder.bottom, 0x071019EE);
+      line(x + rail, ladder.top - 10, x + rail, ladder.bottom, 0x36535DCC);
     }
     for (float y = ladder.top - 2; y < ladder.bottom; y += 8)
-      line(x - 8, y, x + 8, y, 0x7A8C89FF);
+      line(x - 8, y, x + 8, y, 0x44656ACC);
   }
 }
 
@@ -132,7 +85,7 @@ void Renderer::wetSurfaces(const Game &g, float camera, float time) {
   for (const auto &wet : g.level().puddles) {
     float x = wet.x - camera;
     if (x + wet.w < 0 || x > W) continue;
-    rect(x, wet.y + 1, wet.w, wet.h, 0x0A2631D0);
+    rect(x, wet.y + 1, wet.w, wet.h, 0x0A263118);
     for (const auto &light : lights) {
       if (g.lightBlocked(light.x + camera, light.y, wet.x + wet.w / 2, wet.y - 1)) continue;
       float center = std::clamp(light.x, x, x + wet.w);
@@ -158,6 +111,20 @@ void Renderer::reflection(const Game &g, const Atlas &atlas, int frame, float x,
     const float baseline = atlas.trimmed ? 1 : atlas.baselines.at(frame);
     // Only the painted pixels immediately above the feet reflect below them.
     // Strip sampling clips to the puddle and cannot expose another atlas cell.
+    // Keep filtered source pixels inside the authored puddle. Without this
+    // logical clip, SDL's scaled sampler can leave a one-pixel fringe outside
+    // the wet surface and it reads as a detached duplicate sprite.
+    SDL_Rect previousClip{};
+    const bool hadClip = SDL_RenderIsClipEnabled(r);
+    SDL_RenderGetClipRect(r, &previousClip);
+    const int clipLeft = int(std::ceil(wet.x - camera + offsetX));
+    const int clipRight = int(std::floor(wet.x + wet.w - camera + offsetX));
+    SDL_Rect reflectionClip{clipLeft,
+                            int(std::floor(wet.y + offsetY + 1)),
+                            std::max(1, clipRight - clipLeft),
+                            std::max(1, int(std::ceil(wet.h - 1)))};
+    if (hadClip) SDL_IntersectRect(&reflectionClip, &previousClip, &reflectionClip);
+    SDL_RenderSetClipRect(r, &reflectionClip);
     SDL_SetTextureAlphaMod(atlas.texture, 65);
     for (int row = 1; row < wet.h; ++row) {
       int sy = source.y + int(baseline * source.h) - 1 - int(row * source.h / size);
@@ -171,6 +138,7 @@ void Renderer::reflection(const Game &g, const Atlas &atlas, int frame, float x,
       SDL_RenderCopyExF(r, atlas.texture, &strip, &dest, 0, nullptr, flip ? SDL_FLIP_HORIZONTAL : SDL_FLIP_NONE);
     }
     SDL_SetTextureAlphaMod(atlas.texture, 255);
+    SDL_RenderSetClipRect(r, hadClip ? &previousClip : nullptr);
   }
 }
 } // namespace kh
