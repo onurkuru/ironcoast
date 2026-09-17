@@ -2,7 +2,7 @@
 #include "game.h"
 #include "render.h"
 #include "presentation_config.h"
-#include "harbor_review.h"
+#include "painted_route_review.h"
 #include <SDL.h>
 #include <algorithm>
 #include <cmath>
@@ -66,8 +66,8 @@ int main(int argc, char **argv) {
   bool heroMotionReview=false;
   bool guardReactionReview=false;int guardReviewEvent=0;
   bool guardActionReview=false;
-  bool harborReview=false;
-  HarborRouteReview harborRoute;
+  bool harborReview=false,marshReview=false;
+  PaintedRouteReview paintedRoute;
   int chapter = -1, climbPreview=-1;
   bool demo = false, fast = false, bossPreview = false, workshopReview=false, reviewDemo=false;
   float beginX = 40;
@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
     auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
     if(a=="--workshop-review")workshopReview=true;
     else if(a=="--harbor-review")harborReview=true;
+    else if(a=="--marsh-review")marshReview=true;
     else if(a=="--chapter")chapter=std::clamp(std::stoi(next())-1,0,5);
     else if(a=="--climb-preview")climbPreview=std::max(0,std::stoi(next()));
     else if(a=="--ironline-review")ironlineReview=true;
@@ -119,7 +120,7 @@ int main(int argc, char **argv) {
     else if (a == "--help") {
       std::cout << "Iron Coast: Scrap Tide --stage 1..6 --chapter 1..6 --climb-preview LADDER_INDEX --frames N --capture frame.png --demo --fast "
                    "--assets PATH --save PATH --showcase 1..5 --boss-preview --preview-phase 1..2 "
-                   "--record DIR --record-every N --record-audio audio.s16le --harbor-review --workshop-review --review-demo --review-motion --review-camera --review-weapon 0..5 --ironline-review --ironline-demo --hero-motion-review --guard-reaction-review --guard-action-review\n";
+                   "--record DIR --record-every N --record-audio audio.s16le --harbor-review --marsh-review --workshop-review --review-demo --review-motion --review-camera --review-weapon 0..5 --ironline-review --ironline-demo --hero-motion-review --guard-reaction-review --guard-action-review\n";
       return 0;
     }
   }
@@ -242,8 +243,9 @@ int main(int argc, char **argv) {
       view.assist = true;
       game.debugInvincible = true;
     }
-    if(harborReview) {
-      game.load(0,false,campaign()[0].ladders.front().x);
+    if(harborReview || marshReview) {
+      const int map=marshReview?1:0;
+      game.load(map,false,campaign()[map].ladders.front().x);
       game.debugInvincible=true;game.player.inv=0;
       view.screen=Screen::Play;view.assist=true;
     }
@@ -632,7 +634,7 @@ int main(int argc, char **argv) {
             const auto &ladder=game.level().ladders[climbPreview];
             input.up=game.player.y>ladder.top+.1f;
           }
-          if(harborReview)input=harborRoute.input(game);
+          if(harborReview || marshReview)input=paintedRoute.input(game);
           view.input = input;
           queued.jump |= input.jump;
           queued.grenade |= input.grenade;

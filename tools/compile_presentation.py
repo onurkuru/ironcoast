@@ -7,21 +7,32 @@ def compile_config():
     if len(data['maps']) != 6 or len(data['weapons']) != 6 or len(data['secrets']) > 32:
         raise ValueError('Expected six map/weapon profiles and at most 32 discoveries')
     if len(data['productionPlates']) != 6:raise ValueError('Expected six production plates')
-    harbor=data['harborBuiltScene']
-    if harbor['sourceFloor']!=data['productionPlates'][0]['sourceFloor'] or harbor['sourceAspect']!=data['productionPlates'][0]['sourceAspect']:
-        raise ValueError('Harbor painting and geometry registration disagree')
-    if len(data['harborGalleries'])!=3 or len(data['harborLadders'])!=6 or len(data['harborDoors'])!=2:
-        raise ValueError('Incomplete integrated harbor architecture')
-    for gallery in data['harborGalleries']:
-        if not 0<=gallery['u0']<gallery['u1']<=1 or not 0<gallery['v']<harbor['sourceFloor']:
-            raise ValueError('Invalid painted gallery')
-    for ladder in data['harborLadders']:
-        if ladder['gallery'] not in range(3):raise ValueError('Invalid gallery index')
-        gallery=data['harborGalleries'][ladder['gallery']]
-        if not gallery['u0']<ladder['u']<gallery['u1']:raise ValueError('Ladder outside its painted deck')
-    for door in data['harborDoors']:
-        if not 0<door['u']<door['u']+door['w']<1 or not 0<door['v']<door['v']+door['h']<=harbor['sourceFloor']:
-            raise ValueError('Door panel leaves painted opening')
+    for index,prefix in enumerate(('harbor','marsh')):
+        scene=data[prefix+'BuiltScene']
+        galleries,ladders,doors=[data[prefix+section] for section in ('Galleries','Ladders','Doors')]
+        if scene['sourceFloor']!=data['productionPlates'][index]['sourceFloor'] or scene['sourceAspect']!=data['productionPlates'][index]['sourceAspect']:
+            raise ValueError(prefix+' painting and geometry registration disagree')
+        if len(galleries)!=3 or len(ladders)!=6 or len(doors)!=2 or scene['doorOpenDuration']<=0:
+            raise ValueError('Incomplete integrated '+prefix+' architecture')
+        for n,gallery in enumerate(galleries):
+            if not 0<=gallery['u0']<gallery['u1']<=1 or not 0<gallery['v']<scene['sourceFloor']:
+                raise ValueError('Invalid painted gallery')
+            pair=ladders[n*2:n*2+2]
+            if any(ladder['gallery']!=n for ladder in pair) or not gallery['u0']<pair[0]['u']<pair[1]['u']<gallery['u1']:
+                raise ValueError('Each painted gallery needs an ordered pair of attached ladders')
+        for door in doors:
+            if not 0<door['u']<door['u']+door['w']<1 or not 0<door['v']<door['v']+door['h']<=scene['sourceFloor']:
+                raise ValueError('Door panel leaves painted opening')
+    for fall in data['marshCascades']:
+        if not 0<=fall['u0']<fall['u1']<=1 or not 0<fall['v0']<fall['v1']<=data['marshBuiltScene']['sourceFloor']:
+            raise ValueError('Cascade leaves its authored spillway')
+        if not 0<fall['count']<=32 or fall['speed']<=0 or fall['length']<=0:
+            raise ValueError('Invalid cascade budget')
+    mist=data['marshMist']
+    if not data['marshBuiltScene']['sourceFloor']<mist['top']-mist['height']<mist['top']+mist['height']<1:
+        raise ValueError('Marsh mist crosses the walking contact plane')
+    if not 0<mist['opacity']<=32 or mist['speed']<=0 or mist['spacing']<=0:
+        raise ValueError('Invalid Marsh mist budget')
     for section in ['productionProps','productionStructures','campaignPresentation']:
         for key,value in data[section].items():
             if key=='enabled' and value in (0,1):continue

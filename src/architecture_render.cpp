@@ -6,28 +6,31 @@
 
 namespace kh {
 void Renderer::architecture(const Game &g, float camera, float time) {
-  if(g.levelIndex==0 && !g.cinematicReview()) {
+  if(g.levelIndex<=1 && !g.cinematicReview()) {
     // The frame, lintel, ladders, gallery and wall are one authored painting.
     // Animate only its measured door panel; no foreign kit is overlaid here.
-    const auto &rig=tuning::harborBuiltScene;
-    const float width=g.level().width,height=width/rig.sourceAspect;
-    const float top=232-height*rig.sourceFloor;
-    for(size_t i=0;i<tuning::harborDoors.size();++i) {
-      float age=i<g.entranceAges.size()?g.entranceAges[i]:-1;
-      if(age<0)continue;
-      const auto &door=tuning::harborDoors[i];
-      float x=door.u*width-camera,y=top+door.v*height,w=door.w*width,h=door.h*height;
-      if(x+w<0 || x>W)continue;
-      float opening=ease(age/rig.doorOpenDuration);
-      rect(x,y,w,h,rig.doorInterior);
-      rect(x+3,y+3,w-6,h-3,rig.doorShade);
-      if(opening<1 && scenePlate.texture) {
-        SDL_Rect source{int(door.u*scenePlate.width),int(door.v*scenePlate.height+door.h*scenePlate.height*opening),
-          std::max(1,int(door.w*scenePlate.width)),std::max(1,int(door.h*scenePlate.height*(1-opening)))};
-        SDL_FRect dest{x+offsetX,y+offsetY,w,h*(1-opening)};
-        SDL_RenderCopyF(r,scenePlate.texture,&source,&dest);
+    auto doors = [&](const auto &rig, const auto &panels) {
+      const float width=g.level().width,height=width/rig.sourceAspect;
+      const float top=232-height*rig.sourceFloor;
+      for(size_t i=0;i<panels.size();++i) {
+        float age=i<g.entranceAges.size()?g.entranceAges[i]:-1;
+        if(age<0)continue;
+        const auto &door=panels[i];
+        float x=door.u*width-camera,y=top+door.v*height,w=door.w*width,h=door.h*height;
+        if(x+w<0 || x>W)continue;
+        float opening=ease(age/rig.doorOpenDuration);
+        rect(x,y,w,h,rig.doorInterior);
+        rect(x+3,y+3,w-6,h-3,rig.doorShade);
+        if(opening<1 && scenePlate.texture) {
+          SDL_Rect source{int(door.u*scenePlate.width),int(door.v*scenePlate.height+door.h*scenePlate.height*opening),
+            std::max(1,int(door.w*scenePlate.width)),std::max(1,int(door.h*scenePlate.height*(1-opening)))};
+          SDL_FRect dest{x+offsetX,y+offsetY,w,h*(1-opening)};
+          SDL_RenderCopyF(r,scenePlate.texture,&source,&dest);
+        }
       }
-    }
+    };
+    if(g.levelIndex==0)doors(tuning::harborBuiltScene,tuning::harborDoors);
+    else doors(tuning::marshBuiltScene,tuning::marshDoors);
     return;
   }
   // The scene paintings provide architecture. Only interactive doors and

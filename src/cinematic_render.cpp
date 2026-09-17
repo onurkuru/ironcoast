@@ -52,7 +52,7 @@ void Renderer::cinematicLights(const Game &g, float camera, float time) {
   SDL_SetRenderDrawBlendMode(r, previous);
   // Authored contact occlusion, not screen-space AO from a nonexistent depth buffer.
   for (const auto &b : g.level().buildings) {
-    if(g.levelIndex==0 && !g.cinematicReview())continue; // Painted structural contact shadows are registered already.
+    if(g.levelIndex<=1 && !g.cinematicReview())continue; // Painted structural contact shadows are registered already.
     if (b.style == 7 || b.box.x + b.box.w < camera || b.box.x > camera + W) continue;
     for (float d = 0; d < p.aoWidth; d += 2) {
       float a = p.ao * 80 * (1 - d / p.aoWidth);
@@ -279,7 +279,7 @@ void Renderer::cinematicHarbor(const Game &g,float camera,float time) {
   const auto &production=tuning::productionPlates[g.levelIndex];
   if(production.enabled>0) {
     if(plateTheme!=g.levelIndex) {
-      static const char *names[]={"harbor-integrated-v3.png","marsh-pumphouse-v2.png","ironline-cinematic-v1.png",
+      static const char *names[]={"harbor-integrated-v3.png","marsh-integrated-v3.png","ironline-cinematic-v1.png",
                                   "foundry-hall-v2.png","relay-observatory-v2.png","command-hangar-v2.png"};
       Atlas next=load(names[g.levelIndex],1,1,false);
       if(scenePlate.texture)SDL_DestroyTexture(scenePlate.texture);
@@ -311,6 +311,17 @@ void Renderer::cinematicHarbor(const Game &g,float camera,float time) {
 void Renderer::productionPlate(const Game &g,const Atlas &art,float floor,float aspect,float camera,float time) {
   const float width=g.level().width,height=width/aspect,top=232-height*floor;
   sprite(art,0,-camera,top,width,height);
+  if(g.levelIndex==1) {
+    // Flow only inside measured spillways, below the gallery and behind actors.
+    // The phase uses scene time, so pause and deterministic replay stay aligned.
+    for(const auto &fall:tuning::marshCascades)for(int i=0;i<int(fall.count);++i) {
+      float seed=std::fmod(i*.618034f,.999f);
+      float u=fall.u0+seed*(fall.u1-fall.u0);
+      float v=fall.v0+std::fmod(time*fall.speed+i*.137f,fall.v1-fall.v0);
+      float x=u*width-camera;
+      if(x>-2 && x<W+2)line(x,top+v*height,x,top+std::min(fall.v1,v+fall.length)*height,fall.color);
+    }
+  }
   const auto &depth=tuning::productionDepth;
   float start=std::min(.98f,floor+depth.floorMargin)*height;
   // Environment-only strip perspective starts below the contact plane.
@@ -330,6 +341,15 @@ void Renderer::productionPlate(const Game &g,const Atlas &art,float floor,float 
       float v=w.v0+std::fmod(time*w.speed+i*.137f,w.v1-w.v0);
       float x=u*width-camera,y=top+v*height;
       if(x>-8 && x<W+8)line(x,y,(u+w.slant)*width-camera,top+std::min(w.v1,v+w.length)*height,w.color);
+    }
+  }
+  if(g.levelIndex==1) {
+    const auto &mist=tuning::marshMist;
+    for(int i=0;i<8;++i) {
+      float u=std::fmod(i*mist.spacing+time*mist.speed,1.1f)-.05f;
+      float x=u*width-camera,y=top+mist.top*height;
+      if(x>-100 && x<W+100)
+        softLight(x,y,width*.075f,mist.height*height,0x74979800,Uint8(mist.opacity),false);
     }
   }
 }

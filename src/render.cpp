@@ -659,6 +659,24 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     if (x + h.w < 0 || x > W)
       continue;
     bool active = g.hazardOn(h);
+    if(g.levelIndex==1 && h.kind==0) {
+      // A shallow steel vent sits on the painted lane. Steam stays inside the
+      // damaging height instead of suggesting an invisible tall hitbox.
+      const float floor=h.y+h.h-1;
+      rect(x-1,floor-2,h.w+2,3,0x131B1EFF);
+      line(x,floor-2,x+h.w,floor-2,0x566161CC);
+      for(int j=3;j<int(h.w)-2;j+=4)
+        line(x+j,floor-1,x+j+1,floor,0x090F12FF);
+      for(float edge:{x,x+h.w-2})
+        rect(edge,floor-2,2,2,active?0xDFA262FF:0x927354FF);
+      if(active)for(int j=3;j<int(h.w)-2;j+=3) {
+        float phase=std::fmod(time*2+j*.137f,1.f);
+        float y=floor-1-phase*(h.h-2);
+        float drift=std::sin(time*5+j)*1.2f;
+        line(x+j+drift,y,x+j+drift+.5f,y+2,0xC9D5C8A0);
+      }
+      continue;
+    }
     rect(x, h.y + h.h - 3, h.w, 3, h.kind == 0 ? 0x7EC65DFF : GOLD);
     if (active) {
       if (h.kind == 0) {
@@ -691,7 +709,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       SDL_SetTextureColorMod(productionProps.texture,255,255,255);
     }
   for (float cp : l.checkpoints)
-    if (!g.cinematicReview() && g.levelIndex!=0 && cp > camera - 25 && cp < camera + W + 25) {
+    if (!g.cinematicReview() && g.levelIndex>1 && cp > camera - 25 && cp < camera + W + 25) {
       float size=tuning::productionProps.beaconSize;
       groundedSprite(productionProps,3,cp-camera-size/2,232-size,size,size);
       if (cp <= g.checkpoint)

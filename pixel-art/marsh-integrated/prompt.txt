@@ -1,0 +1,12 @@
+Use case: stylized-concept
+Asset type: full-width production background for the existing Iron Coast 2D side-scrolling game.
+Input 1 is the edit target and setting reference: marsh-pumphouse-v2.png.
+Input 2 is the architecture-integration style reference: harbor-integrated-v3.png.
+
+Recompose the marsh pump station into one coherent cinematic pixel-art-style painting, aspect 3:1. Preserve the original setting, rich painted pixel texture, mossy concrete, oxidized green pipes, amber practical lights, cold blue-green swamp, wet reflections, distant trees and working spillways. Keep the same art quality and natural adult character scale as the references, but include no characters, enemies, weapons, text or HUD.
+
+Design specifically for a side-on playable lane. The continuous straight ground contact edge runs horizontally at about 76% of image height from left to right. Water, reeds and foundation piers remain below the lane; scenic depth stays behind it. Keep the rightmost 20% of that lane open for the dredger encounter.
+
+Integrate exactly three broad elevated service galleries as parts of the concrete pump buildings and sluice machinery, not separate tiles: left gallery from 2% to 27% of width at about 35% of height; middle gallery from 35% to 59% at about 42%; right gallery from 65% to 80% at about 33%. Each gallery has a clearly readable straight horizontal near contact edge, a rear railing, deep concrete or rusted steel brackets and a bearing wall/bay. Six practical vertical steel ladders run from the continuous ground lane to the galleries, two per gallery at its near ends. Their rails and rungs remain clearly visible. Keep all supports, seams, material wear, shadows, lamps and perspectives part of the same architecture.
+
+Paint two closed vertical service doors in the lower building walls at about 18% and 67% width, their feet on the ground lane and warm lamps above. Paint low drainage grates flush with the ground lane in the spaces between the major bays. Preserve several visible cascades and large valve wheels behind the playing plane. One broad composition, no collage seams, no repeated modular platform pattern, no floating structures, no detached ladders, no foreground railing across actor feet. Straight camera, no tilted horizon, no diagonal playable surfaces. Full-bleed final artwork with no border or annotations.

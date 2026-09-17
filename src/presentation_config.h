@@ -486,7 +486,7 @@ struct ProductionPlates {
   float sourceAspect;
 };
 inline constexpr std::array<ProductionPlates, 6> productionPlates = {{{1.0f, 0.7569546120058566f, 3.0f},
-{1.0f, 0.725f, 3.0f},
+{1.0f, 0.6764275256222547f, 3.0f},
 {0.0f, 0.73f, 3.0f},
 {0.0f, 0.778f, 3.0f},
 {1.0f, 0.84f, 3.0f},
@@ -531,8 +531,7 @@ struct ProductionWeather {
   float length;
   uint32_t color;
 };
-inline constexpr std::array<ProductionWeather, 4> productionWeather = {{{0.0f, 0.35f, 1.0f, 0.0f, 0.77f, 68.0f, 0.28f, -0.003f, 0.009f, 0x8EAFC344u},
-{1.0f, 0.315f, 0.605f, 0.52f, 0.713f, 58.0f, 0.38f, 0.001f, 0.005f, 0x9EBCC55Au},
+inline constexpr std::array<ProductionWeather, 3> productionWeather = {{{0.0f, 0.35f, 1.0f, 0.0f, 0.77f, 68.0f, 0.28f, -0.003f, 0.009f, 0x8EAFC344u},
 {4.0f, 0.0f, 1.0f, 0.0f, 0.83f, 96.0f, 0.055f, -0.002f, 0.0015f, 0xBAD5DE8Au},
 {5.0f, 0.63f, 0.97f, 0.05f, 0.79f, 64.0f, 0.22f, -0.003f, 0.008f, 0x8DACB84Au}}};
 struct ProductionLights {
@@ -543,10 +542,7 @@ struct ProductionLights {
   float strength;
   uint32_t color;
 };
-inline constexpr std::array<ProductionLights, 26> productionLights = {{{1.0f, 0.061f, 0.485f, 130.0f, 0.46f, 0xFFD295FFu},
-{1.0f, 0.212f, 0.444f, 115.0f, 0.34f, 0xFFD295FFu},
-{1.0f, 0.852f, 0.42f, 180.0f, 0.4f, 0xB0D8CCFFu},
-{3.0f, 0.082f, 0.59f, 120.0f, 0.45f, 0xFFD09AFFu},
+inline constexpr std::array<ProductionLights, 32> productionLights = {{{3.0f, 0.082f, 0.59f, 120.0f, 0.45f, 0xFFD09AFFu},
 {3.0f, 0.356f, 0.15f, 240.0f, 0.38f, 0x81CAE7FFu},
 {3.0f, 0.815f, 0.57f, 200.0f, 0.65f, 0xFFB578FFu},
 {4.0f, 0.145f, 0.664f, 135.0f, 0.5f, 0xFFD89FFFu},
@@ -568,7 +564,16 @@ inline constexpr std::array<ProductionLights, 26> productionLights = {{{1.0f, 0.
 {0.0f, 0.60400390625f, 0.1698389458272328f, 120.0f, 0.24f, 0xFFBB7700u},
 {0.0f, 0.791015625f, 0.5871156661786238f, 120.0f, 0.24f, 0xFFBB7700u},
 {0.0f, 0.888671875f, 0.5095168374816984f, 120.0f, 0.24f, 0xFFBB7700u},
-{0.0f, 0.98974609375f, 0.5534407027818448f, 120.0f, 0.24f, 0xFFBB7700u}}};
+{0.0f, 0.98974609375f, 0.5534407027818448f, 120.0f, 0.24f, 0xFFBB7700u},
+{1.0f, 0.0537109375f, 0.20351390922401172f, 120.0f, 0.24f, 0xFFC18A00u},
+{1.0f, 0.2392578125f, 0.20351390922401172f, 120.0f, 0.24f, 0xFFC18A00u},
+{1.0f, 0.169921875f, 0.48755490483162517f, 120.0f, 0.24f, 0xFFC18A00u},
+{1.0f, 0.38330078125f, 0.32503660322108346f, 120.0f, 0.24f, 0xFFC18A00u},
+{1.0f, 0.5546875f, 0.3206442166910688f, 120.0f, 0.24f, 0xFFC18A00u},
+{1.0f, 0.61962890625f, 0.25036603221083453f, 120.0f, 0.24f, 0xFFC18A00u},
+{1.0f, 0.67626953125f, 0.5065885797950219f, 120.0f, 0.24f, 0xFFC18A00u},
+{1.0f, 0.7529296875f, 0.2518301610541728f, 120.0f, 0.24f, 0xFFC18A00u},
+{1.0f, 0.9873046875f, 0.49487554904831627f, 120.0f, 0.24f, 0xFFC18A00u}}};
 struct ForgeTitanCores {
   float x;
   float y;
@@ -809,4 +814,59 @@ struct HarborDoors {
 };
 inline constexpr std::array<HarborDoors, 2> harborDoors = {{{0.1708984375f, 0.5973645680819912f, 0.0224609375f, 0.15666178623718888f},
 {0.6396484375f, 0.6002928257686676f, 0.0341796875f, 0.15519765739385066f}}};
+struct MarshBuiltScene {
+  float sourceFloor;
+  float sourceAspect;
+  float doorOpenDuration;
+  uint32_t doorInterior;
+  uint32_t doorShade;
+};
+inline constexpr MarshBuiltScene marshBuiltScene = {0.6764275256222547f, 3.0f, 0.75f, 0x050A0EFFu, 0x0C181AFFu};
+struct MarshGalleries {
+  float u0;
+  float u1;
+  float v;
+};
+inline constexpr std::array<MarshGalleries, 3> marshGalleries = {{{0.0341796875f, 0.2587890625f, 0.2884333821376281f},
+{0.3662109375f, 0.578125f, 0.39824304538799415f},
+{0.609375f, 0.7626953125f, 0.3294289897510981f}}};
+struct MarshLadders {
+  float u;
+  float gallery;
+};
+inline constexpr std::array<MarshLadders, 6> marshLadders = {{{0.0576171875f, 0.0f},
+{0.2314453125f, 0.0f},
+{0.3857421875f, 1.0f},
+{0.5537109375f, 1.0f},
+{0.62744140625f, 2.0f},
+{0.73974609375f, 2.0f}}};
+struct MarshDoors {
+  float u;
+  float v;
+  float w;
+  float h;
+};
+inline constexpr std::array<MarshDoors, 2> marshDoors = {{{0.1591796875f, 0.5285505124450952f, 0.0234375f, 0.14202049780380674f},
+{0.66357421875f, 0.5475841874084919f, 0.0244140625f, 0.12298682284040996f}}};
+struct MarshCascades {
+  float u0;
+  float u1;
+  float v0;
+  float v1;
+  float count;
+  float speed;
+  float length;
+  uint32_t color;
+};
+inline constexpr std::array<MarshCascades, 3> marshCascades = {{{0.294921875f, 0.35986328125f, 0.44216691068814057f, 0.6705710102489019f, 24.0f, 0.38f, 0.015f, 0x9CB9C244u},
+{0.4111328125f, 0.46728515625f, 0.49633967789165445f, 0.6705710102489019f, 20.0f, 0.33f, 0.018f, 0x92BBC540u},
+{0.47216796875f, 0.52685546875f, 0.4773060029282577f, 0.6720351390922401f, 20.0f, 0.36f, 0.016f, 0x8FB7C040u}}};
+struct MarshMist {
+  float top;
+  float height;
+  float speed;
+  float opacity;
+  float spacing;
+};
+inline constexpr MarshMist marshMist = {0.7101024890190337f, 0.02635431918008785f, 0.016f, 16.0f, 0.16f};
 } // namespace kh::tuning

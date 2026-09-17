@@ -6,15 +6,15 @@
     "exposure": 1.18,
     "bloom": 0.65,
     "shaft": 0.7,
-    "shaftStep": 6.0,
+    "shaftStep": 6,
     "shaftSpread": 0.28,
     "shaftNoise": 0.22,
     "shaftSpeed": 0.8,
     "ao": 0.28,
-    "aoWidth": 9.0,
-    "fogSpeed": 4.0,
-    "fogHeight": 40.0,
-    "fogSpacing": 175.0,
+    "aoWidth": 9,
+    "fogSpeed": 4,
+    "fogHeight": 40,
+    "fogSpacing": 175,
     "dof": 1.15,
     "motionBlur": 0.65,
     "grade": 0.035,
@@ -26,27 +26,27 @@
     "headFlinch": 0.19,
     "torsoFlinch": 0.13,
     "legFlinch": 0.23,
-    "headAngle": 12.0,
-    "torsoAngle": 7.0,
+    "headAngle": 12,
+    "torsoAngle": 7,
     "legSquash": 0.12,
-    "knockback": 6.0,
+    "knockback": 6,
     "hitStop": 0.025,
     "heavyHitStop": 0.045,
     "hitCooldown": 0.12,
     "hitShake": 0.65,
     "deathDuration": 0.65,
-    "deathTravel": 17.0,
-    "deathLift": 12.0,
-    "deathAngle": 58.0,
-    "impactParticles": 7.0,
+    "deathTravel": 17,
+    "deathLift": 12,
+    "deathAngle": 58,
+    "impactParticles": 7,
     "impactLife": 0.24,
-    "impactSpeed": 75.0,
+    "impactSpeed": 75,
     "hitColor": "FFB19AFF",
     "bloodColor": "BA655EFF",
     "dustColor": "B2BFC6FF"
   },
   "audio": {
-    "falloff": 230.0,
+    "falloff": 230,
     "distantLowpass": 0.08,
     "musicGain": 0.7,
     "duck": 0.7,
@@ -61,15 +61,15 @@
     "discoveryGain": 0.15,
     "reloadLatch": 0.55,
     "reloadClose": 0.88,
-    "clickDecay": 65.0,
-    "impactDecay": 35.0,
-    "crackDecay": 180.0,
-    "tailDecay": 11.0,
+    "clickDecay": 65,
+    "impactDecay": 35,
+    "crackDecay": 180,
+    "tailDecay": 11,
     "tailGain": 0.18,
-    "flamePulse": 72.0,
-    "flameDecay": 4.0,
-    "discoveryFrequency": 660.0,
-    "discoveryPitchRise": 660.0,
+    "flamePulse": 72,
+    "flameDecay": 4,
+    "discoveryFrequency": 660,
+    "discoveryPitchRise": 660,
     "discoveryDuration": 0.6
   },
   "maps": [
@@ -80,7 +80,7 @@
       "edgeColor": "73989EFF",
       "skyColor": "102333FF",
       "fogDensity": 0.08,
-      "fogDrift": 1.0,
+      "fogDrift": 1,
       "textureGain": 0.85,
       "alcoveLampX": 0.18,
       "alcoveLampY": 0.22
@@ -150,181 +150,181 @@
     {
       "flashColor": "FFF1B4FF",
       "tracerColor": "FFE7A8FF",
-      "flashLength": 9.0,
-      "flashWidth": 3.0,
+      "flashLength": 9,
+      "flashWidth": 3,
       "flashDuration": 0.05,
-      "tracerLength": 7.0,
+      "tracerLength": 7,
       "recoil": 1.2,
-      "casing": 1.0,
+      "casing": 1,
       "casingLife": 0.48,
-      "casingSpeed": 48.0,
-      "magazine": 12.0,
+      "casingSpeed": 48,
+      "magazine": 12,
       "reload": 0.72,
       "fireDuration": 0.14,
-      "frequency": 175.0,
-      "pitchDrop": -600.0,
+      "frequency": 175,
+      "pitchDrop": -600,
       "noise": 0.72,
       "lowpass": 0.65,
       "gain": 0.32,
-      "decay": 28.0,
-      "reloadPitch": 800.0,
-      "impactSize": 2.0
+      "decay": 28,
+      "reloadPitch": 800,
+      "impactSize": 2
     },
     {
       "flashColor": "FFBF62FF",
       "tracerColor": "FFBE6CFF",
-      "flashLength": 14.0,
-      "flashWidth": 4.0,
+      "flashLength": 14,
+      "flashWidth": 4,
       "flashDuration": 0.045,
-      "tracerLength": 11.0,
+      "tracerLength": 11,
       "recoil": 1.9,
-      "casing": 1.0,
+      "casing": 1,
       "casingLife": 0.48,
-      "casingSpeed": 48.0,
-      "magazine": 30.0,
+      "casingSpeed": 48,
+      "magazine": 30,
       "reload": 1.15,
       "fireDuration": 0.16,
-      "frequency": 110.0,
-      "pitchDrop": -320.0,
+      "frequency": 110,
+      "pitchDrop": -320,
       "noise": 0.65,
       "lowpass": 0.48,
       "gain": 0.34,
-      "decay": 23.0,
-      "reloadPitch": 500.0,
+      "decay": 23,
+      "reloadPitch": 500,
       "impactSize": 2.5
     },
     {
       "flashColor": "FFE3A0FF",
       "tracerColor": "FFF2CDFF",
-      "flashLength": 19.0,
-      "flashWidth": 8.0,
+      "flashLength": 19,
+      "flashWidth": 8,
       "flashDuration": 0.085,
-      "tracerLength": 4.0,
-      "recoil": 4.0,
-      "casing": 2.0,
+      "tracerLength": 4,
+      "recoil": 4,
+      "casing": 2,
       "casingLife": 0.48,
-      "casingSpeed": 48.0,
-      "magazine": 6.0,
+      "casingSpeed": 48,
+      "magazine": 6,
       "reload": 1.25,
       "fireDuration": 0.32,
-      "frequency": 65.0,
-      "pitchDrop": -120.0,
+      "frequency": 65,
+      "pitchDrop": -120,
       "noise": 0.85,
       "lowpass": 0.3,
       "gain": 0.48,
-      "decay": 14.0,
-      "reloadPitch": 320.0,
-      "impactSize": 3.0
+      "decay": 14,
+      "reloadPitch": 320,
+      "impactSize": 3
     },
     {
       "flashColor": "F79455FF",
       "tracerColor": "ED995EFF",
-      "flashLength": 17.0,
-      "flashWidth": 7.0,
+      "flashLength": 17,
+      "flashWidth": 7,
       "flashDuration": 0.11,
-      "tracerLength": 12.0,
+      "tracerLength": 12,
       "recoil": 4.8,
-      "casing": 0.0,
+      "casing": 0,
       "casingLife": 0.48,
-      "casingSpeed": 48.0,
-      "magazine": 1.0,
+      "casingSpeed": 48,
+      "magazine": 1,
       "reload": 1.3,
       "fireDuration": 0.42,
-      "frequency": 48.0,
-      "pitchDrop": 45.0,
+      "frequency": 48,
+      "pitchDrop": 45,
       "noise": 0.8,
       "lowpass": 0.13,
       "gain": 0.4,
-      "decay": 8.0,
-      "reloadPitch": 170.0,
-      "impactSize": 5.0
+      "decay": 8,
+      "reloadPitch": 170,
+      "impactSize": 5
     },
     {
       "flashColor": "FF783EFF",
       "tracerColor": "FF934BFF",
-      "flashLength": 14.0,
-      "flashWidth": 9.0,
+      "flashLength": 14,
+      "flashWidth": 9,
       "flashDuration": 0.1,
-      "tracerLength": 13.0,
-      "recoil": 1.0,
-      "casing": 0.0,
+      "tracerLength": 13,
+      "recoil": 1,
+      "casing": 0,
       "casingLife": 0.48,
-      "casingSpeed": 48.0,
-      "magazine": 24.0,
+      "casingSpeed": 48,
+      "magazine": 24,
       "reload": 0.95,
       "fireDuration": 0.27,
-      "frequency": 72.0,
-      "pitchDrop": 80.0,
+      "frequency": 72,
+      "pitchDrop": 80,
       "noise": 0.94,
       "lowpass": 0.18,
       "gain": 0.28,
-      "decay": 3.0,
-      "reloadPitch": 110.0,
-      "impactSize": 4.0
+      "decay": 3,
+      "reloadPitch": 110,
+      "impactSize": 4
     },
     {
       "flashColor": "81F3FFFF",
       "tracerColor": "70E7FFFF",
-      "flashLength": 22.0,
-      "flashWidth": 2.0,
+      "flashLength": 22,
+      "flashWidth": 2,
       "flashDuration": 0.075,
-      "tracerLength": 24.0,
+      "tracerLength": 24,
       "recoil": 0.6,
-      "casing": 0.0,
+      "casing": 0,
       "casingLife": 0.48,
-      "casingSpeed": 48.0,
-      "magazine": 8.0,
+      "casingSpeed": 48,
+      "magazine": 8,
       "reload": 0.85,
       "fireDuration": 0.25,
-      "frequency": 950.0,
-      "pitchDrop": -2100.0,
+      "frequency": 950,
+      "pitchDrop": -2100,
       "noise": 0.045,
       "lowpass": 0.6,
       "gain": 0.27,
-      "decay": 17.0,
-      "reloadPitch": 610.0,
-      "impactSize": 2.0
+      "decay": 17,
+      "reloadPitch": 610,
+      "impactSize": 2
     }
   ],
   "secrets": [
     {
-      "map": 0.0,
+      "map": 0,
       "x": 1380,
       "y": -50.04978038067355,
-      "radius": 27.0,
-      "kind": 0.0
+      "radius": 27,
+      "kind": 0
     },
     {
-      "map": 4.0,
+      "map": 4,
       "x": 800,
       "y": -96,
-      "radius": 27.0,
-      "kind": 1.0
+      "radius": 27,
+      "kind": 1
     }
   ],
   "discovery": {
-    "duration": 3.0,
-    "score": 250.0,
-    "plaqueWidth": 22.0,
-    "plaqueHeight": 9.0,
-    "flagWidth": 20.0,
-    "flagHeight": 13.0,
+    "duration": 3,
+    "score": 250,
+    "plaqueWidth": 22,
+    "plaqueHeight": 9,
+    "flagWidth": 20,
+    "flagHeight": 13,
     "color": "EDD9A4FF"
   },
   "environment": {
     "fanSpeed": 0.9,
-    "terminalBlink": 2.0,
+    "terminalBlink": 2,
     "fogWaveSpeed": 0.19,
     "windowShaftSlant": 0.32,
-    "shaftRadiance": 24.0,
-    "sourceBloomRadius": 22.0,
-    "sourceBloomHeight": 10.0,
-    "skyDofAlpha": 44.0,
-    "motionAlpha": 25.0,
-    "alcoveSize": 56.0,
-    "alcoveSpacing": 108.0,
+    "shaftRadiance": 24,
+    "sourceBloomRadius": 22,
+    "sourceBloomHeight": 10,
+    "skyDofAlpha": 44,
+    "motionAlpha": 25,
+    "alcoveSize": 56,
+    "alcoveSpacing": 108,
     "alcoveGain": 0.84,
-    "alcoveLampRadius": 55.0,
+    "alcoveLampRadius": 55,
     "alcoveLampStrength": 0.36
   },
   "materials": {
@@ -347,24 +347,24 @@
     "color091822FF": "091822FF"
   },
   "camera": {
-    "anchorX": 155.0,
-    "lookAhead": 32.0,
+    "anchorX": 155,
+    "lookAhead": 32,
     "followSpeed": 5.5,
-    "verticalSpeed": 5.0,
-    "climbLook": 18.0,
+    "verticalSpeed": 5,
+    "climbLook": 18,
     "bossIntroDuration": 1.8,
-    "bossLift": 9.0,
+    "bossLift": 9,
     "bossZoom": 1.025,
     "climbZoom": 1.012,
     "zoomSpeed": 2.8
   },
   "surface": {
-    "sampleStep": 12.0,
-    "wallIntensity": 28.0,
-    "floorIntensity": 85.0,
-    "specularIntensity": 115.0,
+    "sampleStep": 12,
+    "wallIntensity": 28,
+    "floorIntensity": 85,
+    "specularIntensity": 115,
     "wallRadius": 0.8,
-    "reflectionHeight": 6.0,
+    "reflectionHeight": 6,
     "lightReach": 1.65
   },
   "surfaceMaterials": [
@@ -381,7 +381,7 @@
     {
       "diffuse": 0.68,
       "specular": 0.06,
-      "roughness": 1.0
+      "roughness": 1
     }
   ],
   "hud": {
@@ -389,55 +389,55 @@
     "weaponDuration": 1.4,
     "fadeDuration": 0.5,
     "opacity": 0.8,
-    "margin": 14.0,
+    "margin": 14,
     "healthColor": "D58F73FF",
     "weaponColor": "CDC6B3FF"
   },
   "harborScene": {
-    "width": 720.0,
+    "width": 720,
     "sourceFloor": 0.658,
     "sourceAspect": 1.7768331562167907
   },
   "harborLights": [
     {
-      "x": 73.0,
-      "y": 8.0,
-      "radius": 85.0,
+      "x": 73,
+      "y": 8,
+      "radius": 85,
       "strength": 0.5,
       "color": "E5A66CFF"
     },
     {
-      "x": 117.0,
-      "y": 106.0,
-      "radius": 95.0,
+      "x": 117,
+      "y": 106,
+      "radius": 95,
       "strength": 0.6,
       "color": "F9BA7AFF"
     },
     {
-      "x": 278.0,
-      "y": 145.0,
-      "radius": 95.0,
+      "x": 278,
+      "y": 145,
+      "radius": 95,
       "strength": 0.6,
       "color": "EDB886FF"
     },
     {
-      "x": 452.0,
-      "y": 198.0,
-      "radius": 78.0,
+      "x": 452,
+      "y": 198,
+      "radius": 78,
       "strength": 0.5,
       "color": "FFC07EFF"
     },
     {
-      "x": 501.0,
-      "y": 173.0,
-      "radius": 70.0,
+      "x": 501,
+      "y": 173,
+      "radius": 70,
       "strength": 0.5,
       "color": "96C77AFF"
     },
     {
-      "x": 664.0,
-      "y": 189.0,
-      "radius": 92.0,
+      "x": 664,
+      "y": 189,
+      "radius": 92,
       "strength": 0.5,
       "color": "99CFDCFF"
     }
@@ -1098,7 +1098,7 @@
     },
     {
       "enabled": 1,
-      "sourceFloor": 0.725,
+      "sourceFloor": 0.6764275256222547,
       "sourceAspect": 3
     },
     {
@@ -1161,18 +1161,6 @@
       "color": "8EAFC344"
     },
     {
-      "map": 1,
-      "u0": 0.315,
-      "u1": 0.605,
-      "v0": 0.52,
-      "v1": 0.713,
-      "count": 58,
-      "speed": 0.38,
-      "slant": 0.001,
-      "length": 0.005,
-      "color": "9EBCC55A"
-    },
-    {
       "map": 4,
       "u0": 0,
       "u1": 1,
@@ -1198,30 +1186,6 @@
     }
   ],
   "productionLights": [
-    {
-      "map": 1,
-      "u": 0.061,
-      "v": 0.485,
-      "radius": 130,
-      "strength": 0.46,
-      "color": "FFD295FF"
-    },
-    {
-      "map": 1,
-      "u": 0.212,
-      "v": 0.444,
-      "radius": 115,
-      "strength": 0.34,
-      "color": "FFD295FF"
-    },
-    {
-      "map": 1,
-      "u": 0.852,
-      "v": 0.42,
-      "radius": 180,
-      "strength": 0.4,
-      "color": "B0D8CCFF"
-    },
     {
       "map": 3,
       "u": 0.082,
@@ -1405,6 +1369,78 @@
       "radius": 120,
       "strength": 0.24,
       "color": "FFBB7700"
+    },
+    {
+      "map": 1,
+      "u": 0.0537109375,
+      "v": 0.20351390922401172,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
+    },
+    {
+      "map": 1,
+      "u": 0.2392578125,
+      "v": 0.20351390922401172,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
+    },
+    {
+      "map": 1,
+      "u": 0.169921875,
+      "v": 0.48755490483162517,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
+    },
+    {
+      "map": 1,
+      "u": 0.38330078125,
+      "v": 0.32503660322108346,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
+    },
+    {
+      "map": 1,
+      "u": 0.5546875,
+      "v": 0.3206442166910688,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
+    },
+    {
+      "map": 1,
+      "u": 0.61962890625,
+      "v": 0.25036603221083453,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
+    },
+    {
+      "map": 1,
+      "u": 0.67626953125,
+      "v": 0.5065885797950219,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
+    },
+    {
+      "map": 1,
+      "u": 0.7529296875,
+      "v": 0.2518301610541728,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
+    },
+    {
+      "map": 1,
+      "u": 0.9873046875,
+      "v": 0.49487554904831627,
+      "radius": 120,
+      "strength": 0.24,
+      "color": "FFC18A00"
     }
   ],
   "forgeTitanCores": [
@@ -1544,15 +1580,15 @@
     "maxCameraSpeed": 180,
     "nearDepth": 1.08,
     "depthStart": 0.75,
-    "stripHeight": 1.0
+    "stripHeight": 1
   },
   "workshopCamera": {
-    "establishDuration": 2.0,
-    "establishZoom": 1.0,
+    "establishDuration": 2,
+    "establishZoom": 1,
     "trackingZoom": 1.015,
     "detailZoom": 1.075,
     "combatZoom": 1.035,
-    "galleryZoom": 1.0,
+    "galleryZoom": 1,
     "exitZoom": 1.065,
     "panResponse": 3.2,
     "verticalResponse": 2.4,
@@ -1587,7 +1623,7 @@
     "darkFeather": 30,
     "edgeFeather": 0.004,
     "fogDepth": 0.42,
-    "fogSpeed": 4.0,
+    "fogSpeed": 4,
     "fogWave": 0.17,
     "fogAmplitude": 7,
     "fogY": 120,
@@ -1812,5 +1848,108 @@
       "w": 0.0341796875,
       "h": 0.15519765739385066
     }
-  ]
+  ],
+  "marshBuiltScene": {
+    "sourceFloor": 0.6764275256222547,
+    "sourceAspect": 3,
+    "doorOpenDuration": 0.75,
+    "doorInterior": "050A0EFF",
+    "doorShade": "0C181AFF"
+  },
+  "marshGalleries": [
+    {
+      "u0": 0.0341796875,
+      "u1": 0.2587890625,
+      "v": 0.2884333821376281
+    },
+    {
+      "u0": 0.3662109375,
+      "u1": 0.578125,
+      "v": 0.39824304538799415
+    },
+    {
+      "u0": 0.609375,
+      "u1": 0.7626953125,
+      "v": 0.3294289897510981
+    }
+  ],
+  "marshLadders": [
+    {
+      "u": 0.0576171875,
+      "gallery": 0
+    },
+    {
+      "u": 0.2314453125,
+      "gallery": 0
+    },
+    {
+      "u": 0.3857421875,
+      "gallery": 1
+    },
+    {
+      "u": 0.5537109375,
+      "gallery": 1
+    },
+    {
+      "u": 0.62744140625,
+      "gallery": 2
+    },
+    {
+      "u": 0.73974609375,
+      "gallery": 2
+    }
+  ],
+  "marshDoors": [
+    {
+      "u": 0.1591796875,
+      "v": 0.5285505124450952,
+      "w": 0.0234375,
+      "h": 0.14202049780380674
+    },
+    {
+      "u": 0.66357421875,
+      "v": 0.5475841874084919,
+      "w": 0.0244140625,
+      "h": 0.12298682284040996
+    }
+  ],
+  "marshCascades": [
+    {
+      "u0": 0.294921875,
+      "u1": 0.35986328125,
+      "v0": 0.44216691068814057,
+      "v1": 0.6705710102489019,
+      "count": 24,
+      "speed": 0.38,
+      "length": 0.015,
+      "color": "9CB9C244"
+    },
+    {
+      "u0": 0.4111328125,
+      "u1": 0.46728515625,
+      "v0": 0.49633967789165445,
+      "v1": 0.6705710102489019,
+      "count": 20,
+      "speed": 0.33,
+      "length": 0.018,
+      "color": "92BBC540"
+    },
+    {
+      "u0": 0.47216796875,
+      "u1": 0.52685546875,
+      "v0": 0.4773060029282577,
+      "v1": 0.6720351390922401,
+      "count": 20,
+      "speed": 0.36,
+      "length": 0.016,
+      "color": "8FB7C040"
+    }
+  ],
+  "marshMist": {
+    "top": 0.7101024890190337,
+    "height": 0.02635431918008785,
+    "speed": 0.016,
+    "opacity": 16,
+    "spacing": 0.16
+  }
 }

@@ -6,7 +6,7 @@
 namespace kh {
 // Host review input only: the normal movement, combat and camera code runs
 // unchanged. After the initial spawn, the actor is never teleported.
-class HarborRouteReview {
+class PaintedRouteReview {
 public:
   int completedGalleries = 0;
   bool finished() const { return completedGalleries == 3; }
