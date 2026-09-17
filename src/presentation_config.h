@@ -487,7 +487,7 @@ struct ProductionPlates {
 };
 inline constexpr std::array<ProductionPlates, 6> productionPlates = {{{1.0f, 0.7569546120058566f, 3.0f},
 {1.0f, 0.6764275256222547f, 3.0f},
-{0.0f, 0.73f, 3.0f},
+{1.0f, 0.6366279069767442f, 2.9766162310866573f},
 {0.0f, 0.778f, 3.0f},
 {1.0f, 0.84f, 3.0f},
 {1.0f, 0.793f, 3.0f}}};
@@ -542,7 +542,7 @@ struct ProductionLights {
   float strength;
   uint32_t color;
 };
-inline constexpr std::array<ProductionLights, 32> productionLights = {{{3.0f, 0.082f, 0.59f, 120.0f, 0.45f, 0xFFD09AFFu},
+inline constexpr std::array<ProductionLights, 44> productionLights = {{{3.0f, 0.082f, 0.59f, 120.0f, 0.45f, 0xFFD09AFFu},
 {3.0f, 0.356f, 0.15f, 240.0f, 0.38f, 0x81CAE7FFu},
 {3.0f, 0.815f, 0.57f, 200.0f, 0.65f, 0xFFB578FFu},
 {4.0f, 0.145f, 0.664f, 135.0f, 0.5f, 0xFFD89FFFu},
@@ -573,7 +573,19 @@ inline constexpr std::array<ProductionLights, 32> productionLights = {{{3.0f, 0.
 {1.0f, 0.61962890625f, 0.25036603221083453f, 120.0f, 0.24f, 0xFFC18A00u},
 {1.0f, 0.67626953125f, 0.5065885797950219f, 120.0f, 0.24f, 0xFFC18A00u},
 {1.0f, 0.7529296875f, 0.2518301610541728f, 120.0f, 0.24f, 0xFFC18A00u},
-{1.0f, 0.9873046875f, 0.49487554904831627f, 120.0f, 0.24f, 0xFFC18A00u}}};
+{1.0f, 0.9873046875f, 0.49487554904831627f, 120.0f, 0.24f, 0xFFC18A00u},
+{2.0f, 0.0791015625f, 0.47819767441860467f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.1298828125f, 0.4563953488372093f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.1796875f, 0.47819767441860467f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.365234375f, 0.47819767441860467f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.41259765625f, 0.47819767441860467f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.45849609375f, 0.47819767441860467f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.60546875f, 0.47819767441860467f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.6533203125f, 0.4563953488372093f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.693359375f, 0.47819767441860467f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.00537109375f, 0.563953488372093f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.771484375f, 0.563953488372093f, 88.0f, 0.22f, 0xFFB57400u},
+{2.0f, 0.9892578125f, 0.5988372093023255f, 88.0f, 0.22f, 0xFFB57400u}}};
 struct ForgeTitanCores {
   float x;
   float y;
@@ -869,4 +881,60 @@ struct MarshMist {
   float spacing;
 };
 inline constexpr MarshMist marshMist = {0.7101024890190337f, 0.02635431918008785f, 0.016f, 16.0f, 0.16f};
+struct IronlineBuiltScene {
+  float sourceFloor;
+  float sourceAspect;
+  float doorOpenDuration;
+  uint32_t doorInterior;
+  uint32_t doorShade;
+};
+inline constexpr IronlineBuiltScene ironlineBuiltScene = {0.6366279069767442f, 2.9766162310866573f, 0.75f, 0x060C10FFu, 0x10191FFFu};
+struct IronlineGalleries {
+  float u0;
+  float u1;
+  float v;
+};
+inline constexpr std::array<IronlineGalleries, 3> ironlineGalleries = {{{0.005859375f, 0.25830078125f, 0.3648255813953488f},
+{0.2744140625f, 0.52099609375f, 0.3648255813953488f},
+{0.53466796875f, 0.7705078125f, 0.3648255813953488f}}};
+struct IronlineLadders {
+  float u;
+  float gallery;
+};
+inline constexpr std::array<IronlineLadders, 6> ironlineLadders = {{{0.03759765625f, 0.0f},
+{0.21484375f, 0.0f},
+{0.3271484375f, 1.0f},
+{0.48095703125f, 1.0f},
+{0.5810546875f, 2.0f},
+{0.72509765625f, 2.0f}}};
+struct IronlineDoors {
+  float u;
+  float v;
+  float w;
+  float h;
+};
+inline constexpr std::array<IronlineDoors, 2> ironlineDoors = {{{0.1162109375f, 0.47819767441860467f, 0.02734375f, 0.15843023255813954f},
+{0.638671875f, 0.47819767441860467f, 0.02734375f, 0.15843023255813954f}}};
+struct IronlineTravel {
+  float speed;
+  float mountainWidth;
+  float mountainY;
+  float mountainDepth;
+  float mountainGain;
+  float forestWidth;
+  float forestY;
+  float forestDepth;
+  float forestGain;
+  float forestAlpha;
+  float fogY;
+  float fogSpeed;
+  float fogAlpha;
+  uint32_t fogColor;
+  float windCount;
+  float windSpeed;
+  uint32_t windColor;
+  float skyStrength;
+  uint32_t skyColor;
+};
+inline constexpr IronlineTravel ironlineTravel = {155.0f, 1200.0f, -112.0f, 0.055f, 0.72f, 850.0f, 24.0f, 0.48f, 0.55f, 185.0f, 136.0f, 18.0f, 25.0f, 0x668399FFu, 14.0f, 160.0f, 0x99B3C138u, 0.18f, 0x91B3CE00u};
 } // namespace kh::tuning

@@ -118,9 +118,9 @@ Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, boo
   // neutral paper background of the directional pose reference at render time.
   for (int i = 0; i < a.width * a.height; i++) {
     unsigned char *p = pixels + i * 4;
-    if(name=="ironline-carriages-review-v1.png" || name=="ironline-forest-review-v1.png") {
+    if(name=="ironline-carriages-review-v1.png" || name=="ironline-forest-review-v1.png" || name=="ironline-integrated-v2.png") {
       // Soft coverage and despill remove antialiased key edges after resizing.
-      // This import rule is restricted to the two opaque green-key assets.
+      // This import rule is restricted to authored opaque green-key assets.
       int neutral=std::max(p[0],p[2]),spill=int(p[1])-neutral;
       if(spill>12) {
         float coverage=1-std::clamp((spill-12)/64.f,0.f,1.f);
@@ -395,6 +395,11 @@ void Renderer::collectLights(const Game &g, const Input &input, float camera, fl
     if(x>camera-l.radius && x<camera+W+l.radius)
       lights.push_back({x-camera,y,232,l.radius,l.strength,l.color&0xFFFFFF00u,false,true});
   }
+  if(g.levelIndex==2 && !g.cinematicReview()) {
+    const float roof=g.level().platforms.at(1).box.y;
+    const auto &travel=tuning::ironlineTravel;
+    lights.push_back({W*.5f,roof-45,roof,300,travel.skyStrength,travel.skyColor,false});
+  }
   if(g.workshopReview)for(const auto &l:tuning::workshopLights)
     lights.push_back({l.x-camera,l.y,232,l.radius,l.strength*(1+.025f*std::sin(time*1.7f+l.x)),l.color&0xFFFFFF00u,false,l.window>0});
   if(g.workshopReview)for(const auto &screen:tuning::workshopScreens) {
@@ -643,7 +648,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
   background(g.levelIndex, camera, time);
   atmosphere(g, camera, time, false);
   offsetY = sy - cameraY - (g.workshopReview?tuning::workshop.cameraLift:0.f);
-  cinematicHarbor(g,camera,time);
+  cinematicHarbor(g,camera,time,cameraY);
   if(g.workshopReview)workshopMotion(camera,time);
   architecture(g, camera, time);
   secretProps(g,camera);
@@ -709,7 +714,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       SDL_SetTextureColorMod(productionProps.texture,255,255,255);
     }
   for (float cp : l.checkpoints)
-    if (!g.cinematicReview() && g.levelIndex>1 && cp > camera - 25 && cp < camera + W + 25) {
+    if (!g.cinematicReview() && g.levelIndex>2 && cp > camera - 25 && cp < camera + W + 25) {
       float size=tuning::productionProps.beaconSize;
       groundedSprite(productionProps,3,cp-camera-size/2,232-size,size,size);
       if (cp <= g.checkpoint)

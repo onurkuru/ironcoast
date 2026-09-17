@@ -6,7 +6,7 @@
 
 namespace kh {
 void Renderer::architecture(const Game &g, float camera, float time) {
-  if(g.levelIndex<=1 && !g.cinematicReview()) {
+  if(g.levelIndex<=2 && !g.cinematicReview()) {
     // The frame, lintel, ladders, gallery and wall are one authored painting.
     // Animate only its measured door panel; no foreign kit is overlaid here.
     auto doors = [&](const auto &rig, const auto &panels) {
@@ -30,7 +30,8 @@ void Renderer::architecture(const Game &g, float camera, float time) {
       }
     };
     if(g.levelIndex==0)doors(tuning::harborBuiltScene,tuning::harborDoors);
-    else doors(tuning::marshBuiltScene,tuning::marshDoors);
+    else if(g.levelIndex==1)doors(tuning::marshBuiltScene,tuning::marshDoors);
+    else doors(tuning::ironlineBuiltScene,tuning::ironlineDoors);
     return;
   }
   // The scene paintings provide architecture. Only interactive doors and

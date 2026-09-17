@@ -7,7 +7,7 @@ def compile_config():
     if len(data['maps']) != 6 or len(data['weapons']) != 6 or len(data['secrets']) > 32:
         raise ValueError('Expected six map/weapon profiles and at most 32 discoveries')
     if len(data['productionPlates']) != 6:raise ValueError('Expected six production plates')
-    for index,prefix in enumerate(('harbor','marsh')):
+    for index,prefix in enumerate(('harbor','marsh','ironline')):
         scene=data[prefix+'BuiltScene']
         galleries,ladders,doors=[data[prefix+section] for section in ('Galleries','Ladders','Doors')]
         if scene['sourceFloor']!=data['productionPlates'][index]['sourceFloor'] or scene['sourceAspect']!=data['productionPlates'][index]['sourceAspect']:
@@ -33,6 +33,17 @@ def compile_config():
         raise ValueError('Marsh mist crosses the walking contact plane')
     if not 0<mist['opacity']<=32 or mist['speed']<=0 or mist['spacing']<=0:
         raise ValueError('Invalid Marsh mist budget')
+    travel=data['ironlineTravel']
+    if not 0<travel['mountainDepth']<travel['forestDepth']<1 or travel['speed']<=0:
+        raise ValueError('Ironline scenery must travel at distinct ordered depths')
+    if min(travel['mountainWidth'],travel['forestWidth'])<480:
+        raise ValueError('Ironline scenery panels must cover the viewport')
+    if not 0<travel['mountainGain']<=1 or not 0<travel['forestGain']<=1:
+        raise ValueError('Invalid Ironline scenery intensity')
+    if not 0<travel['forestAlpha']<=255 or not 0<=travel['fogAlpha']<=48 or not 0<travel['windCount']<=32:
+        raise ValueError('Invalid Ironline atmosphere budget')
+    if not 0<travel['skyStrength']<=.3:
+        raise ValueError('Ironline roof fill must remain weaker than its practical lights')
     for section in ['productionProps','productionStructures','campaignPresentation']:
         for key,value in data[section].items():
             if key=='enabled' and value in (0,1):continue

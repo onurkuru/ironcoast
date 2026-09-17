@@ -1102,9 +1102,9 @@
       "sourceAspect": 3
     },
     {
-      "enabled": 0,
-      "sourceFloor": 0.73,
-      "sourceAspect": 3
+      "enabled": 1,
+      "sourceFloor": 0.6366279069767442,
+      "sourceAspect": 2.9766162310866573
     },
     {
       "enabled": 0,
@@ -1441,6 +1441,102 @@
       "radius": 120,
       "strength": 0.24,
       "color": "FFC18A00"
+    },
+    {
+      "map": 2,
+      "u": 0.0791015625,
+      "v": 0.47819767441860467,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.1298828125,
+      "v": 0.4563953488372093,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.1796875,
+      "v": 0.47819767441860467,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.365234375,
+      "v": 0.47819767441860467,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.41259765625,
+      "v": 0.47819767441860467,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.45849609375,
+      "v": 0.47819767441860467,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.60546875,
+      "v": 0.47819767441860467,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.6533203125,
+      "v": 0.4563953488372093,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.693359375,
+      "v": 0.47819767441860467,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.00537109375,
+      "v": 0.563953488372093,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.771484375,
+      "v": 0.563953488372093,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
+    },
+    {
+      "map": 2,
+      "u": 0.9892578125,
+      "v": 0.5988372093023255,
+      "radius": 88,
+      "strength": 0.22,
+      "color": "FFB57400"
     }
   ],
   "forgeTitanCores": [
@@ -1951,5 +2047,90 @@
     "speed": 0.016,
     "opacity": 16,
     "spacing": 0.16
+  },
+  "ironlineBuiltScene": {
+    "sourceFloor": 0.6366279069767442,
+    "sourceAspect": 2.9766162310866573,
+    "doorOpenDuration": 0.75,
+    "doorInterior": "060C10FF",
+    "doorShade": "10191FFF"
+  },
+  "ironlineGalleries": [
+    {
+      "u0": 0.005859375,
+      "u1": 0.25830078125,
+      "v": 0.3648255813953488
+    },
+    {
+      "u0": 0.2744140625,
+      "u1": 0.52099609375,
+      "v": 0.3648255813953488
+    },
+    {
+      "u0": 0.53466796875,
+      "u1": 0.7705078125,
+      "v": 0.3648255813953488
+    }
+  ],
+  "ironlineLadders": [
+    {
+      "u": 0.03759765625,
+      "gallery": 0
+    },
+    {
+      "u": 0.21484375,
+      "gallery": 0
+    },
+    {
+      "u": 0.3271484375,
+      "gallery": 1
+    },
+    {
+      "u": 0.48095703125,
+      "gallery": 1
+    },
+    {
+      "u": 0.5810546875,
+      "gallery": 2
+    },
+    {
+      "u": 0.72509765625,
+      "gallery": 2
+    }
+  ],
+  "ironlineDoors": [
+    {
+      "u": 0.1162109375,
+      "v": 0.47819767441860467,
+      "w": 0.02734375,
+      "h": 0.15843023255813954
+    },
+    {
+      "u": 0.638671875,
+      "v": 0.47819767441860467,
+      "w": 0.02734375,
+      "h": 0.15843023255813954
+    }
+  ],
+  "ironlineTravel": {
+    "speed": 155,
+    "mountainWidth": 1200,
+    "mountainY": -112,
+    "mountainDepth": 0.055,
+    "mountainGain": 0.72,
+    "forestWidth": 850,
+    "forestY": 24,
+    "forestDepth": 0.48,
+    "forestGain": 0.55,
+    "forestAlpha": 185,
+    "fogY": 136,
+    "fogSpeed": 18,
+    "fogAlpha": 25,
+    "fogColor": "668399FF",
+    "windCount": 14,
+    "windSpeed": 160,
+    "windColor": "99B3C138",
+    "skyStrength": 0.18,
+    "skyColor": "91B3CE00"
   }
 }

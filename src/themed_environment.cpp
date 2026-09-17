@@ -4,7 +4,7 @@
 #include <cmath>
 namespace kh {
 void Renderer::themedPlatforms(const Game &g,float camera) {
-  if(g.cinematicReview() || g.levelIndex<=1)return; // Harbor and Marsh use their painted architecture.
+  if(g.cinematicReview() || g.levelIndex<=2)return; // Integrated scenes use their painted architecture.
   const auto &rig=tuning::productionStructures;
   const auto &deck=productionStructures.cells.at(g.levelIndex);
   for(const auto &p:g.level().platforms) {

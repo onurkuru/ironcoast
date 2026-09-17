@@ -16,7 +16,7 @@ An original single-player run-and-gun homebrew for **PlayStation Vita**. Fight a
 
 Download **`Iron-Coast-PSVita-v0.3.0.vpk`** from **Releases → Assets**. Everything needed is inside: executable, game assets, bubble icon, loading image and LiveArea. No separate asset download or commercial game data is required.
 
-The source tree contains the newer **v0.4.0 development work**, recovered on 16 September 2026: cinematic environments, adult character animation rigs, weapon audio and reloads, chapter transitions, and Harbor and Marsh platforms aligned to the painted architecture. These source changes are not included in the published v0.3.0 package. See the [Harbor integration report](docs/HARBOR_INTEGRATION.md) and [Marsh integration report](docs/MARSH_INTEGRATION.md) for runnable reviews; visual review and physical Vita testing remain ongoing.
+The source tree contains the newer **v0.4.0 development work**, recovered on 16 September 2026: cinematic environments, adult character animation rigs, weapon audio and reloads, chapter transitions, and Harbor, Marsh and Ironline routes aligned to the painted architecture. These source changes are not included in the published v0.3.0 package. Runnable reviews are documented for [Harbor](docs/HARBOR_INTEGRATION.md), [Marsh](docs/MARSH_INTEGRATION.md) and [Ironline](docs/IRONLINE_INTEGRATION.md); visual review and physical Vita testing remain ongoing.
 
 Only PS Vita game packages are distributed here. The source includes host-side development and test support, but there is no desktop game release.
 
@@ -79,6 +79,17 @@ benchmark; the current 2D scene does not establish equivalent visual quality.
 | West pump hall | Spillway gallery | East control room |
 |---|---|---|
 | ![West pump hall](docs/screenshots/marsh-integrated-west.png) | ![Spillway gallery](docs/screenshots/marsh-integrated-middle.png) | ![East control room](docs/screenshots/marsh-integrated-east.png) |
+
+## Current Ironline development captures
+
+The campaign now has three integrated carriage roofs and a connected service
+deck. Mountains and forest move at separate depths while the train, actors and
+collision remain aligned. These are executable frames from the continuous
+[campaign review](docs/IRONLINE_INTEGRATION.md), not the older two-carriage slice.
+
+| First carriage | Middle carriage | Third carriage |
+|---|---|---|
+| ![First carriage](docs/screenshots/ironline-integrated-west.png) | ![Middle carriage](docs/screenshots/ironline-integrated-middle.png) | ![Third carriage](docs/screenshots/ironline-integrated-east.png) |
 
 ## Published v0.3.0 screenshots
 
@@ -165,7 +176,7 @@ Hold **Up + Square** to shoot upward. Use **Down + Square while airborne** to sh
 
 ## Development status
 
-The v0.4.0 source work adds material-aware lighting, bounded cinematic camera framing, original environmental paintings, distinct weapon reports and reloads, localized enemy reactions and two hidden discoveries. See the [cinematic update, tuning reference and test guide](docs/CINEMATIC_UPDATE.md). Harbor and Marsh routes now follow their integrated paintings; the [v0.3.0 architecture report](docs/ARCHITECTURE_UPDATE.md) describes the earlier layout.
+The v0.4.0 source work adds material-aware lighting, bounded cinematic camera framing, original environmental paintings, distinct weapon reports and reloads, localized enemy reactions and two hidden discoveries. See the [cinematic update, tuning reference and test guide](docs/CINEMATIC_UPDATE.md). Harbor, Marsh and Ironline routes now follow their integrated paintings; the [v0.3.0 architecture report](docs/ARCHITECTURE_UPDATE.md) describes the earlier layout. The [current development status](docs/DEVELOPMENT_STATUS.md) separates implemented foundations from remaining art, balance and hardware work.
 
 The original [level research](LEVEL_DESIGN_RESEARCH.md) informed this implementation. Building and ladder routes are included; elevators, sloped collision and a full 3D renderer are not. The [v0.2.5 stability audit](docs/STABILITY_AUDIT.md) records the earlier baseline; current architecture checks are documented separately. Promotional art remains separate from actual gameplay captures.
 

@@ -13,6 +13,12 @@ struct RendererAudit {
   static void railBackdrop(Renderer &renderer,const Game &game,float time) {
     renderer.offsetX=renderer.offsetY=0;renderer.ironlineScene(game,0,time);
   }
+  static void campaignRailBackdrop(Renderer &renderer,const Game &game,float time,float cameraY=0) {
+    renderer.releaseSceneLayers(game);
+    renderer.offsetX=0;renderer.offsetY=-cameraY;
+    renderer.ironlineCampaignScene(game,0,time,cameraY);
+    renderer.offsetY=0;
+  }
   static void depthPlate(Renderer &renderer,const Game &game,float camera,float time=0) {
     renderer.loadWorkshop();
     renderer.offsetY=-26; // same workshop camera lift as drawGame
@@ -188,6 +194,32 @@ int main(int argc, char **argv) {
       if(distantMovement<50)throw std::runtime_error("Train landscape is stationary while player is idle");
       RendererAudit::railBackdrop(renderer,rail,0);
       if(pixels()!=start)throw std::runtime_error("Train parallax leaves previous frame artifacts");
+    }
+    {
+      Game rail;rail.load(2);
+      RendererAudit::campaignRailBackdrop(renderer,rail,0);auto start=pixels();
+      for(Uint32 packed:start) {
+        const auto *p=reinterpret_cast<const Uint8*>(&packed);
+        if(p[1]>p[0]+40 && p[1]>p[2]+40)
+          throw std::runtime_error("Chroma green leaked into campaign freight");
+      }
+      RendererAudit::campaignRailBackdrop(renderer,rail,2);auto travel=pixels();
+      int distantMovement=0;
+      for(int x=100;x<700;++x) {
+        distantMovement+=start[30*960+x]!=travel[30*960+x];
+        if(start[400*960+x]!=travel[400*960+x])
+          throw std::runtime_error("Campaign train moved independently of its floor");
+      }
+      if(distantMovement<100)throw std::runtime_error("Campaign scenery does not move while idle");
+      RendererAudit::campaignRailBackdrop(renderer,rail,0,-70);auto climbed=pixels();
+      for(int x=100;x<700;++x)
+        if(start[160*960+x]!=climbed[300*960+x])
+          throw std::runtime_error("Climb camera moves train body away from contact geometry");
+      RendererAudit::campaignRailBackdrop(renderer,rail,0);
+      if(pixels()!=start)throw std::runtime_error("Campaign scenery accumulates previous frames");
+      Game other;other.load(0);renderer.render(other,view);
+      RendererAudit::campaignRailBackdrop(renderer,rail,0);
+      if(pixels()!=start)throw std::runtime_error("Rail layer reload changes campaign appearance");
     }
     original.load(0);
     original.player.inv = 0;

@@ -13,7 +13,7 @@ int main(int argc,char **argv) {
   try {
     Game game;
     const int stage=argc>1?std::stoi(argv[1])-1:0;
-    check(stage==0 || stage==1, "Expected Harbor or Marsh review stage");
+    check(stage>=0 && stage<=2, "Expected Harbor, Marsh or Ironline campaign review stage");
     game.load(stage, false, campaign()[stage].ladders.front().x);
     game.debugInvincible = true;
     PaintedRouteReview review;

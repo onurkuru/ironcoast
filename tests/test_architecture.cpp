@@ -46,10 +46,17 @@ int main() {
    }
    for (const auto &b : level.buildings) {
     if (b.style == 8 || b.box.y >= 232) continue;
-    Game g;g.load(stage,false,b.box.x+26);g.debugInvincible=true;
+    // Authored paintings do not share the old kit's fixed 26-unit inset.
+    // Traverse the real pair attached to this roof.
+    std::vector<float> attached;
+    for(const auto &ladder:level.ladders)
+      if(std::fabs(ladder.top-b.box.y)<.1f && ladder.x>=b.box.x && ladder.x<=b.box.x+b.box.w)
+        attached.push_back(ladder.x);
+    check(attached.size()==2,"roof route needs its two authored ladders");
+    Game g;g.load(stage,false,*std::min_element(attached.begin(),attached.end()));g.debugInvincible=true;
     Input up;up.up=true;ticks(g,up,20+int((232-b.box.y)/72*60));
     check(std::fabs(g.player.y-b.box.y)<.1f,"roof route ascent");
-    float target=b.box.x+b.box.w-26;
+    float target=*std::max_element(attached.begin(),attached.end());
     for (int n=0;n<600 && std::fabs(g.player.x-target)>.01f;++n) {
       // The production rig accelerates and brakes. A proportional controller
       // approaches either side of the marker without assuming instant velocity.

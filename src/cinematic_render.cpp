@@ -52,7 +52,7 @@ void Renderer::cinematicLights(const Game &g, float camera, float time) {
   SDL_SetRenderDrawBlendMode(r, previous);
   // Authored contact occlusion, not screen-space AO from a nonexistent depth buffer.
   for (const auto &b : g.level().buildings) {
-    if(g.levelIndex<=1 && !g.cinematicReview())continue; // Painted structural contact shadows are registered already.
+    if(g.levelIndex<=2 && !g.cinematicReview())continue; // Painted structural contact shadows are registered already.
     if (b.style == 7 || b.box.x + b.box.w < camera || b.box.x > camera + W) continue;
     for (float d = 0; d < p.aoWidth; d += 2) {
       float a = p.ao * 80 * (1 - d / p.aoWidth);
@@ -156,7 +156,10 @@ void Renderer::releaseSceneLayers(const Game &g) {
   // Vita keeps only the current room's cinematic backplates resident.
   // Actor atlases remain shared across transitions and keep their anchors.
   if(!g.workshopReview)for(auto *a:{&workshopPlate,&workshopShell,&workshopDistance})release(*a);
-  if(!g.ironlineReview)for(auto *a:{&ironlineTrain,&ironlineDistance,&ironlineForest})release(*a);
+  if(!g.ironlineReview)release(ironlineTrain);
+  if(!g.ironlineReview && (g.levelIndex!=2 || g.workshopReview))
+    for(auto *a:{&ironlineDistance,&ironlineForest})release(*a);
+  if(g.cinematicReview()){release(scenePlate);plateTheme=-1;}
   if(g.levelIndex!=3)for(auto *a:{&forgeTitan,&foundryHall})release(*a);
 }
 void Renderer::workshopMotion(float camera, float time) {
@@ -225,8 +228,48 @@ void Renderer::ironlineScene(const Game &,float camera,float time) {
     line(x,y,x+8,y-1,s.windColor);
   }
 }
-void Renderer::cinematicHarbor(const Game &g,float camera,float time) {
+void Renderer::ironlineCampaignScene(const Game &g,float camera,float time,float cameraY) {
+  if(plateTheme!=2) {
+    Atlas next=load("ironline-integrated-v2.png",1,1,false);
+    if(scenePlate.texture)SDL_DestroyTexture(scenePlate.texture);
+    scenePlate=std::move(next);plateTheme=2;
+  }
+  if(!ironlineDistance.texture)ironlineDistance=load("ironline-mountains-review-v1.png",1,1,false);
+  if(!ironlineForest.texture)ironlineForest=load("ironline-forest-review-v1.png",1,1,false);
+  const auto &travel=tuning::ironlineTravel;
+  const float surfaceOffset=offsetY;
+  rect(-offsetX,-offsetY,W,H,tuning::maps[2].skyColor);
+  auto layer=[&](const Atlas &art,float width,float y,float depth,float gain,Uint8 alpha) {
+    float scroll=(camera+time*travel.speed)*depth;
+    int first=int(std::floor(scroll/width));
+    // Vertical scenery parallax never changes the roof/actor contact transform.
+    offsetY=surfaceOffset+cameraY*(1-depth);
+    Uint8 tint=Uint8(gain*255);
+    SDL_SetTextureColorMod(art.texture,tint,tint,tint);
+    for(int tile=first;tile<=first+2;++tile)
+      sprite(art,0,tile*width-scroll,y,width,width*art.height/art.width,(tile&1)!=0,0,alpha);
+    SDL_SetTextureColorMod(art.texture,255,255,255);
+  };
+  layer(ironlineDistance,travel.mountainWidth,travel.mountainY,travel.mountainDepth,travel.mountainGain,255);
+  layer(ironlineForest,travel.forestWidth,travel.forestY,travel.forestDepth,travel.forestGain,Uint8(travel.forestAlpha));
+  for(int i=0;i<5;++i) {
+    float x=i*150-std::fmod(time*travel.fogSpeed+camera*travel.forestDepth,150.f);
+    softLight(x,travel.fogY+std::sin(time*.2f+i)*8,140,26,travel.fogColor,Uint8(travel.fogAlpha),false);
+  }
+  offsetY=surfaceOffset;
+  const auto &rig=tuning::ironlineBuiltScene;
+  float width=g.level().width,height=width/rig.sourceAspect;
+  sprite(scenePlate,0,-camera,232-height*rig.sourceFloor,width,height);
+  float roof=232+(tuning::ironlineGalleries.front().v-rig.sourceFloor)*height;
+  for(int i=0;i<int(travel.windCount);++i) {
+    float x=W-std::fmod(time*travel.windSpeed+i*53.71f,W+25.f);
+    float y=roof-130+std::fmod(i*29.73f,110.f);
+    line(x,y,x+8,y-1,travel.windColor);
+  }
+}
+void Renderer::cinematicHarbor(const Game &g,float camera,float time,float cameraY) {
   if(g.ironlineReview){ironlineScene(g,camera,time);return;}
+  if(g.levelIndex==2 && !g.workshopReview){ironlineCampaignScene(g,camera,time,cameraY);return;}
   if(g.levelIndex==3) {
     loadFoundry();const auto &hall=tuning::foundryHall;
     productionPlate(g,foundryHall,hall.sourceFloor,hall.sourceAspect,camera,time);

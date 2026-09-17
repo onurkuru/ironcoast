@@ -34,6 +34,7 @@ class Renderer {
   Atlas productionStructures;
   void loadFoundry();
   void ironlineScene(const Game &, float camera, float time);
+  void ironlineCampaignScene(const Game &, float camera, float time, float cameraY);
   void loadWorkshop();
   void loadActors();
   void releaseSceneLayers(const Game &);
@@ -58,7 +59,7 @@ class Renderer {
   void collectLights(const Game &, const Input &, float, float, float);
   void atmosphere(const Game &, float, float, bool);
   void cinematicLights(const Game &, float, float);
-  void cinematicHarbor(const Game &, float, float time = 0);
+  void cinematicHarbor(const Game &, float, float time = 0, float cameraY = 0);
   void contextualHud(const Game &, const ViewState &);
   void secretProps(const Game &, float);
   void themedArchitecture(const Game &, float, float);

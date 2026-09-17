@@ -3,7 +3,7 @@
 Geometry is authored in world pixels. Every raised route is a visible gallery,
 car roof or service deck. The ground corridor remains safe for the vehicle.
 """
-WIDTHS = [1920,1920,1840,1600,1760,1920]
+WIDTHS = [1920,1920,1920,1600,1760,1920]
 BLOCKS = [
  [(12,147,58,0),(360,200,120,0),(754,200,50,0),(1080,220,102,6)],
  [(12,315,51,1),(398,340,26,1),(790,265,40,1)],
@@ -52,6 +52,8 @@ def apply_architecture(levels):
   level['hazards']=[dict(originals[n%len(originals)],x=x) for n,x in enumerate(locations)] if originals else []
   if index==2:level['brief2']='MIRA: Take the carriage roofs to flank the shields. The service deck leads to the locomotive cannon.'
  from harbor_architecture import apply_harbor
-  apply_harbor(levels[0])
-  from marsh_architecture import apply_marsh
-  apply_marsh(levels[1])
+ apply_harbor(levels[0])
+ from marsh_architecture import apply_marsh
+ apply_marsh(levels[1])
+ from ironline_architecture import apply_ironline
+ apply_ironline(levels[2])
