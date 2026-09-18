@@ -19,6 +19,34 @@ static Enemy guard(float x) {
   return e;
 }
 int main() {
+  for (int chapter = 0; chapter < 6; ++chapter) {
+    Game g; g.load(chapter);
+    g.boss.active = true; g.boss.state = BossState::Recover;
+    g.player.health = g.player.lives = 1; g.player.inv = 0;
+    g.rescued = 2; g.totalRescued = 4; g.score = 100;
+    g.damageBoss(g.boss.hp);
+    check(g.boss.dead && g.status == Status::Play, "lethal boss hit secures victory");
+    check(g.score == 100 && g.totalRescued == 4, "completion rewards wait for mission clear");
+    for (int frame = 0; frame < 240; ++frame) {
+      g.hitPlayer();
+      g.explosion(g.player.x, g.player.y - 10, 50, 1, true);
+      g.updateBoss(DT);
+    }
+    check(g.status == Status::Clear && g.player.health == 1 && g.player.lives == 1,
+          "remaining damage cannot turn the boss destruction into game over");
+    check(g.score == 3600 && g.totalRescued == 6, "clear awards boss and rescue rewards exactly once");
+    g.load((chapter + 1) % 6, true);
+    check(g.totalRescued == 6 && g.score == 3600, "completed rescue total carries to next mission");
+
+    Game lost; lost.load(chapter);
+    lost.boss.active = true; lost.boss.state = BossState::Recover;
+    lost.player.health = lost.player.lives = 1; lost.player.inv = 0;
+    lost.rescued = 2; lost.totalRescued = 4;
+    lost.hitPlayer();
+    lost.damageBoss(lost.boss.hp);
+    check(lost.status == Status::Dying && !lost.boss.dead && lost.totalRescued == 4,
+          "fatal player hit first cannot bank rewards from a posthumous boss hit");
+  }
   // A fast shot crosses both actors during one simulation step. Reversing
   // spawn order must not move the physical target to the rear soldier.
   for (bool reverse : {false,true}) {

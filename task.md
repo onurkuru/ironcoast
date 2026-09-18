@@ -1,11 +1,9 @@
-# Fair encounter handoff
+# Victory handoff
 
-- [x] Crates/barrels intercept both friendly and hostile fire; front/back cover regression.
-- [x] Elevated threats aligned and engaged through ordinary UP fire.
-- [x] Six normal-damage fresh-mission clears required.
-- [x] Sequential normal campaign: six chapters, two openings, three legitimate Continues, carried lives.
-- [x] Foundry drop/sweep warnings match actual attack direction and columns; visual captures checked.
-- [x] Combined 26-test suite and 13 application smoke checks.
-- [x] Updated local executable and normal-damage Relay completion video; GitHub handoff prepared.
+- [x] Protect won missions during boss destruction.
+- [x] Commit completion rewards once, only on Clear.
+- [x] Test fatal-hit ordering and next-chapter totals for all six bosses.
+- [x] All 26 integrated tests and 13 application checks pass; all six normal-damage routes and sequential campaign remain passing.
+- [x] Prepare updated local executable and GitHub handoff.
 
-Human difficulty/enjoyment review and final cinematic artwork remain separate quality gates. This pass makes no REPLACED-parity or hardware-performance claim; further Vita optimization is deferred.
+Final visual quality and human playfeel approval remain open.

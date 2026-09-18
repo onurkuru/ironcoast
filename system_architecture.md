@@ -78,3 +78,7 @@ Renderer owns a reusable native 480x272 target when SDL supports it, then upscal
 Props participate in nearest-contact selection for hostile as well as friendly bullets. The same cover must not stop only the player’s weapon. Foundry warnings now distinguish even-pattern falling columns from odd-pattern horizontal sweeps, and drop columns use the real phase-dependent counts/offsets for Harbor, Foundry and Final Wave. Keep warning formulas synchronized with `fireBossVolley()` when changing those patterns.
 
 `ArcadeReview` aligns beneath elevated drone targets before upward firing and resets its cooldown bookkeeping when mission time resets. The acceptance test now requires all six ordinary-damage fresh mission clears and a full `beginChapter`/`advanceSection` campaign, using normal `retry` after Game Over with a bounded Continue count. Normal and assisted outcomes remain distinct.
+
+## Secured boss victory
+
+Boss damage is accepted only during Status::Play. Once boss.dead is set, hitPlayer ignores further arena damage during destruction. If the player dies first, later shots cannot bank a posthumous boss victory. The 2500 boss points and campaign rescue total are committed exactly once on transition to Clear, together with rescue points. Six-boss regression coverage checks both hit orders and carried totals.

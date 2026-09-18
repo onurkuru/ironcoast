@@ -1,8 +1,8 @@
-# Fair encounter continuation
+# Victory handoff continuation
 
-1. Correct physical cover so hostile and player shots resolve the same nearest prop contact.
-2. Diagnose the Relay normal-damage failure without weakening the boss; correct ordinary-input air-target alignment and require all six normal routes to clear.
-3. Match Foundry warnings to the actual drop columns or horizontal sweep pattern; inspect real before/after captures.
-4. Run integrated host/application checks, capture normal-damage Relay completion, refresh the independent local playtest and update GitHub.
+1. [MODIFY] src/game.cpp: lock victory against further player damage, accept boss damage only during active play, and award boss/rescue completion rewards at Clear.
+2. [MODIFY] tests/test_arcade_mechanics.cpp: cover both fatal-hit orderings, one-time completion rewards and carried rescue totals.
+3. [MODIFY] task.md and system_architecture.md: record verified behavior.
+4. Build, run campaign/application checks, refresh the local executable and push GitHub.
 
-Work continues from the current workspace copy with independent Git metadata. Further Vita optimization remains deferred.
+Game quality remains the priority; no Vita optimization in this pass.

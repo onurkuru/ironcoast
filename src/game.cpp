@@ -309,7 +309,7 @@ void Game::damageEnemy(Enemy &e, float amount, bool explosive, int approach, Hit
   }
 }
 void Game::damageBoss(float amount) {
-  if (!boss.active || boss.dead)
+  if (!boss.active || boss.dead || status != Status::Play)
     return;
   // Armor reduces damage outside recovery, but the pistol always remains viable.
   boss.hp -= amount * (boss.state == BossState::Recover ? 1.0f : .4f);
@@ -318,8 +318,6 @@ void Game::damageBoss(float amount) {
     boss.hp = 0;
     boss.dead = true;
     boss.death = 3.2f;
-    score += 2500;
-    totalRescued += rescued;
     for (auto &b : bullets)
       if (b.hostile)
         b.alive = false;
@@ -348,7 +346,9 @@ void Game::explosion(float x, float y, float radius, float damage, bool hostile)
   }
 }
 void Game::hitPlayer() {
-  if (player.inv > 0 || debugInvincible || status != Status::Play)
+  // The destruction sequence celebrates a secured victory, even if stray
+  // enemies or a floor hazard are still active in the arena.
+  if (player.inv > 0 || debugInvincible || status != Status::Play || boss.dead)
     return;
   if (player.vehicleHP > 0) {
     player.vehicleHP--;
@@ -469,7 +469,8 @@ void Game::updateBoss(float dt) {
     if (boss.death <= 0 && status == Status::Play) {
       status = Status::Clear;
       clearTimer = 0;
-      score += rescued * 500;
+      score += 2500 + rescued * 500;
+      totalRescued += rescued;
     }
     return;
   }
