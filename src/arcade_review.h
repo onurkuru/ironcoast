@@ -23,7 +23,7 @@ public:
     for (const auto &enemy : game.enemies) {
       if (enemy.dead || !enemy.active || enemy.entryAge < .45f) continue;
       const float dx = enemy.x-player.x, dy = enemy.y-player.y;
-      if (std::fabs(dy)>75 || std::fabs(dx)>300 || enemy.x<game.camera-90) continue;
+      if (std::fabs(dy)>(game.level().bossKind==4?240.f:75.f) || std::fabs(dx)>300 || enemy.x<game.camera-90) continue;
       ++nearby;
       const float cost = std::fabs(dx)+std::fabs(dy)*1.5f;
       if (cost<best) { target=&enemy;best=cost; }
@@ -35,6 +35,13 @@ public:
       // the old demo running through it. A small tap changes facing normally.
       in.move=std::fabs(dx)>165?float(direction):player.dir!=direction?.12f*direction:0;
       in.up=target->y<player.y-55 && std::fabs(dx)<65;
+      if(game.level().bossKind==4 && target->y<player.y-50) {
+        // Relay's elevated defenders are narrow: firing vertically from 65
+        // pixels away cannot hit them. Align underneath before aiming up and
+        // clear the visible roof guards before entering the boss crossfire.
+        in.move=std::fabs(dx)>10?std::clamp(dx*.08f,-1.f,1.f):0;
+        in.up=std::fabs(dx)<18;
+      }
       in.down=target->kind==4 && target->y>player.y-10 && player.grounded;
       in.grenade=player.grenades>0 && std::fabs(dx)<190 &&
                  (target->kind==2 || target->kind==4 || nearby>=3) && game.time-lastGrenade>1.4f;

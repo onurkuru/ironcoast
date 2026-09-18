@@ -52,6 +52,15 @@ int main() {
     check(g.enemies[0].hp<10,"crouched fire reaches low turret without changing its silhouette");
   }
   {
+    auto g=arena();g.player.inv=0;g.props.push_back({85,232,7,3,false});
+    const auto box=g.propBox(g.props[0]);const int health=g.player.health;
+    g.fire(160,box.y+box.h*.5f,-9000,0,1,4,true);g.update({});
+    check(g.props[0].hp==2 && g.player.health==health,"crate intercepts hostile fire before player");
+    auto front=arena();front.player.x=120;front.player.inv=0;front.props.push_back({85,232,7,3,false});
+    front.fire(160,box.y+box.h*.5f,-9000,0,1,4,true);front.update({});
+    check(front.player.health==health-1 && front.props[0].hp==3,"rear cover cannot protect a player standing in front");
+  }
+  {
     auto g=arena();
     auto gallery=std::find_if(g.level().platforms.begin(),g.level().platforms.end(),[](const Platform&p){return p.oneWay;});
     check(gallery!=g.level().platforms.end(),"test scene contains a gallery");

@@ -345,11 +345,53 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
   SDL_SetTextureColorMod(atlas.texture, 255, 255, 255);
   if (b.dead) return;
   if (b.state == BossState::Windup) {
-    float target = b.targetX - camera, floor = g.floorAt(b.targetX, 200);
-    bool groundStrike = (kind == 0 && b.pattern % 2) || kind == 3 || (kind == 5 && b.pattern % 2);
-    if (groundStrike) {
-      ring(target, floor - 2, 24 + pose.charge * 18, 5, RED);
-      text("MOVE!", target - 14, floor - 50, 1, GOLD);
+    const bool odd=b.pattern%2;
+    const bool fallingVolley=(kind==0 && odd) || (kind==3 && !odd) || (kind==5 && odd);
+    auto warningLabel=[&](const char *label,float x,float y,int letters) {
+      const float width=letters*6.f+8;
+      x=std::clamp(x-width*.5f,4.f,W-width-4);
+      rect(x,y-2,width,11,0x091018DD);
+      text(label,x+4,y,1,0xFFDFA1FF);
+    };
+    if (fallingVolley) {
+      // These positions mirror fireBossVolley, including its asymmetric
+      // phase-dependent spread. The old single centre ring hid outer lanes.
+      const int count=kind==0?b.phase+1:kind==3?b.phase+2:3;
+      const float first=kind==0?-20.f:kind==3?-45.f:-40.f;
+      const float startY=kind==0?42.f:kind==3?40.f:24.f;
+      for(int i=0;i<count;++i) {
+        const float worldX=b.targetX+first+i*40;
+        const float x=worldX-camera;
+        float floor=232;
+        for(const auto &platform:g.level().platforms)
+          if(!platform.oneWay && worldX>=platform.box.x && worldX<=platform.box.x+platform.box.w && platform.box.y>=startY)
+            floor=std::min(floor,platform.box.y);
+        if(x<-10 || x>W+10)continue;
+        // Sparse prediction marks show direction without resembling a live beam.
+        for(float y=startY+8;y<floor-12;y+=18) {
+          rect(x-1,y-1,3,6,0x091018A0);
+          line(x,y,x,y+3,0xFFC093CC);
+        }
+        line(x-4,startY+3,x,startY+7,0xFFB68BFF);
+        line(x,startY+7,x+4,startY+3,0xFFB68BFF);
+        ring(x,floor-2,10+pose.charge*3,3,0x091018FF);
+        ring(x,floor-2,8+pose.charge*3,2,0xFF795DFF);
+      }
+      warningLabel("MOVE!",b.targetX-camera+first+(count-1)*20,182,5);
+    } else if(kind==3 && odd) {
+      // Foundry's alternate attack sweeps horizontally from the muzzle;
+      // displaying a falling-strike marker here instructed the wrong dodge.
+      const auto muzzle=bossMuzzlePoint(b,kind,alpha);
+      const float right=std::clamp(muzzle.x-camera,0.f,float(W));
+      for(int volley=0;volley<2+b.phase;++volley) {
+        const float y=214-volley*12;
+        for(float x=12;x<right-8;x+=32) {
+          rect(x-1,y-3,6,7,0x091018A0);
+          line(x+3,y-2,x,y,0xFFC093DD);
+          line(x,y,x+3,y+2,0xFFC093DD);
+        }
+      }
+      warningLabel("SWEEP",right*.5f,159,5);
     } else if (kind == 1 && b.pattern % 2)
       for (int j = 0; j < 7; ++j) text("<", cx - 68 - j * 16, cy - 8, 1, RED);
   }

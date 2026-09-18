@@ -72,3 +72,9 @@ Swept projectile contacts choose the nearest entry time across terrain, enemies,
 ArcadeReview drives ordinary inputs and actually engages ground squads; --arcade-review uses normal damage, while --arcade-review-assist explicitly enables invulnerability for presentation captures. Neither controller teleports actors or injects boss damage. Assisted captures establish movement and integration; normal-damage results are recorded separately.
 
 Renderer owns a reusable native 480x272 target when SDL supports it, then upscales with nearest filtering and restores the caller target, viewport and scale. Target-less backends keep the direct rendering path. This already-implemented optimization is retained; additional Vita work is deferred behind gameplay review at the user’s request.
+
+## Fair encounter continuation
+
+Props participate in nearest-contact selection for hostile as well as friendly bullets. The same cover must not stop only the player’s weapon. Foundry warnings now distinguish even-pattern falling columns from odd-pattern horizontal sweeps, and drop columns use the real phase-dependent counts/offsets for Harbor, Foundry and Final Wave. Keep warning formulas synchronized with `fireBossVolley()` when changing those patterns.
+
+`ArcadeReview` aligns beneath elevated drone targets before upward firing and resets its cooldown bookkeeping when mission time resets. The acceptance test now requires all six ordinary-damage fresh mission clears and a full `beginChapter`/`advanceSection` campaign, using normal `retry` after Game Over with a bounded Continue count. Normal and assisted outcomes remain distinct.

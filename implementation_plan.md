@@ -1,11 +1,8 @@
-# Arcade campaign completion
+# Fair encounter continuation
 
-The user authorized continuous development and GitHub updates.
+1. Correct physical cover so hostile and player shots resolve the same nearest prop contact.
+2. Diagnose the Relay normal-damage failure without weakening the boss; correct ordinary-input air-target alignment and require all six normal routes to clear.
+3. Match Foundry warnings to the actual drop columns or horizontal sweep pattern; inspect real before/after captures.
+4. Run integrated host/application checks, capture normal-damage Relay completion, refresh the independent local playtest and update GitHub.
 
-1. Unify adult human proportions, preserve mechanical silhouettes and readable class equipment.
-2. Restore arcade pace: movement, uninterrupted shooting, directional melee, bounded reinforcement squads and fair windups.
-3. Render atmospheric overdraw once at native resolution and measure host throughput.
-4. Audit all six stages, routes, bosses, retries and campaign transitions; correct concrete failures.
-5. Run host and Vita validation, inspect actual gameplay, export playable evidence, document limitations and push GitHub.
-
-Visual polish against the REPLACED reference and physical Vita performance remain independently verified quality gates.
+Work continues from the current workspace copy with independent Git metadata. Further Vita optimization remains deferred.

@@ -1154,9 +1154,11 @@ void Game::update(Input in, float dt) {
       for (auto &e : enemies)
         if (!e.dead && e.active && closer(enemyBox(e))) enemyHit = &e;
       if (boss.active && !boss.dead && closer(bossBox())) bossHit = true;
-      for (auto &p : props)
-        if (!p.dead && closer(propBox(p))) propHit = &p;
     }
+    // Physical cover works in both directions. A crate cannot block the
+    // player's fire while letting hostile rounds pass through unhindered.
+    for (auto &p : props)
+      if (!p.dead && closer(propBox(p))) propHit = &p;
     collision = std::isfinite(nearest.time);
     if (collision) {
       b.x = b.px + (b.x - b.px) * nearest.time;

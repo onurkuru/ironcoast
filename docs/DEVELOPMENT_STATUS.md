@@ -6,7 +6,7 @@ The current deliverable is an arcade gameplay development preview. A single comp
 |---|---|---|
 | Campaign | Six missions, two opening sections, six bosses, checkpoints, rescues, vehicles and end flow run | Human full-campaign difficulty/playfeel pass |
 | Arcade combat | Faster movement, sustained finite-ammo weapons, bounded squads, adult infantry, shield openings and readable incoming fire | Broader player balance feedback |
-| Normal-damage automation | Five of six missions cleared through ordinary controls | Relay bot fails near final boss phase; no six-of-six claim |
+| Normal-damage automation | Six separate clears plus a full sequential campaign with two opening rooms and three legitimate Continues | Automated clear is not human difficulty approval |
 | Logic | Nearest swept hits, cover ordering, proper grenade normals, body-sized blasts and nonrepeatable rescue health | Continue targeted regressions for new bugs |
 | Visual quality | Adult roles, shield equipment, hostile-shot readability, three painted/registered environments and remaining scene kits | REPLACED-level animation and scene consistency not achieved |
 | Distribution | GitHub source and independent local Mac playtest | Public Vita download is still v0.3.0; no new release claimed |

@@ -30,10 +30,10 @@ Final integrated test and normal-damage results are appended after the team hand
 | Marsh | 34.8 s | Clear, 2 lives / 3 HP |
 | Ironline | 47.7 s | Clear, 1 life / 3 HP |
 | Foundry | 44.7 s | Clear, 1 life / 1 HP |
-| Relay | 45.6 s | Game over, boss 36.38 HP remaining |
+| Relay | 54.2 s | Clear, 2 lives / 4 HP |
 | Final Wave | 57.1 s | Clear, 1 life / 2 HP |
 
-Each route engages 13–16 enemies. All six assisted routes clear; this is separately reported and does not overwrite the Relay normal-damage failure. The tests require normal routes to reach their bosses and terminate, plus at least the five currently confirmed clears. Human pacing, difficulty and enjoyment still require playtesting.
+Each route engages 13–20 enemies. All six normal-damage and all six assisted routes clear; the two modes are reported separately. The test now requires all six normal-damage clears. Relay’s former failure came from the controller skipping elevated drone/roof threats before entering the arena; it now aligns for ordinary upward fire and clears those threats. Boss stats and attack strength were not reduced. Human pacing, difficulty and enjoyment still require playtesting.
 
 ### Integrated checks
 
@@ -42,3 +42,13 @@ All 26 host CTest cases pass, including six-stage progression, continuous routes
 ![Actual normal-damage Harbor gameplay](arcade-gameplay.png)
 
 The frame above is captured from the executable during the ordinary-damage Harbor review. The local review includes its complete 30-second recording with game audio.
+
+### Fair cover and accurate warnings
+
+Physical crates and barrels now intercept hostile fire as well as player shots. A regression checks both a player sheltered behind a crate and a player exposed in front of it. Foundry windup warnings distinguish falling columns from horizontal volleys and follow their actual positions.
+
+### Sequential normal-damage campaign
+
+The acceptance controller also runs `beginChapter(chapter, chapter>0)` across all six chapters and both opening rooms, calls the real `advanceSection()`, and uses the normal `retry()` only after Game Over. Lives carry between missions. All six chapters clear in 21,407 simulation frames (356.8 seconds), with 10 life losses and 3 Continues (Ironline, Relay, Final Wave); ending state is 2 lives / 2 HP. This is explicitly a continued campaign, not a no-continue clear. The test caps Continues at 12 and retains the separate six fresh-mission clear requirements.
+
+The fair-encounter continuation passed the complete 26-test host suite and all 13 SDL/audio/menu/save startup cases in the new active checkout. The 60-second Relay recording shows normal damage, actual game audio and the Mission Complete screen.
