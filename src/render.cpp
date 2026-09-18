@@ -717,6 +717,15 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     if (x + h.w < 0 || x > W)
       continue;
     bool active = g.hazardOn(h);
+    bool disabled = false;
+    for (int i = 0; i < g.routeControlCount(); ++i)
+      if (&h == &l.hazards[i] && g.routeDisabled[i]) disabled = true;
+    if (disabled) {
+      rect(x-2,h.y+h.h-4,h.w+4,4,0x101D25FF);
+      for (int j = 2; j < h.w; j += 5)
+        rect(x+j,h.y+h.h-3,2,2,0x7DD2A5FF);
+      continue;
+    }
     if(g.levelIndex==1 && h.kind==0) {
       // A shallow steel vent sits on the painted lane. Steam stays inside the
       // damaging height instead of suggesting an invisible tall hitbox.

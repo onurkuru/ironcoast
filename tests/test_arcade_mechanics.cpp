@@ -19,6 +19,41 @@ static Enemy guard(float x) {
   return e;
 }
 int main() {
+  for (int chapter = 3; chapter < 6; ++chapter) {
+    Game g; g.load(chapter); g.enemies.clear(); g.items.clear();
+    check(g.routeControlCount() == 3, "late mission has three sabotage routes");
+    for (int i = 0; i < 3; ++i) {
+      auto box = g.routeControlBox(i);
+      g.player.x = box.x + box.w / 2; g.player.y = 232;
+      g.player.grounded = true;
+      check(g.nearbyRouteControl() == -1, "ground lane cannot activate a gallery control");
+      const auto &ladder = g.level().ladders[i * 2];
+      g.player.x = ladder.x; g.player.y = ladder.bottom; g.player.vx = g.player.vy = 0;
+      Input climb; climb.up = true;
+      for (int frame = 0; frame < 300 && g.player.y > ladder.top + .1f; ++frame) g.update(climb);
+      check(g.player.grounded && g.player.ladder < 0, "gallery control route has a usable ladder exit");
+      Input walk; walk.move = 1;
+      for (int frame = 0; frame < 120 && g.nearbyRouteControl() != i; ++frame) g.update(walk);
+      check(g.nearbyRouteControl() == i, "gallery control is reachable from its deck");
+      int score = g.score, grenades = g.player.grenades;
+      Input interact; interact.interact = true;
+      g.update(interact);
+      check(g.routeDisabled[i] && g.score == score + 250 && g.player.grenades == grenades + 1,
+            "ordinary interaction sabotages one circuit and supplies one reward");
+      g.update(interact);
+      check(g.score == score + 250 && g.player.grenades == grenades + 1,
+            "repeated interaction cannot farm circuit rewards");
+      const auto &hazard = g.level().hazards[i];
+      g.time = hazard.period - hazard.offset;
+      check(!g.hazardOn(hazard), "disabled circuit stays harmless during its active phase");
+    }
+    g.retry();
+    check(g.routeDisabled[0] && g.routeDisabled[1] && g.routeDisabled[2],
+          "Continue retains completed sabotage routes");
+    g.load(chapter);
+    check(!g.routeDisabled[0] && !g.routeDisabled[1] && !g.routeDisabled[2],
+          "fresh mission restores route objectives");
+  }
   for (int chapter = 0; chapter < 6; ++chapter) {
     Game g; g.load(chapter);
     g.boss.active = true; g.boss.state = BossState::Recover;

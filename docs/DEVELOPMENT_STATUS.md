@@ -12,3 +12,5 @@ The current deliverable is an arcade gameplay development preview. A single comp
 | Distribution | GitHub source and independent local Mac playtest | Public Vita download is still v0.3.0; no new release claimed |
 
 The user explicitly prioritized game completion over further Vita optimization. Existing native-resolution rendering remains, but hardware work is deferred until gameplay review. No physical Vita frame-rate claim is made. See [arcade verification](ARCADE_GAMEPLAY.md) for reproducible results.
+
+Late-campaign content pass: Foundry coolant valves, Relay breakers and Final Wave defense overrides add nine optional upper-route objectives. Each disables one floor trap and gives a once-only score/grenade reward. All nine routes are covered by ladder/walk interaction tests. This is gameplay content progression, not completion of the cinematic art target.

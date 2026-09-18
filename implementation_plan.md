@@ -1,9 +1,9 @@
-# Player menu continuity
+# Late campaign sabotage routes
 
-1. [MODIFY] src/render.h: shared pause navigation, safe cancel/resume and controls return context.
-2. [MODIFY] src/main.cpp: route pause entry/navigation and controls return through the shared flow.
-3. [MODIFY] src/render.cpp: readable selectable pause menu and accurate keyboard/controller hints.
-4. [MODIFY] tests/test_render.cpp: validate pause navigation and controls return, then inspect actual menu captures.
-5. Refresh playable build, documentation and GitHub after integrated checks.
+1. [MODIFY] src/game.h/src/game.cpp: three optional upper-route controls in chapters 4–6, each disabling its associated floor hazard and awarding one grenade/250 points once. Preserve disabled controls through Continue; reset on a new mission. Derive anchors from authored gallery colliders.
+2. [MODIFY] src/themed_environment.cpp/src/hud_render.cpp: grounded control cabinets, armed/off feedback, interaction prompts and brief success feedback.
+3. [MODIFY] tools/architecture.py, data/campaign.json and generated campaign: explain each chapter objective in briefing.
+4. [MODIFY] tests/test_arcade_mechanics.cpp: normal-input control activation, vertical reach, once-only reward, retry persistence, new-mission reset.
+5. Validate campaign and actual visual/gameplay captures, refresh local build and GitHub.
 
-6. [MODIFY] tools/test_runtime.py: include the actual pause screen in application startup coverage.
+6. [MODIFY] src/render.cpp and docs/DEVELOPMENT_STATUS.md/system_architecture.md: show disabled outlets and document the nine-objective progression.

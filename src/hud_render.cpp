@@ -54,6 +54,23 @@ void Renderer::contextualHud(const Game &g,const ViewState &v) {
     text(p.reloadTime>0?"RELOAD":std::to_string(p.magazine),h.margin+22,H-25,1,c,false);
   }
   if(g.discoveryTime>0)text("HIDDEN RELIC FOUND",h.margin,H-55,1,color(tuning::discovery.color,g.discoveryTime),false);
+  if (g.routeControlCount() && g.status == Status::Play && !g.boss.active) {
+    const int near = g.nearbyRouteControl();
+    if (g.routeNotice > 0 || near >= 0) {
+      rect(24,H-64,432,19,0x071320E8);
+      if (g.routeNotice > 0) {
+        text("CIRCUIT OFFLINE  +250  SUPPLY SECURED",34,H-58,1,0x7DD2A5FF);
+      } else {
+        text(std::string(
+#ifdef KH_VITA
+          "TRIANGLE: "
+#else
+          "E / PAD Y: "
+#endif
+          ) + g.routeControlName(),34,H-58,1,0xF5D39AFF);
+      }
+    }
+  }
   if(g.workshopSecured)text(g.ironlineReview?"CARRIAGES SECURED":"WORKSHOP SECURED",W/2-64,H-30,1,h.weaponColor);
   else if((g.ironlineReview && g.player.x>tuning::ironlineReview.exitX-20) ||
           (g.workshopReview && g.player.x>tuning::workshop.exitX-20))

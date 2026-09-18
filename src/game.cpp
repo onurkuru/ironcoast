@@ -106,7 +106,32 @@ Sound Game::footstep() const {
   return Sound::Step;
 }
 bool Game::hazardOn(const Hazard &h) const {
+  for (int i = 0; i < routeControlCount(); ++i) {
+    const auto &linked = level().hazards[i];
+    if (routeDisabled[i] && h.x == linked.x && h.y == linked.y && h.kind == linked.kind)
+      return false;
+  }
   return h.period <= 0 || std::fmod(time + h.offset, h.period) < h.on;
+}
+int Game::routeControlCount() const {
+  if (cinematicReview() || levelIndex < 3) return 0;
+  return std::min({3, int(level().hazards.size()), int(level().platforms.size()) - 1});
+}
+Rect Game::routeControlBox(int index) const {
+  const auto &deck = level().platforms.at(index + 1).box;
+  return {deck.x + deck.w * .55f - 9, deck.y - 28, 18, 28};
+}
+int Game::nearbyRouteControl() const {
+  if (!player.grounded || player.vehicleHP || player.ladder >= 0) return -1;
+  for (int i = 0; i < routeControlCount(); ++i) {
+    const auto box = routeControlBox(i);
+    if (!routeDisabled[i] && std::fabs(player.x - box.x - box.w / 2) < 32 &&
+        std::fabs(player.y - box.y - box.h) < 8) return i;
+  }
+  return -1;
+}
+const char *Game::routeControlName() const {
+  return levelIndex == 3 ? "COOLANT VALVE" : levelIndex == 4 ? "RELAY BREAKER" : "DEFENSE OVERRIDE";
 }
 void Game::load(int index, bool keepScore, float startX, bool review, bool railReview) {
   const auto oldDiscoveries=discoveries;
@@ -200,6 +225,7 @@ void Game::syncPresentation() {
 }
 void Game::retry() {
   const bool sequence = chapterSequence;
+  const auto savedRoute = routeDisabled;
   int c = continues + 1;
   int savedRescues = rescued;
   std::vector<Item> savedWorkers;
@@ -207,6 +233,7 @@ void Game::retry() {
     if (item.kind == 0 && item.used) savedWorkers.push_back(item);
   load(levelIndex, true, checkpoint, workshopReview, ironlineReview);
   chapterSequence = sequence;
+  routeDisabled = savedRoute;
   rescued = savedRescues;
   for (auto &item : items)
     if (item.kind == 0)
@@ -852,7 +879,16 @@ void Game::update(Input in, float dt) {
   cameraZoom+=(targetZoom-cameraZoom)*std::min(1.f,dt*framing.zoomSpeed);
   }
   if (in.interact && player.ladder < 0) {
-    if (player.vehicleHP > 0) {
+    const int control = nearbyRouteControl();
+    if (control >= 0 && status == Status::Play) {
+      routeDisabled[control] = true;
+      routeNotice = 3;
+      score += 250;
+      player.grenades = std::min(30, player.grenades + 1);
+      sounds.push_back(Sound::Discovery);
+      const auto box = routeControlBox(control);
+      burst(box.x + box.w / 2, box.y + 8, 2, 8);
+    } else if (player.vehicleHP > 0) {
       float exitX = player.x - player.dir * 30;
       float ground = floorAt(exitX, player.y - 2);
       if (ground < player.y + 12) {
@@ -1233,6 +1269,7 @@ void Game::update(Input in, float dt) {
       burst(i.x, i.y, 2, 8);
     }
   }
+  routeNotice = std::max(0.f, routeNotice - dt);
   for (auto &h : level().hazards)
     if (hazardOn(h) && overlap(playerBox(), {h.x, h.y, h.w, h.h}))
       hitPlayer();

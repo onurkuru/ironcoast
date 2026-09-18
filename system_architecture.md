@@ -86,3 +86,9 @@ Boss damage is accepted only during Status::Play. Once boss.dead is set, hitPlay
 ## Pause and controls navigation
 
 ViewState::enterPause resets selection to Resume for keyboard, controller disconnect and lost-focus entry. pauseInput prioritizes pause/cancel over confirm because Start maps to both on host controllers. Main Menu requires explicit selection. Controls opened from Pause return to Pause and retain paused audio; controls opened from Title return to Title. Host hints use actual keyboard bindings and SDL controller A/B/X/Y names; Vita retains its native labels.
+
+## Late-campaign sabotage routes
+
+Chapters 4–6 expose one optional control on each of their first three gallery colliders. Game::routeControlBox derives cabinet feet directly from the deck; control index maps to the same-index floor hazard. Activation requires standing on the gallery and ordinary Interact input, awards 250 points and one grenade (cap 30) once, and permanently disables that hazard for the current mission. routeDisabled survives life loss and Continue but resets on a new load. It does not change boss patterns, lock exits or modify earlier chapters. If galleries/hazards are reordered, update this index mapping deliberately.
+
+Cabinets render in themedPlatforms, disabled outlets render in drawGame, and contextualHud presents the action/result. tests/test_arcade_mechanics.cpp climbs and walks to all nine controls, checks rewards, vertical reach, disabled hazards and Continue/new-mission persistence. Captures are controlled visual fixtures, separate from combat balance tests.

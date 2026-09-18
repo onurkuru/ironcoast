@@ -52,6 +52,7 @@ def apply_architecture(levels):
   level['hazards']=[dict(originals[n%len(originals)],x=x) for n,x in enumerate(locations)] if originals else []
   if index==2:level['brief2']='MIRA: Take the carriage roofs to flank the shields. The service deck leads to the locomotive cannon.'
   if index>=3:
+   level['brief2']=["MIRA: Open the three gallery coolant valves to shut down the flame vents. Each valve stocks a grenade.","MIRA: Cut the three gallery breakers to ground the electric arcs. Each breaker stocks a grenade.","DENIZ: Override the three gallery defense terminals to silence the deck traps. Then take down the Grid."][index-3]
    from arcade_encounters import apply_arcade_encounters
    apply_arcade_encounters(level)
  from harbor_architecture import apply_harbor

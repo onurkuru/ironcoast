@@ -181,6 +181,12 @@ struct Game {
   bool arcadeCombat() const { return !cinematicReview() || chapterSequence; }
   float enemyBodyScale(const Enemy &) const;
   bool chapterSequence = false;
+  std::array<bool, 3> routeDisabled{};
+  float routeNotice = 0;
+  int routeControlCount() const;
+  Rect routeControlBox(int index) const;
+  int nearbyRouteControl() const;
+  const char *routeControlName() const;
   float sectionExitAge = 0;
   void beginChapter(int index, bool keepScore = false);
   bool advanceSection();
