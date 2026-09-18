@@ -10,6 +10,17 @@ using namespace kh;
 
 namespace kh {
 struct RendererAudit {
+  static void infantryState(const Renderer &renderer) {
+    for(const Atlas *atlas:{&renderer.workshopGuard,&renderer.guardReactions,&renderer.guardShield}) {
+      if(!atlas->texture)throw std::runtime_error("Infantry atlas missing after actor render");
+      SDL_BlendMode blend;Uint8 red,green,blue,alpha;
+      SDL_GetTextureBlendMode(atlas->texture,&blend);
+      SDL_GetTextureColorMod(atlas->texture,&red,&green,&blue);
+      SDL_GetTextureAlphaMod(atlas->texture,&alpha);
+      if(blend!=SDL_BLENDMODE_BLEND || red!=255 || green!=255 || blue!=255 || alpha!=255)
+        throw std::runtime_error("Infantry role/visibility pass leaked blend, tint or alpha to next actor");
+    }
+  }
   static void railBackdrop(Renderer &renderer,const Game &game,float time) {
     renderer.offsetX=renderer.offsetY=0;renderer.ironlineScene(game,0,time);
   }
@@ -505,6 +516,22 @@ int main(int argc, char **argv) {
       view.screen=Screen::Play;view.interpolation=1;view.input={};
       renderer.render(scene,view);
       if(argc>2)renderer.screenshot(std::string(argv[2])+"/cinematic-map-"+std::to_string(stage)+".png");
+    }
+    {
+      Game lineup;lineup.load(0);lineup.enemies.clear();lineup.items.clear();lineup.props.clear();
+      lineup.player.x=70;lineup.player.y=232;lineup.player.inv=0;lineup.time=8;lineup.camera=0;
+      for(int kind=0;kind<3;++kind) {
+        Enemy soldier;soldier.kind=kind;soldier.x=170+kind*110;soldier.y=232;
+        soldier.active=true;soldier.entryAge=1;soldier.hp=soldier.maxhp=7;lineup.enemies.push_back(soldier);
+      }
+      lineup.syncPresentation();view.input={};renderer.render(lineup,view);
+      RendererAudit::infantryState(renderer);
+      if(argc>2)renderer.screenshot(std::string(argv[2])+"/adult-class-lineup.png");
+      lineup.enemies[0].hurt=.05f;lineup.enemies[0].flinch=.15f;
+      lineup.enemies[1].flinch=.15f;lineup.enemies[1].hitZone=HitZone::Legs;
+      lineup.enemies[2].dead=true;lineup.enemies[2].death=.6f;lineup.enemies[2].deathDuration=1.2f;
+      lineup.syncPresentation();renderer.render(lineup,view);
+      RendererAudit::infantryState(renderer);
     }
     for(int weapon=0;weapon<6;++weapon) {
       Game scene;scene.load(0,false,450);scene.player.weapon=scene.player.firedWeapon=weapon;scene.player.inv=0;

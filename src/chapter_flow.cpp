@@ -7,9 +7,8 @@ bool Game::cinematicHero() const {
   return cinematicReview() || tuning::campaignPresentation.enabled > 0;
 }
 bool Game::cinematicGuard(const Enemy &e) const {
-  // The recovered sentry is a rifle guard. Grenadiers, shields, drones and
-  // turrets retain their own rigs until their dedicated replacements exist.
-  return cinematicReview() || (tuning::campaignPresentation.enabled > 0 && e.kind == 0);
+  // All human classes share adult anatomy; machinery keeps its own silhouette.
+  return cinematicHero() && e.kind < 3;
 }
 float Game::enemyBodyScale(const Enemy &e) const {
   return cinematicGuard(e) || (cinematicHero() && e.kind < 3) ? tuning::workshop.guardScale : 1.f;

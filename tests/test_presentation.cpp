@@ -7,8 +7,42 @@
 using namespace kh;
 void check(bool ok,const char *message){if(!ok)throw std::runtime_error(message);}
 int main(){try {
+  // Three seconds of sustained fire must cross magazine boundaries without
+  // stalling, while still spending exactly one reserve round per powered shot.
+  for(int weapon=0;weapon<6;++weapon) {
+    Game arcade;arcade.load(0);arcade.enemies.clear();arcade.props.clear();arcade.items.clear();
+    arcade.player.weapon=arcade.player.magazineWeapon=weapon;
+    arcade.player.magazine=1;arcade.player.ammo=200;
+    Input trigger;trigger.shoot=true;int shots=0,gap=0,longest=0;
+    for(int tick=0;tick<180;++tick) {
+      arcade.update(trigger);++gap;
+      check(arcade.player.reloadTime==0,"Arcade fire stalled for a magazine");
+      if(arcade.player.fireAge==0) {++shots;longest=std::max(longest,gap);gap=0;}
+    }
+    check(shots>=8 && longest<=24,"Arcade cadence has long dead time");
+    if(weapon)check(arcade.player.ammo==200-shots,"Arcade refill duplicated reserve ammunition");
+    arcade.player.magazine=0;trigger.shoot=false;trigger.reload=true;arcade.update(trigger);
+    check(arcade.player.reloadTime>0,"Arcade manual reload was removed");
+  }
+  {
+    Game arcade;arcade.load(0);arcade.enemies.clear();arcade.items.clear();arcade.props.clear();
+    Enemy behind;behind.active=true;behind.x=arcade.player.x-20;behind.y=232;behind.hp=20;behind.entryAge=1;
+    arcade.enemies.push_back(behind);Input trigger;trigger.shoot=true;arcade.update(trigger);
+    check(arcade.enemies[0].hp==20 && arcade.player.actionKind!=1,"Melee hit an enemy behind the player");
+    arcade.damageEnemy(arcade.enemies[0],1,false);float before=arcade.time;arcade.update({});
+    check(arcade.time>before,"Ordinary bullets froze arcade movement");
+    for(int kind=0;kind<3;++kind) {
+      behind.kind=kind;Rect body=arcade.enemyBox(behind);
+      check(std::fabs(body.h-arcade.playerBox().h)<3,"Human enemy anatomy mismatches hero height");
+    }
+    auto &shield=arcade.enemies[0];shield.kind=2;shield.dir=-1;shield.state=1;shield.timer=.2f;
+    shield.flinch=0;shield.hurt=0;shield.x=arcade.player.x-70;shield.hp=20;
+    arcade.update({});check(shield.dir==-1,"Shield instantly turned during committed windup");
+    arcade.damageEnemy(shield,2,false,1);check(shield.hp==20,"Frontal shield block missing");
+    arcade.damageEnemy(shield,2,false,-1);check(shield.hp==18,"Shield back cannot be flanked");
+  }
   for(int w=0;w<6;++w) {
-    Game g;g.load(0);g.enemies.clear();g.props.clear();g.items.clear();g.debugInvincible=true;
+    Game g;g.load(0,false,40,true);g.enemies.clear();g.props.clear();g.items.clear();g.debugInvincible=true;
     g.player.weapon=w;g.player.ammo=200;g.player.magazineWeapon=w;g.player.magazine=1;
     Input fire;fire.shoot=true;g.update(fire);
     check(g.player.magazine==0,"Last round must empty the magazine");
@@ -24,7 +58,7 @@ int main(){try {
     g.player.magazine=0;g.player.shot=0;g.update(fire);
     check(g.player.reloadTime>0,"Manual reload missing");
   }
-  Game g;g.load(0);g.enemies.clear();g.debugInvincible=true;
+  Game g;g.load(0,false,40,true);g.enemies.clear();g.debugInvincible=true;
   Enemy e;e.active=true;e.x=250;e.y=232;e.hp=100;
   for(int zone=0;zone<3;++zone) {
     Rect body=g.enemyBox(e);

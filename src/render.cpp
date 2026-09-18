@@ -59,6 +59,7 @@ Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move
   // an outstretched arm occupy a different visual scale from its idle pose.
   hero = load("hero-cinematic-v2.png", 8, 8, false);
   enemies = load("enemies-cinematic-v2.png", 8, 6, false);
+  guardShield = load("guard-shield-v1.png",1,1,false);
   vehicle = load("vehicle-v2.png", 4, 4, false);
   for (int i = 0; i < 6; i++)
     bosses[i] = load("boss" + std::to_string(i) + "-v2.png", 4, 4, false);
@@ -75,7 +76,15 @@ Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move
   hiddenFlag = load("hidden-flag.png",1,1,false);
   architectureTiles = load("architecture-v1.png", 3, 2, false);
   // One small radial alpha mask is reused for lamps, fog and contact shadows.
-  // No full-screen render targets or per-frame texture uploads are required.
+  // Reuse one native-resolution canvas: atmospheric overdraw should not scale
+  // with the output window. Target-less backends retain the direct path.
+  if(SDL_RenderTargetSupported(r)) {
+    canvas=SDL_CreateTexture(r,SDL_PIXELFORMAT_RGBA8888,SDL_TEXTUREACCESS_TARGET,W,H);
+    if(canvas) {
+      SDL_SetTextureBlendMode(canvas,SDL_BLENDMODE_NONE);
+      SDL_SetTextureScaleMode(canvas,SDL_ScaleModeNearest);
+    }
+  }
   SDL_Surface *mask = SDL_CreateRGBSurfaceWithFormat(0, 64, 64, 32, SDL_PIXELFORMAT_RGBA32);
   if (!mask)
     throw std::runtime_error(SDL_GetError());
@@ -92,6 +101,8 @@ Renderer::Renderer(SDL_Renderer *rr, std::string path) : r(rr), assets(std::move
     throw std::runtime_error(SDL_GetError());
 }
 Renderer::~Renderer() {
+  SDL_DestroyTexture(canvas);
+  SDL_DestroyTexture(guardShield.texture);
   SDL_DestroyTexture(productionProps.texture);
   SDL_DestroyTexture(productionStructures.texture);
   SDL_DestroyTexture(forgeTitan.texture);SDL_DestroyTexture(foundryHall.texture);
@@ -118,7 +129,7 @@ Atlas Renderer::load(const std::string &name, int cols, int rows, bool trim, boo
   // neutral paper background of the directional pose reference at render time.
   for (int i = 0; i < a.width * a.height; i++) {
     unsigned char *p = pixels + i * 4;
-    if(name=="ironline-carriages-review-v1.png" || name=="ironline-forest-review-v1.png" || name=="ironline-integrated-v2.png") {
+    if(name=="ironline-carriages-review-v1.png" || name=="ironline-forest-review-v1.png" || name=="ironline-integrated-v2.png" || name=="guard-shield-v1.png") {
       // Soft coverage and despill remove antialiased key edges after resizing.
       // This import rule is restricted to authored opaque green-key assets.
       int neutral=std::max(p[0],p[2]),spill=int(p[1])-neutral;
@@ -773,6 +784,26 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     float life=e.deathDuration>0?e.deathDuration:tuning::combat.deathDuration;
     float deathT = e.dead ? 1.0f - std::clamp(e.death / life, 0.0f, 1.0f) : 0.0f;
     bool authoredReaction=authoredGuard && tuning::guardReactions.enabled>0 && (e.dead || e.flinch>0);
+    auto classTint=[&](const Atlas &atlas) {
+      if(!authoredGuard || e.hurt>0 || e.kind==0)return;
+      Uint8 red,green,blue;SDL_GetTextureColorMod(atlas.texture,&red,&green,&blue);
+      // Preserve mids in the dark uniforms: multiplying every channel down
+      // made the class tint disappear into the similarly coloured scenery.
+      if(e.kind==1){red=255;green=Uint8(std::max(190,int(green)));blue=Uint8(blue*.70f);}
+      else {red=Uint8(red*.82f);green=Uint8(std::max(215,int(green)));blue=255;}
+      SDL_SetTextureColorMod(atlas.texture,red,green,blue);
+    };
+    auto guardPass=[&](const Atlas &atlas,uint8_t opacity,const auto &draw) {
+      draw(opacity);
+      if(!authoredGuard || !g.arcadeCombat() || e.hurt>0)return;
+      // A restrained material fill lifts the authored uniform's dark mids.
+      // Reuse the exact pose and alpha, so no outline/halo, geometry change or
+      // extra light is painted onto the wall behind the soldier.
+      SDL_BlendMode previous;SDL_GetTextureBlendMode(atlas.texture,&previous);
+      SDL_SetTextureBlendMode(atlas.texture,SDL_BLENDMODE_ADD);
+      draw(uint8_t(opacity*.34f));
+      SDL_SetTextureBlendMode(atlas.texture,previous);
+    };
     // Full source poses: walk 0..3, attack 4, hurt 5, collapse 6/7.
     int frame = e.dead
                     ? (e.kind == 5 ? std::min(1, int(deathT * 2))
@@ -826,8 +857,11 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
       visualX=e.x-camera+e.hitDir*travel;
       uint8_t opacity=e.dead?uint8_t(255*guardCorpseOpacity(e)):alpha;
       actorLight(guardReactions,visualX,e.y-rig.renderSize*.5f,e.hurt>0);
-      sprite(guardReactions,pose,visualX-rig.renderSize/2,
-             e.y-rig.renderSize*rig.baseline/rig.cellSize,rig.renderSize,rig.renderSize,flip,0,opacity);
+      classTint(guardReactions);
+      guardPass(guardReactions,opacity,[&](uint8_t a){
+        sprite(guardReactions,pose,visualX-rig.renderSize/2,
+               e.y-rig.renderSize*rig.baseline/rig.cellSize,rig.renderSize,rig.renderSize,flip,0,a);
+      });
       if(!e.dead)reflection(g,guardReactions,pose,visualX,e.y,rig.renderSize,flip,camera,time);
       SDL_SetTextureColorMod(guardReactions.texture,255,255,255);
     } else {
@@ -836,12 +870,27 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
         drawW=drawH=tuning::guardAction.renderSize;yy=e.y-drawH;
       }
       actorLight(enemies, e.x - camera, e.y - drawH * .5f, e.hurt > 0);
-      groundedSprite(enemies, idx, visualX - drawW / 2, yy, drawW, drawH, e.dir > 0, angle, alpha);
+      classTint(enemies);
+      guardPass(enemies,alpha,[&](uint8_t a){
+        groundedSprite(enemies,idx,visualX-drawW/2,yy,drawW,drawH,e.dir>0,angle,a);
+      });
       if (!e.dead && e.flinch<=0) reflection(g, enemies, idx, visualX, e.y, drawW, e.dir > 0, camera, time);
       SDL_SetTextureColorMod(enemies.texture, 255, 255, 255);
     }
+    if(authoredGuard && e.kind==2 && !e.dead) {
+      const bool open=e.state==2;
+      const float sx=e.x-camera+e.dir*17;
+      actorLight(guardShield,sx,e.y-28,e.hurt>0);
+      sprite(guardShield,0,sx-29,e.y-58+(open?9:0),58,58,e.dir>0,open?-e.dir*22:0,alpha);
+      SDL_SetTextureColorMod(guardShield.texture,255,255,255);
+    }
     if (e.state == 1 && !e.dead) {
-      if(!authoredGuard)text("!", e.x - camera - 2, yy - 10, 1, GOLD);
+      const float warningY=e.y-g.enemyBox(e).h-12;
+      const uint32_t warning=e.kind==1?0xFF9764FF:0xFFDFA1FF;
+      // Keep a short, stable warning above the body rather than flashing the
+      // whole sprite, which resembles a hit reaction during busy firefights.
+      rect(e.x-camera-4,warningY-2,9,11,0x091018D8);
+      text("!",e.x-camera-2,warningY,1,warning);
     }
   }
   drawBoss(g, camera, alpha);
@@ -1048,12 +1097,22 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     if (b.alive) {
       float x = b.x - camera;
       if (b.kind == 3) {
-        rect(x - 3, b.y - 3, 6, 6, b.hostile ? RED : 0x9DB65AFF);
+        rect(x-4,b.y-4,8,8,0x091018FF);
+        rect(x - 3, b.y - 3, 6, 6, b.hostile ? 0xFF795DFF : 0x9DB65AFF);
         rect(x - 1, b.y - 4, 2, 2, CREAM);
+        if(b.hostile) {
+          const float pulse=.5f+.5f*std::sin(time*20);
+          ring(x,b.y,6+pulse*2,6+pulse*2,0xFF795D00u|uint32_t(90+pulse*90));
+        }
       } else if (b.hostile && g.cinematicHero()) {
-        float length=4,angle=std::atan2(b.vy,b.vx);
-        line(x,b.y,x-std::cos(angle)*length,b.y-std::sin(angle)*length,0xFFE4B5FF);
-        softLight(x,b.y,4,2,0xFFB16AFF,65);
+        const float angle=std::atan2(b.vy,b.vx),dx=std::cos(angle),dy=std::sin(angle);
+        const uint32_t danger=b.kind==5?0x69E8FFFF:0xFF795DFF;
+        // Enemy rounds use a dark-edged warm core, clearly distinct from the
+        // player's long gold tracers. Their bright core matches the hit radius.
+        line(x-dx*2,b.y-dy*2,x-dx*9,b.y-dy*9,(danger&0xFFFFFF00u)|160);
+        rect(x-3,b.y-3,6,6,0x091018EE);
+        rect(x-2,b.y-2,4,4,danger);
+        rect(x-1,b.y-1,2,2,0xFFF4E0FF);
       } else if (b.hostile) {
         rect(x - 4, b.y - 4, 8, 8, INK);
         rect(x - 3, b.y - 3, 6, 6, b.kind == 5 ? TEAL : RED);
@@ -1089,6 +1148,14 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
   if (g.flash > 0 && v.shake) rect(0,0,W,H,0xF4D8A030);
 }
 void Renderer::render(const Game &g, const ViewState &v) {
+  SDL_Texture *destination=SDL_GetRenderTarget(r);
+  SDL_Rect viewport;SDL_RenderGetViewport(r,&viewport);
+  float scaleX,scaleY;SDL_RenderGetScale(r,&scaleX,&scaleY);
+  const bool nativeCanvas=canvas && SDL_SetRenderTarget(r,canvas)==0;
+  if(nativeCanvas) {
+    SDL_RenderSetViewport(r,nullptr);
+    SDL_RenderSetScale(r,1,1);
+  }
   backgroundMotion=0;
   SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
   SDL_SetRenderDrawColor(r, 8, 18, 28, 255);
@@ -1259,6 +1326,13 @@ void Renderer::render(const Game &g, const ViewState &v) {
       rect(i, 0, 1, 272, shade);
       rect(479 - i, 0, 1, 272, shade);
     }
+  }
+  if(nativeCanvas) {
+    SDL_SetRenderTarget(r,destination);
+    SDL_RenderSetViewport(r,&viewport);
+    SDL_RenderSetScale(r,scaleX,scaleY);
+    const SDL_FRect screen{0,0,float(W),float(H)};
+    SDL_RenderCopyF(r,canvas,nullptr,&screen);
   }
 }
 void Renderer::screenshot(const std::string &path) {

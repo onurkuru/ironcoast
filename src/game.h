@@ -178,6 +178,7 @@ struct Game {
   // must not silently fall back to the older rig when a review room ends.
   bool cinematicHero() const;
   bool cinematicGuard(const Enemy &) const;
+  bool arcadeCombat() const { return !cinematicReview() || chapterSequence; }
   float enemyBodyScale(const Enemy &) const;
   bool chapterSequence = false;
   float sectionExitAge = 0;

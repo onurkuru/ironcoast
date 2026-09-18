@@ -44,6 +44,8 @@ def apply_marsh(level):
     level['puddles'] = [[230,232,110,7],[890,232,110,7],[1600,232,130,7]]
     level['buildings'].append({'box': [width-480,-72,480,304], 'style': 8})
     level['minY'] = min(p['box'][1] for p in level['platforms'])-130
+    from arcade_encounters import apply_arcade_encounters
+    apply_arcade_encounters(level)
 
 
 if __name__ == '__main__':

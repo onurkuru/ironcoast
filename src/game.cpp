@@ -10,19 +10,37 @@ static float clamp(float x, float a, float b) { return std::max(a, std::min(x, b
 bool overlap(Rect a, Rect b) {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
-bool segmentRect(float ax, float ay, float bx, float by, Rect r) {
+struct Contact {
+  float time = std::numeric_limits<float>::infinity(), nx = 0, ny = 0;
+};
+static Contact segmentContact(float ax, float ay, float bx, float by, Rect r) {
   float lo = 0, hi = 1, dx = bx - ax, dy = by - ay;
-  auto slab = [&](float p, float d, float mn, float mx) {
+  Contact contact;
+  auto slab = [&](float p, float d, float mn, float mx, float nx, float ny) {
     if (std::fabs(d) < .00001f)
       return p >= mn && p <= mx;
     float a = (mn - p) / d, b = (mx - p) / d;
     if (a > b)
       std::swap(a, b);
+    if (a >= lo) {
+      contact.nx = d > 0 ? -nx : nx;
+      contact.ny = d > 0 ? -ny : ny;
+    }
     lo = std::max(lo, a);
     hi = std::min(hi, b);
     return lo <= hi;
   };
-  return slab(ax, dx, r.x, r.x + r.w) && slab(ay, dy, r.y, r.y + r.h);
+  if (slab(ax, dx, r.x, r.x + r.w, 1, 0) && slab(ay, dy, r.y, r.y + r.h, 0, 1))
+    contact.time = lo;
+  return contact;
+}
+bool segmentRect(float ax, float ay, float bx, float by, Rect r) {
+  return std::isfinite(segmentContact(ax, ay, bx, by, r).time);
+}
+static bool blastOverlaps(float x, float y, float radius, Rect body) {
+  float nearestX = clamp(x, body.x, body.x + body.w);
+  float nearestY = clamp(y, body.y, body.y + body.h);
+  return std::hypot(x - nearestX, y - nearestY) <= radius;
 }
 const Level &workshopLevel();
 const Level &ironlineLevel();
@@ -259,7 +277,10 @@ void Game::damageEnemy(Enemy &e, float amount, bool explosive, int approach, Hit
   }
   e.flinch=e.flinchDuration; e.hurt=e.flinchDuration;
   if(cinematicGuard(e) && tuning::guardReactions.enabled>0)e.hurt=tuning::guardReactions.flashDuration;
-  if (hitCooldown<=0) {hitStop=explosive?c.heavyHitStop:c.hitStop;hitCooldown=c.hitCooldown;}
+  if (hitCooldown<=0) {
+    hitStop=arcadeCombat()?(explosive?DT:0.f):(explosive?c.heavyHitStop:c.hitStop);
+    hitCooldown=c.hitCooldown;
+  }
   shake=std::max(shake,c.hitShake);
   const Rect body=enemyBox(e);
   float impactY=body.y+body.h*(zone==HitZone::Head?.12f:zone==HitZone::Legs?.84f:.47f);
@@ -312,16 +333,16 @@ void Game::explosion(float x, float y, float radius, float damage, bool hostile)
   shake = std::max(shake, 3.0f);
   sounds.push_back(Sound::Blast);
   if (hostile) {
-    if (std::hypot(player.x - x, player.y - 18 - y) < radius)
+    if (blastOverlaps(x, y, radius, playerBox()))
       hitPlayer();
   } else {
     for (auto &e : enemies)
-      if (!e.dead && e.active && std::hypot(e.x - x, e.y - 18 - y) < radius + 14)
+      if (!e.dead && e.active && blastOverlaps(x, y, radius, enemyBox(e)))
         damageEnemy(e, damage, true);
-    if (boss.active && !boss.dead && std::hypot(boss.x - x, boss.y - 50 - y) < radius + 65)
+    if (boss.active && !boss.dead && blastOverlaps(x, y, radius, bossBox()))
       damageBoss(damage);
     for (auto &p : props)
-      if (!p.dead && std::hypot(p.x - x, p.y - propBox(p).h*.5f - y) < radius) {
+      if (!p.dead && blastOverlaps(x, y, radius, propBox(p))) {
         p.hp = 0;
       }
   }
@@ -692,7 +713,8 @@ void Game::update(Input in, float dt) {
     player.crouch = false;
     player.grounded = false;
     player.vx = 0;
-    player.vy = (in.down ? 72.0f : 0) - (in.up ? 72.0f : 0);
+    const float climbSpeed=arcadeCombat()?tuning::campaignPresentation.climbSpeed:72.f;
+    player.vy = (in.down ? climbSpeed : 0) - (in.up ? climbSpeed : 0);
     if (player.climbTransition > 0) player.vy = 0;
     const float before = player.y;
     player.y = clamp(player.y + player.vy * dt, ladder.top, ladder.bottom);
@@ -702,7 +724,7 @@ void Game::update(Input in, float dt) {
       player.ladder = -1;
       player.ladderLock = .25f;
       player.vy = -240;
-      player.vx = in.move * 145;
+      player.vx = in.move * (arcadeCombat()?tuning::campaignPresentation.runSpeed:145.f);
     } else if ((in.up && player.y <= ladder.top) || (in.down && player.y >= ladder.bottom)) {
       player.ladder = -1;
       player.ladderLock = .2f;
@@ -715,9 +737,11 @@ void Game::update(Input in, float dt) {
   const float strideStartX = player.x;
   if (!climbing) {
   player.crouch = in.down && player.grounded && player.vehicleHP == 0;
-  float targetVX=player.crouch ? 0 : in.move * (player.vehicleHP ? 125.0f : 145.0f);
+  const auto &arcade=tuning::campaignPresentation;
+  float targetVX=player.crouch ? 0 : in.move * (player.vehicleHP ? (arcadeCombat()?arcade.vehicleSpeed:125.f) : (arcadeCombat()?arcade.runSpeed:145.f));
   if(cinematicHero() && !player.vehicleHP && !player.crouch) {
     float rate=std::fabs(in.move)>.1f?tuning::heroLocomotion.acceleration:tuning::heroLocomotion.braking;
+    if(arcadeCombat())rate*=1.5f;
     player.vx+=clamp(targetVX-player.vx,-rate*dt,rate*dt);
     if(std::fabs(in.move)>.1f && std::fabs(player.vx)>1)player.dir=player.vx>0?1:-1;
   } else {
@@ -728,7 +752,7 @@ void Game::update(Input in, float dt) {
   // the sprite back to frame zero.
   player.anim += dt;
   if (in.jump && player.grounded) {
-    player.vy = player.vehicleHP ? -320 : -320;
+    player.vy = arcadeCombat()?-tuning::campaignPresentation.jumpSpeed:-320.f;
     player.grounded = false;
     burst(player.x, player.y, 1, 2, .3f);
     sounds.push_back(Sound::Jump);
@@ -854,6 +878,10 @@ void Game::update(Input in, float dt) {
     player.reloadTime = std::max(0.f, player.reloadTime-dt);
     if (player.reloadTime <= 0) player.magazine = int(tuning::weapons[player.weapon].magazine);
   }
+  // Reserve ammunition remains finite. Only the artificial magazine pause is
+  // removed from the arcade campaign; manual reload and art reviews still work.
+  if(arcadeCombat() && !in.reload && player.reloadTime<=0 && player.magazine<=0)
+    player.magazine=int(tuning::weapons[player.weapon].magazine);
   if (!player.vehicleHP && player.ladder < 0 && player.reloadTime <= 0 &&
       ((in.reload && player.magazine < int(tuning::weapons[player.weapon].magazine)) ||
        (in.shoot && player.magazine <= 0))) {
@@ -864,13 +892,14 @@ void Game::update(Input in, float dt) {
     bool melee = false;
     if (!in.up && !player.vehicleHP)
       for (auto &e : enemies)
-        if (!e.dead && e.active && e.kind < 3 && std::fabs(e.x - player.x) < 28 &&
+        if (!e.dead && e.active && e.kind < 3 && (e.x-player.x)*player.dir>=0 &&
+            std::fabs(e.x - player.x) < (arcadeCombat()?38.f:28.f) &&
             std::fabs(e.y - player.y) < 22) {
           damageEnemy(e, 4, true);
           melee = true;
-          player.action = .42f;
+          player.action = arcadeCombat()?.22f:.42f;
           player.actionKind = 1;
-          player.shot = .42f;
+          player.shot = player.action;
           player.recoil = .1f;
           burst(player.x + player.dir * 18, player.y - 20, 2, 5);
           break;
@@ -888,6 +917,7 @@ void Game::update(Input in, float dt) {
         vx = 0;
         vy = 500;
       }
+      if(arcadeCombat()){vx*=1.3f;vy*=1.3f;}
       if (w == 0) {
         fire(ox, oy, vx, vy, 1, 0);
         player.shot = .18f;
@@ -936,6 +966,10 @@ void Game::update(Input in, float dt) {
         audioEvents.push_back({Sound::Laser, ox, oy, w});
         shake = .8f;
       }
+      if(arcadeCombat()) {
+        static constexpr float cadence[]={.133f,.065f,.32f,.38f,.11f,.18f};
+        player.shot=cadence[w];
+      }
       weaponEffect(ox, oy, w);
       if (!player.vehicleHP) --player.magazine;
       if (w > 0 && !player.vehicleHP) {
@@ -952,7 +986,7 @@ void Game::update(Input in, float dt) {
     player.action = .45f;
     player.actionKind = 2;
     player.recoil = .12f;
-    float v = player.vehicleHP ? 250 : 155;
+    float v = player.vehicleHP ? 250 : arcadeCombat()?225.f:155.f;
     const float throwScale=player.vehicleHP?1.f:player.presentationScale;
     fire(player.x + player.dir * 10*throwScale, player.y - 26*throwScale, player.dir * v, -220, 8, 3, false, .95f);
     sounds.push_back(Sound::Grenade);
@@ -982,10 +1016,18 @@ void Game::update(Input in, float dt) {
     if (!e.active || e.x < camera - 180 || e.x > camera + W + 130)
       continue;
     float distance = std::fabs(player.x - e.x);
-    e.dir = player.x < e.x ? -1 : 1;
+    // Commit infantry facing during the visible windup. Crossing behind a
+    // shield must expose its back instead of instantly rotating the armor.
+    if(e.state==0 || e.kind>=3)e.dir = player.x < e.x ? -1 : 1;
     if (e.flinch>0) continue;
     e.timer -= dt;
-    const auto &behavior=tuning::enemyTypes[std::clamp(e.kind,0,4)];
+    auto behavior=tuning::enemyTypes[std::clamp(e.kind,0,4)];
+    if(arcadeCombat()) {
+      behavior.speed*=1.8f;
+      behavior.windup*=.8f;
+      behavior.recovery*=.7f;
+      behavior.projectileSpeed*=1.15f;
+    }
     float oldX=e.x;
     if (e.kind == 3) {
       e.y = e.baseY + std::sin(time * 2 + e.origin) * behavior.bob;
@@ -1014,12 +1056,20 @@ void Game::update(Input in, float dt) {
         e.state = 1;
         e.timer = behavior.windup;
       } else if (e.state == 1) {
+        if(e.kind<3 && (player.x-e.x)*e.dir<0) {
+          e.state=0;e.timer=.2f;
+          continue; // reacquire instead of firing backwards through the rifle
+        }
         e.state = 2;
         e.timer = .3f;
         if (distance < 27 && e.kind < 3 && std::fabs(e.y - player.y) < 26)
           hitPlayer();
-        else if (e.kind == 1)
-          fire(e.x, e.y - 30*enemyBodyScale(e), e.dir * (65 + distance * .25f), -205, 1, 3, true, 1.25f);
+        else if (e.kind == 1) {
+          e.fireAge=0;
+          auto muzzle=guardMuzzle(e);
+          fire(muzzle.x, muzzle.y, e.dir * (65 + distance * .25f), -205, 1, 3, true, 1.25f);
+          audioEvents.push_back({Sound::Grenade,muzzle.x,muzzle.y,3});
+        }
         else {
           e.fireAge=0;
           float ox = e.x + e.dir * 15*enemyBodyScale(e), oy = e.y - (e.kind == 4 ? 16 : 24)*enemyBodyScale(e),
@@ -1057,55 +1107,71 @@ void Game::update(Input in, float dt) {
     if (b.kind == 2 && int(time * 35) != int((time - dt) * 35))
       burst(b.x, b.y, 1, 1);
     bool collision = false, enemyImpact = false;
+    Contact nearest;
+    Enemy *enemyHit = nullptr;
+    Prop *propHit = nullptr;
+    bool playerHit = false, bossHit = false;
+    // Resolve the first physical contact along the entire frame's travel.
+    // Enemy storage/spawn order must never let a shot pass through cover.
     for (auto &p : level().platforms) {
-      if (p.oneWay && b.kind != 3)
-        continue;
-      if (segmentRect(b.px, b.py, b.x, b.y, p.box)) {
-        if (b.kind == 3) {
-          b.y = p.box.y - 3;
-          b.vy = -std::fabs(b.vy) * .35f;
-          b.vx *= .72f;
-        } else
-          collision = true;
-        break;
+      if (p.oneWay && b.kind != 3) continue;
+      Rect box = p.box;
+      if (b.kind == 3) {
+        // A thrown grenade can pass upward through a one-way gallery just as
+        // the hero does. It only lands when crossing its top while descending.
+        if (p.oneWay && (b.vy <= 0 || b.py > box.y - 3 + .01f)) continue;
+        box = {box.x - 3, box.y - 3, box.w + 6, box.h + 6};
       }
+      auto contact = segmentContact(b.px, b.py, b.x, b.y, box);
+      if (contact.time < nearest.time) nearest = contact;
     }
     if (b.kind == 3) {
+      if (std::isfinite(nearest.time)) {
+        b.x = b.px + (b.x - b.px) * nearest.time + nearest.nx * .01f;
+        b.y = b.py + (b.y - b.py) * nearest.time + nearest.ny * .01f;
+        if (nearest.nx != 0) b.vx = -b.vx * .55f;
+        if (nearest.ny != 0) {
+          b.vy = -b.vy * .35f;
+          b.vx *= .72f;
+        }
+      }
       if (b.life <= 0) {
         b.alive = false;
         explosion(b.x, b.y, 43, b.damage, b.hostile);
       }
       continue;
     }
-    if (!collision && b.hostile) {
-      if (segmentRect(b.px, b.py, b.x, b.y, playerBox())) {
-        hitPlayer();
-        collision = true;
-      }
-    } else if (!b.hostile && !collision) {
+    auto closer = [&](Rect box) {
+      auto contact = segmentContact(b.px, b.py, b.x, b.y, box);
+      if (contact.time >= nearest.time) return false;
+      nearest = contact;
+      enemyHit = nullptr; propHit = nullptr; playerHit = bossHit = false;
+      return true;
+    };
+    if (b.hostile) {
+      if (closer(playerBox())) playerHit = true;
+    } else {
       for (auto &e : enemies)
-        if (!e.dead && e.active && segmentRect(b.px, b.py, b.x, b.y, enemyBox(e))) {
-          if (b.kind != 2) {
-            enemyImpact=true;
-            damageEnemy(e, b.damage, false, b.vx > 0 ? 1 : b.vx < 0 ? -1 : 0, hitZone(e,b));
-            if(!cinematicGuard(e))weaponEffect(b.x,b.y,b.weapon,true,false);
-          }
-          collision = true;
-          break;
-        }
-      if (!collision && boss.active && !boss.dead && segmentRect(b.px, b.py, b.x, b.y, bossBox())) {
-        if (b.kind != 2)
-          damageBoss(b.damage);
-        burst(b.x, b.y, 0, 3);
-        collision = true;
+        if (!e.dead && e.active && closer(enemyBox(e))) enemyHit = &e;
+      if (boss.active && !boss.dead && closer(bossBox())) bossHit = true;
+      for (auto &p : props)
+        if (!p.dead && closer(propBox(p))) propHit = &p;
+    }
+    collision = std::isfinite(nearest.time);
+    if (collision) {
+      b.x = b.px + (b.x - b.px) * nearest.time;
+      b.y = b.py + (b.y - b.py) * nearest.time;
+      if (playerHit) hitPlayer();
+      if (enemyHit && b.kind != 2) {
+        enemyImpact = true;
+        damageEnemy(*enemyHit, b.damage, false, b.vx > 0 ? 1 : b.vx < 0 ? -1 : 0, hitZone(*enemyHit,b));
+        if (!cinematicGuard(*enemyHit)) weaponEffect(b.x,b.y,b.weapon,true,false);
       }
-      if (!collision)
-        for (auto &p : props)
-          if (!p.dead && segmentRect(b.px, b.py, b.x, b.y, propBox(p))) {
-            p.hp -= int(std::ceil(b.damage));
-            collision = true;
-            break;
-          }
+      if (bossHit) {
+        if (b.kind != 2) damageBoss(b.damage);
+        burst(b.x, b.y, 0, 3);
+      }
+      if (propHit && b.kind != 2) propHit->hp -= int(std::ceil(b.damage));
     }
     if (collision || b.life <= 0 || b.x < camera - 140 || b.x > camera + W + 160 || b.y < level().minY - 100 ||
         b.y > H + 100) {
@@ -1142,6 +1208,10 @@ void Game::update(Input in, float dt) {
         score += 200;
         sounds.push_back(Sound::Rescue);
         player.grenades += 2;
+        if (arcadeCombat() && player.health < player.maxHealth) {
+          player.health = std::min(player.maxHealth, player.health + 1);
+          player.healthNotice = tuning::hud.healthDuration;
+        }
       } else if (i.kind <= 3) {
         player.weapon = i.kind;
         player.ammo = i.kind == 1 ? 180 : i.kind == 2 ? 24 : 14;

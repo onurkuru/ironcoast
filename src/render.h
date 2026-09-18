@@ -29,6 +29,7 @@ class Renderer {
   Atlas workshopHero, workshopGuard, workshopAim, workshopClimb, workshopPlate, workshopShell, workshopDistance;
   Atlas ironlineTrain, ironlineDistance, ironlineForest;
   Atlas heroLocomotion, guardReactions;
+  Atlas guardShield;
   Atlas forgeTitan, foundryHall;
   Atlas productionProps;
   Atlas productionStructures;
@@ -52,6 +53,7 @@ class Renderer {
   };
   std::vector<LocalLight> lights;
   SDL_Texture *lightMask = nullptr;
+  SDL_Texture *canvas = nullptr;
   int sceneTheme = 0;
   float offsetX = 0, offsetY = 0;
   Atlas load(const std::string &, int, int, bool trim = false, bool paperKey = false, bool windowMatte = false);

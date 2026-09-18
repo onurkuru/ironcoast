@@ -1648,10 +1648,14 @@
     "enabled": 1,
     "health": 6,
     "exitHold": 0.8,
-    "cameraPanResponse": 4,
-    "cameraMaxSpeed": 200,
-    "cameraLeadResponse": 4,
-    "bossArenaInset": 24
+    "cameraPanResponse": 7,
+    "cameraMaxSpeed": 280,
+    "cameraLeadResponse": 7,
+    "bossArenaInset": 24,
+    "runSpeed": 205,
+    "climbSpeed": 130,
+    "vehicleSpeed": 180,
+    "jumpSpeed": 320
   },
   "workshop": {
     "width": 640,

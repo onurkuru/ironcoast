@@ -34,6 +34,8 @@ def apply_harbor(level):
     level['puddles']=[[170,232,100,7],[715,232,115,7],[1550,232,120,7]]
     level['buildings'].append({'box':[width-480,-72,480,304],'style':8})
     level['minY']=min(p['box'][1] for p in level['platforms'])-130
+    from arcade_encounters import apply_arcade_encounters
+    apply_arcade_encounters(level)
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)

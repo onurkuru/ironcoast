@@ -74,9 +74,9 @@ int main() {
     check(g.entranceAges[id]<0,"door triggered ahead of its marker");
     g.player.x=door.triggerX+1;ticks(g,{},20);
     for (const auto &e:g.enemies) if(e.entrance==int(id)) check(!e.active,"door spawned before warning finished");
-    ticks(g,{},130);
+    ticks(g,{},230);
     int count=0;for (const auto &e:g.enemies) if(e.entrance==int(id)){check(e.active,"door reinforcement missing");++count;}
-    check(count==2,"door wave is not finite pair");
+    check(count==5,"door wave is not a finite five-person squad");
     auto size=g.enemies.size();ticks(g,{},300);check(g.enemies.size()==size,"door repeated unbounded reinforcements");
     g.retry();ticks(g,{},140);check(g.enemies.size()==size,"retry duplicated door wave");
     ++doors;

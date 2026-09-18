@@ -58,3 +58,17 @@ architecture is a development milestone, not equivalent production quality.
 The source and local Vita package are v0.4.0 development; the public release is
 still v0.3.0. Real Vita installation, performance and controller feel remain
 unverified. Keep claims and screenshots tied to the actual source/package tested.
+
+## Arcade gameplay pass — 17 September
+
+Campaign pacing uses Game::arcadeCombat(): ordinary campaign and chapter openings use arcade controls, while isolated art reviews retain their cinematic timing. campaignPresentation owns run/climb/vehicle/jump speed. Powered weapons consume finite reserve rounds without forced magazine stalls; optional manual reload remains. Ordinary hits no longer stop the whole simulation; explosive impacts pause at most one tick. Infantry commit facing through windup, and melee only reaches forward.
+
+All human enemy kinds 0–2 share the adult guard rig; drones and turrets keep mechanical silhouettes. Shield equipment has an authored chroma-key PNG, lowers during the real vulnerable attack state and uses the same facing as its collision behavior. Grenade troops fire from the authored muzzle. Gameplay lighting lifts uniform detail and hostile projectiles use a distinct warning palette. HUD presents health, lives, reserve ammo, grenades, score and boss health; contextual cues explain low targets and real ladder access.
+
+arcade_encounters.py appends bounded wingmen and five-person door squads after each architecture generator rebuilds its base lists. Early and post-door weapon caches sustain the new cadence. Do not call this append pass twice on existing generated lists; rerun the full architecture generator instead. Entrances retain warning/exit time and do not spawn indefinitely.
+
+Swept projectile contacts choose the nearest entry time across terrain, enemies, bosses and props. Solid grenade impacts reflect the hit axis; one-way decks accept downward top crossings only. Blast radii intersect actual body rectangles. tests/test_arcade_mechanics.cpp covers order independence, cover, grenade normals, body-scaled blasts and crouched fire against low turrets.
+
+ArcadeReview drives ordinary inputs and actually engages ground squads; --arcade-review uses normal damage, while --arcade-review-assist explicitly enables invulnerability for presentation captures. Neither controller teleports actors or injects boss damage. Assisted captures establish movement and integration; normal-damage results are recorded separately.
+
+Renderer owns a reusable native 480x272 target when SDL supports it, then upscales with nearest filtering and restores the caller target, viewport and scale. Target-less backends keep the direct rendering path. This already-implemented optimization is retained; additional Vita work is deferred behind gameplay review at the user’s request.

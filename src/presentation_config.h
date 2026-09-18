@@ -648,8 +648,12 @@ struct CampaignPresentation {
   float cameraMaxSpeed;
   float cameraLeadResponse;
   float bossArenaInset;
+  float runSpeed;
+  float climbSpeed;
+  float vehicleSpeed;
+  float jumpSpeed;
 };
-inline constexpr CampaignPresentation campaignPresentation = {1.0f, 6.0f, 0.8f, 4.0f, 200.0f, 4.0f, 24.0f};
+inline constexpr CampaignPresentation campaignPresentation = {1.0f, 6.0f, 0.8f, 7.0f, 280.0f, 7.0f, 24.0f, 205.0f, 130.0f, 180.0f, 320.0f};
 struct Workshop {
   float width;
   float sourceAspect;

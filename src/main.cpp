@@ -3,6 +3,7 @@
 #include "render.h"
 #include "presentation_config.h"
 #include "painted_route_review.h"
+#include "arcade_review.h"
 #include <SDL.h>
 #include <algorithm>
 #include <cmath>
@@ -68,6 +69,8 @@ int main(int argc, char **argv) {
   bool guardActionReview=false;
   bool harborReview=false,marshReview=false,ironlineCampaignReview=false;
   PaintedRouteReview paintedRoute;
+  ArcadeReview arcadePilot;
+  bool arcadeReview=false,arcadeAssist=false;
   int chapter = -1, climbPreview=-1;
   bool demo = false, fast = false, bossPreview = false, workshopReview=false, reviewDemo=false;
   float beginX = 40;
@@ -75,6 +78,8 @@ int main(int argc, char **argv) {
     std::string a = argv[i];
     auto next = [&]() { return i + 1 < argc ? std::string(argv[++i]) : std::string(); };
     if(a=="--workshop-review")workshopReview=true;
+    else if(a=="--arcade-review")arcadeReview=true;
+    else if(a=="--arcade-review-assist"){arcadeReview=true;arcadeAssist=true;}
     else if(a=="--harbor-review")harborReview=true;
     else if(a=="--marsh-review")marshReview=true;
     else if(a=="--ironline-campaign-review")ironlineCampaignReview=true;
@@ -121,7 +126,7 @@ int main(int argc, char **argv) {
     else if (a == "--help") {
       std::cout << "Iron Coast: Scrap Tide --stage 1..6 --chapter 1..6 --climb-preview LADDER_INDEX --frames N --capture frame.png --demo --fast "
                    "--assets PATH --save PATH --showcase 1..5 --boss-preview --preview-phase 1..2 "
-                   "--record DIR --record-every N --record-audio audio.s16le --harbor-review --marsh-review --ironline-campaign-review --workshop-review --review-demo --review-motion --review-camera --review-weapon 0..5 --ironline-review --ironline-demo --hero-motion-review --guard-reaction-review --guard-action-review\n";
+                   "--record DIR --record-every N --record-audio audio.s16le --arcade-review --arcade-review-assist --harbor-review --marsh-review --ironline-campaign-review --workshop-review --review-demo --review-motion --review-camera --review-weapon 0..5 --ironline-review --ironline-demo --hero-motion-review --guard-reaction-review --guard-action-review\n";
       return 0;
     }
   }
@@ -243,6 +248,11 @@ int main(int argc, char **argv) {
     if (demo) {
       view.assist = true;
       game.debugInvincible = true;
+    }
+    if(arcadeReview) {
+      game.load(stage>=0?std::clamp(stage,0,5):0);
+      game.debugInvincible=arcadeAssist;
+      view.screen=Screen::Play;view.assist=arcadeAssist;
     }
     if(harborReview || marshReview || ironlineCampaignReview) {
       const int map=ironlineCampaignReview?2:marshReview?1:0;
@@ -554,7 +564,7 @@ int main(int argc, char **argv) {
           if (demo) {
             input = {};
             input.shoot = true;
-            input.move = game.boss.active ? 0 : 1;
+            input.move = game.boss.active && !game.boss.dead ? 0 : 1;
             float look = game.floorAt(game.player.x + 48, game.player.y - 2);
             input.jump =
                 game.player.grounded && (look > game.player.y + 18 ||
@@ -636,6 +646,7 @@ int main(int argc, char **argv) {
             input.up=game.player.y>ladder.top+.1f;
           }
           if(harborReview || marshReview || ironlineCampaignReview)input=paintedRoute.input(game);
+          if(arcadeReview)input=arcadePilot.input(game);
           view.input = input;
           queued.jump |= input.jump;
           queued.grenade |= input.grenade;

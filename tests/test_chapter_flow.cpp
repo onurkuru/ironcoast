@@ -43,7 +43,7 @@ int main(){try{
       auto muzzle=muzzlePoint(g.player,{});auto body=g.enemyBox(e);
       check(muzzle.y>=body.y && muzzle.y<=body.y+body.h,"hero shoots over a grounded enemy class");
     }
-    check(g.cinematicGuard(e)==(kind==0),"non-rifle class replaced by sentry art");
+    check(g.cinematicGuard(e)==(kind<3),"human and mechanical rigs mixed");
   }
   for(int chapter=0;chapter<6;++chapter) {
     Game g;g.load(chapter);g.debugInvincible=true;g.enemies.clear();

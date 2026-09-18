@@ -1,20 +1,14 @@
-# Development status — 17 September 2026
+# Development status — 18 September 2026
 
-Overall progress toward a polished, publishable version with the user's cinematic
-pixel-art target is estimated at **40–50%**. This is a planning judgment, not a
-measured completion score. It is not calculated from lines of code or passing
-tests, and does not imply that REPLACED-equivalent quality is halfway achieved.
+The current deliverable is an arcade gameplay development preview. A single completion percentage would hide the difference between playable features and the much higher cinematic art target.
 
-| Area | Current evidence | Remaining work |
+| Area | Evidence | Remaining validation |
 |---|---|---|
-| Gameplay foundation | Six-mission flow, weapons/reloads, enemies, bosses, rescues, checkpoints and vehicle systems exist | Full manual playthroughs, pacing and combat balance |
-| Integrated architecture | Harbor, Marsh and Ironline have art-registered routes and continuous reviews | Foundry, Relay and Final Wave need comparable passes |
-| Characters and effects | Adult hero/guard rigs, locomotion, aim and hit reactions are present | Broader animation polish, transitions and consistent scene response |
-| Visual quality | Measured contacts, local light and selected independent scenery layers | Consistent composition, depth and motion across the campaign; target quality is not yet reached |
-| Verification | Host gameplay/render tests, Linux CI and Vita build/package checks | Physical Vita installation, memory/frame-rate measurements, audio and controller testing |
-| Distribution | Public v0.3.0 preview and newer v0.4.0 development source | Hardware validation and a reviewed new release |
+| Campaign | Six missions, two opening sections, six bosses, checkpoints, rescues, vehicles and end flow run | Human full-campaign difficulty/playfeel pass |
+| Arcade combat | Faster movement, sustained finite-ammo weapons, bounded squads, adult infantry, shield openings and readable incoming fire | Broader player balance feedback |
+| Normal-damage automation | Five of six missions cleared through ordinary controls | Relay bot fails near final boss phase; no six-of-six claim |
+| Logic | Nearest swept hits, cover ordering, proper grenade normals, body-sized blasts and nonrepeatable rescue health | Continue targeted regressions for new bugs |
+| Visual quality | Adult roles, shield equipment, hostile-shot readability, three painted/registered environments and remaining scene kits | REPLACED-level animation and scene consistency not achieved |
+| Distribution | GitHub source and independent local Mac playtest | Public Vita download is still v0.3.0; no new release claimed |
 
-A finished release needs all six missions to meet the agreed visual standard,
-complete normal-difficulty playthroughs with reliable retry/save behavior, and
-validation on the target hardware. The invulnerable review videos demonstrate
-integration and movement, not those release criteria.
+The user explicitly prioritized game completion over further Vita optimization. Existing native-resolution rendering remains, but hardware work is deferred until gameplay review. No physical Vita frame-rate claim is made. See [arcade verification](ARCADE_GAMEPLAY.md) for reproducible results.

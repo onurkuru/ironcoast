@@ -42,6 +42,8 @@ def apply_ironline(level):
     level['puddles'] = [[180,232,110,5],[725,232,110,5],[1300,232,100,5]]
     level['buildings'].append({'box': [width-480,-72,480,304], 'style': 8})
     level['minY'] = min(p['box'][1] for p in level['platforms'])-130
+    from arcade_encounters import apply_arcade_encounters
+    apply_arcade_encounters(level)
 
 
 if __name__ == '__main__':

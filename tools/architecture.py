@@ -51,6 +51,9 @@ def apply_architecture(levels):
   originals=level['hazards']
   level['hazards']=[dict(originals[n%len(originals)],x=x) for n,x in enumerate(locations)] if originals else []
   if index==2:level['brief2']='MIRA: Take the carriage roofs to flank the shields. The service deck leads to the locomotive cannon.'
+  if index>=3:
+   from arcade_encounters import apply_arcade_encounters
+   apply_arcade_encounters(level)
  from harbor_architecture import apply_harbor
  apply_harbor(levels[0])
  from marsh_architecture import apply_marsh
