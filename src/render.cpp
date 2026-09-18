@@ -815,7 +815,7 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     groundedSprite(vehicle, frame, g.vehicleX - camera - 38, feet - 76, 76, 76);
     SDL_SetTextureColorMod(vehicle.texture, 255, 255, 255);
     if (g.canBoardVehicle())
-      text(controlHint("TRIANGLE", "E / TRIANGLE"), g.vehicleX - camera - 32, 155, 1, GOLD);
+      text(controlHint("TRIANGLE", "E / PAD Y"), g.vehicleX - camera - 32, 155, 1, GOLD);
   }
   for (const auto &source : g.enemies) {
     auto e = interpolatedEnemy(source,alpha);
@@ -1230,7 +1230,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
       text((v.menu == i ? "> " : "  ") + std::string(opts[i]), 29, 161 + i * 16, 1,
            v.menu == i ? GOLD : CREAM);
     }
-    text(controlHint("CROSS  SELECT", "ENTER / X  SELECT"), 26, 248, 1, TEAL);
+    text(controlHint("CROSS  SELECT", "ENTER / Z  SELECT"), 26, 248, 1, TEAL);
     text("PS VITA HOMEBREW", 337, 249, 1, CREAM);
   }
   if (v.screen == Screen::Map) {
@@ -1258,7 +1258,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
     }
     for (auto &e : l.spawns)
       rect(20 + e.x / l.width * 435, 196 + e.y / 232 * 26, 2, 2, RED);
-    text(controlHint("< > SELECT   CROSS START   CIRCLE BACK", "< > SELECT   ENTER / X START   ESC BACK"), 20, 245, 1, CREAM);
+    text(controlHint("< > SELECT   CROSS START   CIRCLE BACK", "< > SELECT   ENTER / Z START   ESC BACK"), 20, 245, 1, CREAM);
     if (v.selected > v.unlocked && !v.assist)
       text("COMPLETE THE PREVIOUS MISSION", 20, 234, 1, RED);
   }
@@ -1277,23 +1277,30 @@ void Renderer::render(const Game &g, const ViewState &v) {
       "COOLING GANTRIES / PRESS TIMING","VERTICAL ASCENT / DRONE AMBUSHES",
       "ARMORED DECKS / FINAL GRID SHUTDOWN"};
     text(routes[v.selected], 33, 202, 1, TEAL);
-    text(controlHint("CROSS  DEPLOY", "ENTER / X  DEPLOY"), 33, 231, 1, GOLD);
+    text(controlHint("CROSS  DEPLOY", "ENTER / Z  DEPLOY"), 33, 231, 1, GOLD);
   }
   if (v.screen == Screen::Pause) {
     rect(0, 0, 480, 272, 0x071320C8);
-    text("PAUSED", 167, 79, 4, CREAM);
-    text(controlHint("CROSS / START  RESUME", "ENTER / START   RESUME"), 149, 131, 1, GOLD);
-    text(controlHint("SOUND: MAIN MENU SETTINGS","M   TOGGLE SOUND"), 149, 152, 1, CREAM);
+    text("PAUSED", 167, 45, 4, CREAM);
+    const char *choices[] = {"RESUME", "CONTROLS", "MAIN MENU"};
+    for (int i = 0; i < 3; ++i) {
+      if (v.menu == i) rect(137, 92 + i * 22, 208, 18, 0x071320E8);
+      text((v.menu == i ? "> " : "  ") + std::string(choices[i]),
+           149, 98 + i * 22, 1, v.menu == i ? GOLD : CREAM);
+    }
+    text(controlHint("CROSS SELECT / CIRCLE OR START RESUME",
+                     "ENTER SELECT / ESC OR P RESUME"), 90, 176, 1, TEAL);
+    text(v.menu == 2 ? "LEAVES THIS MISSION. UNLOCKS ARE KEPT." :
+         controlHint("UP / DOWN SELECT", "UP / DOWN SELECT    M SOUND"), 90, 191, 1, CREAM);
     text("LIVES "+std::to_string(g.player.lives)+"  HEALTH "+std::to_string(g.player.health)+"  SCORE "+std::to_string(g.score),90,210,1,CREAM);
     text("AMMO "+(g.player.weapon?std::to_string(g.player.ammo):std::string("UNLIMITED"))+"  GRENADES "+std::to_string(g.player.grenades)+"  RESCUED "+std::to_string(g.rescued)+"/3",90,224,1,CREAM);
     text(g.level().name,90,238,1,GOLD);
-    text(controlHint("CIRCLE  MAIN MENU", "ESC / O   MAIN MENU"), 149, 173, 1, CREAM);
   }
   if (v.screen == Screen::Play && g.status == Status::GameOver) {
     rect(0, 0, 480, 272, 0x101523CB);
     text("SIGNAL LOST", 61, 89, 3, RED);
-    text(controlHint("CROSS  CONTINUE FROM CHECKPOINT", "ENTER / X  CONTINUE FROM CHECKPOINT"), 92, 140, 1, CREAM);
-    text(controlHint("CIRCLE  MAIN MENU", "ESC / O  MAIN MENU"), 182, 160, 1, GOLD);
+    text(controlHint("CROSS  CONTINUE FROM CHECKPOINT", "ENTER / Z  CONTINUE FROM CHECKPOINT"), 92, 140, 1, CREAM);
+    text(controlHint("CIRCLE  MAIN MENU", "ESC / B  MAIN MENU"), 182, 160, 1, GOLD);
   }
   if (v.screen == Screen::Debrief) {
     rect(0, 0, 480, 272, 0x071A27EB);
@@ -1302,8 +1309,8 @@ void Renderer::render(const Game &g, const ViewState &v) {
     text("SCORE  " + std::to_string(g.score), 35, 128, 2, CREAM);
     text("RESCUED  " + std::to_string(g.rescued) + " / 3", 35, 153, 1, TEAL);
     text("ENEMIES  " + std::to_string(g.kills), 35, 172, 1, CREAM);
-    text(g.levelIndex==5?controlHint("CROSS  EPILOGUE","ENTER / X  EPILOGUE"):
-         controlHint("CROSS  NEXT MISSION", "ENTER / X  NEXT MISSION"), 35, 228, 1, GOLD);
+    text(g.levelIndex==5?controlHint("CROSS  EPILOGUE","ENTER / Z  EPILOGUE"):
+         controlHint("CROSS  NEXT MISSION", "ENTER / Z  NEXT MISSION"), 35, 228, 1, GOLD);
   }
   if (v.screen == Screen::Ending) {
     rect(0, 0, 480, 272, 0x071A27E8);
@@ -1318,7 +1325,7 @@ void Renderer::render(const Game &g, const ViewState &v) {
             30, 141, 1, 420, TEAL);
     text("CAMPAIGN SCORE " + std::to_string(g.score), 30, 199, 1, GOLD);
     text("RESCUE " + std::to_string(g.totalRescued) + " / 18", 30, 217, 1, CREAM);
-    text(controlHint("CROSS  MAIN MENU", "ENTER / X   MAIN MENU"), 30, 245, 1, CREAM);
+    text(controlHint("CROSS  MAIN MENU", "ENTER / Z   MAIN MENU"), 30, 245, 1, CREAM);
   }
   if (v.screen == Screen::Options) {
     rect(0, 0, 480, 272, 0x071A27E8);
@@ -1346,18 +1353,18 @@ void Renderer::render(const Game &g, const ViewState &v) {
                          "PAUSE        START"};
 #else
     const char *rows[] = {"MOVE         ARROWS / WASD       D-PAD / LEFT STICK",
-                          "JUMP         Z / SPACE          X (CROSS)",
-                          "FIRE         X / J              SQUARE",
-                          "GRENADE      C / K              CIRCLE / R",
-                          "INTERACT E / TRIANGLE  RELOAD R / L",
-                          "AIM UP       UP + FIRE          UP + SQUARE",
-                          "AIM DOWN     AIR DOWN + FIRE     AIR DOWN + SQUARE",
-                          "PAUSE        ESC                START"};
+                          "JUMP         Z / SPACE          PAD A",
+                          "FIRE         X / J              PAD X",
+                          "GRENADE      C / K              PAD B / RB",
+                          "INTERACT     E / PAD Y   RELOAD R / LB",
+                          "AIM UP       UP + FIRE",
+                          "AIM DOWN     AIR DOWN + FIRE",
+                          "PAUSE        ESC / P            START"};
 #endif
     for (int i = 0; i < 8; i++)
       text(rows[i], 23, 69 + i * 18, 1, CREAM);
     text("CLIMB        UP / DOWN   JUMP TO RELEASE", 23, 218, 1, CREAM);
-    text(controlHint("CROSS / CIRCLE  BACK", "ENTER / O / ESC  BACK"), 25, 244, 1, TEAL);
+    text(controlHint("CROSS / CIRCLE  BACK", "ENTER / ESC  BACK"), 25, 244, 1, TEAL);
   }
   if (v.screen == Screen::Play || v.screen == Screen::Pause) {
     // Keep small character details clear; only the frame edges are shaded.

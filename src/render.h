@@ -18,7 +18,23 @@ struct ViewState {
   int selected = 0, unlocked = 0, best = 0, menu = 0;
   float clock = 0, interpolation = 0;
   bool muted = false, shake = true, assist = false, fullscreen = false;
+  bool controlsFromPause = false;
   Input input;
+  void enterPause() { screen = Screen::Pause; menu = 0; }
+  void pauseInput(bool confirm, bool back, bool pause, bool up, bool down) {
+    if (back || pause) { screen = Screen::Play; return; }
+    if (up) menu = (menu + 2) % 3;
+    if (down) menu = (menu + 1) % 3;
+    if (!confirm) return;
+    if (menu == 0) screen = Screen::Play;
+    else if (menu == 1) { controlsFromPause = true; screen = Screen::Controls; }
+    else { screen = Screen::Title; menu = 0; }
+  }
+  void closeControls() {
+    screen = controlsFromPause ? Screen::Pause : Screen::Title;
+    menu = controlsFromPause ? 1 : 3;
+    controlsFromPause = false;
+  }
 };
 class Renderer {
   friend struct RendererAudit;

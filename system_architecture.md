@@ -82,3 +82,7 @@ Props participate in nearest-contact selection for hostile as well as friendly b
 ## Secured boss victory
 
 Boss damage is accepted only during Status::Play. Once boss.dead is set, hitPlayer ignores further arena damage during destruction. If the player dies first, later shots cannot bank a posthumous boss victory. The 2500 boss points and campaign rescue total are committed exactly once on transition to Clear, together with rescue points. Six-boss regression coverage checks both hit orders and carried totals.
+
+## Pause and controls navigation
+
+ViewState::enterPause resets selection to Resume for keyboard, controller disconnect and lost-focus entry. pauseInput prioritizes pause/cancel over confirm because Start maps to both on host controllers. Main Menu requires explicit selection. Controls opened from Pause return to Pause and retain paused audio; controls opened from Title return to Title. Host hints use actual keyboard bindings and SDL controller A/B/X/Y names; Vita retains its native labels.

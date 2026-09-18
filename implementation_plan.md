@@ -1,8 +1,9 @@
-# Victory handoff continuation
+# Player menu continuity
 
-1. [MODIFY] src/game.cpp: lock victory against further player damage, accept boss damage only during active play, and award boss/rescue completion rewards at Clear.
-2. [MODIFY] tests/test_arcade_mechanics.cpp: cover both fatal-hit orderings, one-time completion rewards and carried rescue totals.
-3. [MODIFY] task.md and system_architecture.md: record verified behavior.
-4. Build, run campaign/application checks, refresh the local executable and push GitHub.
+1. [MODIFY] src/render.h: shared pause navigation, safe cancel/resume and controls return context.
+2. [MODIFY] src/main.cpp: route pause entry/navigation and controls return through the shared flow.
+3. [MODIFY] src/render.cpp: readable selectable pause menu and accurate keyboard/controller hints.
+4. [MODIFY] tests/test_render.cpp: validate pause navigation and controls return, then inspect actual menu captures.
+5. Refresh playable build, documentation and GitHub after integrated checks.
 
-Game quality remains the priority; no Vita optimization in this pass.
+6. [MODIFY] tools/test_runtime.py: include the actual pause screen in application startup coverage.

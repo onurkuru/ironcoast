@@ -118,6 +118,30 @@ int main(int argc, char **argv) {
   SDL_RenderSetLogicalSize(device, 480, 272);
   int result = 0;
   try {
+    ViewState menu;
+    menu.menu = 4;
+    menu.enterPause();
+    if (menu.menu != 0) throw std::runtime_error("Pause must default to resume");
+    menu.pauseInput(false, true, true, false, false);
+    if (menu.screen != Screen::Play) throw std::runtime_error("Escape must resume, not abandon the mission");
+    menu.enterPause();
+    menu.pauseInput(false, false, false, false, true);
+    menu.pauseInput(true, false, false, false, false);
+    if (menu.screen != Screen::Controls) throw std::runtime_error("Pause controls entry failed");
+    menu.closeControls();
+    if (menu.screen != Screen::Pause || menu.menu != 1)
+      throw std::runtime_error("Controls must return to the paused mission");
+    menu.pauseInput(true, false, true, false, false);
+    if (menu.screen != Screen::Play) throw std::runtime_error("Controller Start must resume before confirming a selection");
+    menu.enterPause();
+    menu.pauseInput(false, false, false, true, false);
+    menu.pauseInput(true, false, false, false, false);
+    if (menu.screen != Screen::Title || menu.menu != 0)
+      throw std::runtime_error("Explicit main menu selection failed");
+    menu.screen = Screen::Controls;
+    menu.closeControls();
+    if (menu.screen != Screen::Title || menu.menu != 3)
+      throw std::runtime_error("Title controls return context failed");
     Renderer renderer(device, argv[1]);
     auto pixels = [&]() {
       std::vector<Uint32> data(960 * 544);

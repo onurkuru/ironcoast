@@ -322,6 +322,8 @@ int main(int argc, char **argv) {
       view.screen = Screen::Brief;
     else if (initialScreen == "controls")
       view.screen = Screen::Controls;
+    else if (initialScreen == "pause")
+      view.enterPause();
     SDL_GameController *pad = nullptr;
     auto openPad = [&]() {
       if (pad)
@@ -359,12 +361,12 @@ int main(int argc, char **argv) {
           SDL_GameControllerClose(pad);
           pad = nullptr;
           if (view.screen == Screen::Play)
-            view.screen = Screen::Pause;
+            view.enterPause();
         }
         if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_FOCUS_LOST &&
             !fast) {
           if (view.screen == Screen::Play)
-            view.screen = Screen::Pause;
+            view.enterPause();
           accumulator = 0;
           previous = {};
         }
@@ -463,9 +465,10 @@ int main(int argc, char **argv) {
           } else if (view.menu == 2) {
             view.screen = Screen::Options;
             view.menu = 0;
-          } else if (view.menu == 3)
+          } else if (view.menu == 3) {
+            view.controlsFromPause = false;
             view.screen = Screen::Controls;
-          else
+          } else
             running = false;
         }
       } else if (view.screen == Screen::Map) {
@@ -521,18 +524,11 @@ int main(int argc, char **argv) {
           view.menu = 2;
         }
       } else if (view.screen == Screen::Controls) {
-        if (confirm || back) {
-          view.screen = Screen::Title;
-          view.menu = 3;
-        }
+        if (confirm || back)
+          view.closeControls();
       } else if (view.screen == Screen::Pause) {
-        if (confirm || (pause && !back)) {
-          view.screen = Screen::Play;
-          accumulator = 0;
-        } else if (back) {
-          view.screen = Screen::Title;
-          view.menu = 0;
-        }
+        view.pauseInput(confirm, back, pause, up, down);
+        accumulator = 0;
       } else if (view.screen == Screen::Debrief) {
         if (confirm) {
           if (game.levelIndex == 5)
@@ -558,7 +554,7 @@ int main(int argc, char **argv) {
             view.menu = 0;
           }
         } else if (pause) {
-          view.screen = Screen::Pause;
+          view.enterPause();
           accumulator = 0;
         } else {
           if (demo) {
@@ -695,7 +691,8 @@ int main(int argc, char **argv) {
           }
         }
       }
-      audio.settings(game.levelIndex, view.muted, view.screen == Screen::Pause,
+      audio.settings(game.levelIndex, view.muted, view.screen == Screen::Pause ||
+                         (view.screen == Screen::Controls && view.controlsFromPause),
                      game.boss.active && !game.boss.dead);
       view.interpolation = fast || view.screen != Screen::Play || game.status == Status::GameOver
                                ? 1.0f

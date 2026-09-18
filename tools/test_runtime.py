@@ -19,7 +19,7 @@ def main():
         cases = [(f'mission-{stage}', ['--stage', str(stage), '--demo', '--frames', '120'], '')
                  for stage in range(1, 7)]
         cases += [(f'menu-{screen}', ['--screen', screen, '--frames', '2'], '')
-                  for screen in ('map', 'brief', 'controls')]
+                  for screen in ('map', 'brief', 'controls', 'pause')]
         cases += [(f'save-{i}', ['--frames', '2'], data) for i, data in enumerate([
             'bad magic', 'KH_SAVE_1 3', 'KH_SAVE_1 999 -123 8 2 -1 7',
             'KH_SAVE_1 999999999999999999999999999999999999 0 0 0 0 0'])]
