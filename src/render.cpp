@@ -384,14 +384,27 @@ void Renderer::drawBoss(const Game &g, float camera, float alpha) {
       const auto muzzle=bossMuzzlePoint(b,kind,alpha);
       const float right=std::clamp(muzzle.x-camera,0.f,float(W));
       for(int volley=0;volley<2+b.phase;++volley) {
-        const float y=214-volley*12;
         for(float x=12;x<right-8;x+=32) {
+          const float y=muzzle.y+(muzzle.x-camera-x)/120.f*foundrySweepVY(volley);
           rect(x-1,y-3,6,7,0x091018A0);
           line(x+3,y-2,x,y,0xFFC093DD);
           line(x,y,x+3,y+2,0xFFC093DD);
         }
       }
       warningLabel("SWEEP",right*.5f,159,5);
+    } else if (kind == 4) {
+      // The first radial volley uses these same angles in fireBossVolley.
+      // Short spokes communicate a spreading attack without drawing live beams.
+      const int rays = 8 + b.phase * 2;
+      const float originY = between(b.prevY,b.y,alpha) - 50;
+      for (int i = 0; i < rays; ++i) {
+        const float angle = 6.283185f * i / rays + b.pattern * .18f;
+        const float dx=std::cos(angle), dy=std::sin(angle);
+        const float radius=27+pose.charge*8;
+        line(cx+dx*radius,originY+dy*radius,cx+dx*(radius+9),originY+dy*(radius+9),0x08131EFF);
+        line(cx+dx*(radius+1),originY+dy*(radius+1),cx+dx*(radius+7),originY+dy*(radius+7),TEAL);
+      }
+      warningLabel("RADIAL",cx,originY-52,6);
     } else if (kind == 1 && b.pattern % 2)
       for (int j = 0; j < 7; ++j) text("<", cx - 68 - j * 16, cy - 8, 1, RED);
   }
@@ -717,14 +730,22 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
     if (x + h.w < 0 || x > W)
       continue;
     bool active = g.hazardOn(h);
-    bool disabled = false;
-    for (int i = 0; i < g.routeControlCount(); ++i)
-      if (&h == &l.hazards[i] && g.routeDisabled[i]) disabled = true;
-    if (disabled) {
+    if (g.hazardDisabled(h)) {
       rect(x-2,h.y+h.h-4,h.w+4,4,0x101D25FF);
       for (int j = 2; j < h.w; j += 5)
         rect(x+j,h.y+h.h-3,2,2,0x7DD2A5FF);
       continue;
+    }
+    const float warning = g.hazardWarning(h);
+    if (warning > 0) {
+      const float floor=h.y+h.h;
+      rect(x-2,floor-7,h.w+4,3,0x101820FF);
+      rect(x-1,floor-6,(h.w+2)*warning,1,0xFFD38AFF);
+      for(float edge:{x-2,x+h.w+1})
+        for(float y=h.y;y<floor-9;y+=9)
+          rect(edge,y,1,3,0xF6BE7200u|Uint8(80+warning*140));
+      rect(x+h.w*.5f-4,h.y-15,9,11,0x101820E0);
+      text("!",x+h.w*.5f-2,h.y-13,1,0xFFD38AFF);
     }
     if(g.levelIndex==1 && h.kind==0) {
       // A shallow steel vent sits on the painted lane. Steam stays inside the

@@ -1,8 +1,9 @@
-# Campaign completion pass
+# Late campaign combat readability
 
-1. Root: [NEW] src/save_progress.h, tests/test_save_progress.cpp; [MODIFY] src/main.cpp, src/render.h, src/render.cpp, CMakeLists.txt. Persist mission completion and best rescues; migrate legacy saves; show progress on map and ending.
-2. Combat agent: verify all 18 rescue routes including late chapter galleries using real movement inputs; report/fix blockers within tests/review helpers.
-3. Design agent: improve late chapter platform/support/entrance integration in src/themed_environment.cpp and src/architecture_render.cpp; retain all nine sabotage controls.
-4. Integrated build/tests, real visual capture, refresh playable delivery and GitHub.
+1. [MODIFY] src/game.h/src/game.cpp: expose disabled-hazard state and a 0.7-second pre-activation warning from the existing hazard cycle; do not alter damage or timing.
+2. [MODIFY] src/render.cpp: show floor hazard charge-up and Relay radial volley directions during windup. Preserve disabled outlet indicators.
+3. [MODIFY] tests/test_arcade_mechanics.cpp: verify warning boundaries, active/safe phases and disabled circuits.
+4. Independent agent audits late boss logic; address verified blockers if found.
+5. Build/test/capture; refresh playable package and GitHub.
 
-Completion gates: campaign and full-rescue traversal, completion persistence, coherent late-stage scene contact, regression-free delivery. REPLACED benchmark and human playfeel remain explicit quality gates, not inferred from automated tests.
+6. Verified Foundry fixes: allow the fourth phase-two sweep volley before recovery; emit all sweep rounds from the real muzzle and share their vertical velocities with warning rays.

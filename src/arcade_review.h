@@ -65,6 +65,12 @@ public:
       if(game.level().bossKind==5 && game.boss.pattern%2==1 &&
          (game.boss.state==BossState::Windup || game.boss.state==BossState::Attack ||
           game.boss.state==BossState::Recover))safeX+=75;
+      // Foundry's even pattern marks up to four columns, ending 75 pixels
+      // beyond the tracked position. Leave the full marked spread before it
+      // falls, rather than trying to hop through its vertical projectiles.
+      if(game.level().bossKind==3 && game.boss.pattern%2==0 &&
+         (game.boss.state==BossState::Windup || game.boss.state==BossState::Attack ||
+          game.boss.state==BossState::Recover))safeX+=110;
       in.move=std::fabs(player.x-safeX)>8?std::clamp((safeX-player.x)*.05f,-1.f,1.f):
               player.dir!=direction?.12f*direction:0;
       in.up=false;

@@ -105,13 +105,22 @@ Sound Game::footstep() const {
       return p.material == 1 ? Sound::MetalStep : Sound::Step;
   return Sound::Step;
 }
-bool Game::hazardOn(const Hazard &h) const {
+bool Game::hazardDisabled(const Hazard &h) const {
   for (int i = 0; i < routeControlCount(); ++i) {
     const auto &linked = level().hazards[i];
     if (routeDisabled[i] && h.x == linked.x && h.y == linked.y && h.kind == linked.kind)
-      return false;
+      return true;
   }
+  return false;
+}
+bool Game::hazardOn(const Hazard &h) const {
+  if (hazardDisabled(h)) return false;
   return h.period <= 0 || std::fmod(time + h.offset, h.period) < h.on;
+}
+float Game::hazardWarning(const Hazard &h) const {
+  if (hazardDisabled(h) || h.period <= 0 || hazardOn(h)) return 0;
+  const float until = h.period - std::fmod(time + h.offset, h.period);
+  return std::clamp(1.f - until / .7f, 0.f, 1.f);
 }
 int Game::routeControlCount() const {
   if (cinematicReview() || levelIndex < 3) return 0;
@@ -450,7 +459,7 @@ void Game::fireBossVolley() {
       for (int i = 0; i < phase + 2; i++)
         fire(boss.targetX - 45 + i * 40, 40, 0, 175, 1, 6, true, 2);
     } else if (boss.pattern % 2 == 1) {
-      fire(ox, 214 - volley * 12, -120, 0, 1, 4, true, 4);
+      fire(ox, oy, -120, foundrySweepVY(volley), 1, 4, true, 4);
     }
   } else if (k == 4) {
     for (int i = 0; i < 8 + phase * 2; i++) {
@@ -596,7 +605,8 @@ void Game::updateBoss(float dt) {
     enter(BossState::Windup, boss.phase == 2 ? .72f : .92f);
     sounds.push_back(Sound::Boss);
   } else if (boss.state == BossState::Windup) {
-    enter(BossState::Attack, k == 1 && boss.pattern % 2 ? .95f : .82f);
+    const bool fullSweep = k == 3 && boss.pattern % 2 && boss.phase == 2;
+    enter(BossState::Attack, fullSweep ? .96f : k == 1 && boss.pattern % 2 ? .95f : .82f);
   } else if (boss.state == BossState::Attack) {
     enter(BossState::Recover, boss.phase == 2 ? 1.1f : 1.45f);
   } else {

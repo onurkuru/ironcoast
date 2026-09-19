@@ -1,4 +1,5 @@
 #include "game.h"
+#include "animation.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -19,6 +20,36 @@ static Enemy guard(float x) {
   return e;
 }
 int main() {
+  {
+    Game g; g.load(3);
+    const auto &hazard=g.level().hazards[0];
+    g.time=hazard.period-hazard.offset-.8f;
+    check(g.hazardWarning(hazard)==0 && !g.hazardOn(hazard), "safe interval has no early warning");
+    g.time+=.45f;
+    check(g.hazardWarning(hazard)>.4f && !g.hazardOn(hazard), "charge-up warns before damage begins");
+    g.time=hazard.period-hazard.offset+.01f;
+    check(g.hazardWarning(hazard)==0 && g.hazardOn(hazard), "active hazard replaces warning at cycle boundary");
+    g.routeDisabled[0]=true;
+    check(!g.hazardOn(hazard), "disabled hazard cannot damage");
+    g.time=hazard.period-hazard.offset-.2f;
+    check(g.hazardWarning(hazard)==0, "sabotaged circuit cannot issue a false warning");
+  }
+  for (int phase : {1,2}) {
+    Game g;g.load(3);g.boss.active=true;g.boss.phase=phase;
+    g.boss.hp=g.boss.maxhp*(phase==1?1.f:.4f);
+    g.boss.pattern=1;g.boss.state=BossState::Windup;g.boss.duration=.01f;g.boss.stateAge=0;
+    g.updateBoss(DT);
+    check(g.boss.state==BossState::Attack,"Foundry sweep enters attack after its warning");
+    for(int frame=0;frame<120 && g.boss.state==BossState::Attack;++frame)g.updateBoss(DT);
+    int shots=0;
+    const auto muzzle=bossMuzzlePoint(g.boss,3);
+    for(const auto &b:g.bullets)if(b.alive && b.hostile) {
+      check(std::fabs(b.y-muzzle.y)<.01f,"Foundry sweep rounds originate at the authored muzzle");
+      check(b.vx==-120 && b.vy==foundrySweepVY(shots),"Foundry warning slopes match projectile directions");
+      ++shots;
+    }
+    check(shots==2+phase,"Foundry attack emits every advertised sweep volley");
+  }
   for (int chapter = 3; chapter < 6; ++chapter) {
     Game g; g.load(chapter); g.enemies.clear(); g.items.clear();
     check(g.routeControlCount() == 3, "late mission has three sabotage routes");

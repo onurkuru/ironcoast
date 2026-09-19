@@ -1,9 +1,8 @@
-# Campaign completion pass
+# Late campaign combat readability
 
-- [x] Persist mission completion and rescue records; retain legacy saves and report write failures.
-- [x] Verify all 18 rescue routes, 36 ladder traversals, nine sabotage objectives and two openings in an assisted full campaign.
-- [x] Improve final three chapters hardware and ladder contact/readability.
-- [x] Inspect chapter hardware and completion-map visuals; 27 tests and 14 application checks pass.
-- [x] Normal-damage application clear writes KH_SAVE_2 with the earned mission record (score 3900); delivery/GitHub handoff prepared.
-
-Final cinematic art and human playfeel remain quality gates; no physical Vita performance claim.
+- [x] Timed floor hazards warn 0.7 seconds before activating; disabled circuits stay silent.
+- [x] Relay radial windup preview.
+- [x] Independent audit found and fixed Foundry missing fourth volley and displaced bullet origins.
+- [x] Foundry controller exits the falling-column spread; six normal clears and sequential campaign pass.
+- [x] All 27 tests and 14 application checks pass; real warning captures inspected.
+- [x] Playable package and GitHub handoff prepared.

@@ -98,3 +98,11 @@ Cabinets render in themedPlatforms, disabled outlets render in drawGame, and con
 SaveProgress owns preferences, unlocks, score and six best-rescue records (-1 unfinished; 0–3 cleared). KH_SAVE_2 extends the legacy header with these six values. KH_SAVE_1 preserves preferences/unlocks and only infers clears before the unlocked mission; unknown rescue counts remain zero and the final clear is never invented. Truncated/invalid record tails preserve the header but discard the entire record array. Training cannot award records. Writes retain the temporary-file/rename path and failures are now visible. ViewState inherits this storage; main calls recordMission only on Clear. The map presents lifetime best rescues, while the ending keeps the current run total distinct.
 
 The continuous assisted route test traverses six chapters, two opening rooms, all 36 ladder directions, 18 workers, nine sabotage controls and six bosses with ordinary inputs. Assist isolates route accessibility; the separate normal-damage campaign remains the balance regression.
+
+## Combat warning contracts
+
+Game::hazardWarning exposes the final 0.7 seconds of an inactive timed hazard cycle. Disabled route circuits never warn or damage. This is presentation of the existing timing, not extra damage or a changed safe window. Relay windup spokes match the first radial volley angles.
+
+Foundry horizontal sweep rounds now originate at the authored muzzle, with foundrySweepVY shared by gameplay and preview rays. Phase-two sweeps last 0.96 seconds so all four promised volleys can fire at the existing fixed-step cadence before recovery; the previous 0.82-second duration silently omitted the fourth. Regression tests cover both phases, actual origin, direction and warning boundaries.
+
+ArcadeReview treats Foundry falling columns as an area to leave during windup, retaining the chosen safe side through the impact/recovery window. This uses ordinary motion; it does not alter simulation difficulty or test pass criteria.

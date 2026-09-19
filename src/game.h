@@ -141,6 +141,7 @@ struct Prop {
   bool dead = false;
 };
 enum class BossState { Move, Windup, Recover, Attack, Enter, Overload };
+inline float foundrySweepVY(int volley) { return -12.f * volley; }
 struct Boss {
   float x = 0, y = 232, hp = 0, maxhp = 0, timer = 1, age = 0, hurt = 0, death = 0, targetX = 0;
   float prevX = 0, prevY = 232, vx = 0, vy = 0, moveX = 0, moveY = 232;
@@ -223,6 +224,8 @@ struct Game {
   void fireBossVolley();
   void syncPresentation();
   bool hazardOn(const Hazard &) const;
+  bool hazardDisabled(const Hazard &) const;
+  float hazardWarning(const Hazard &) const;
   float random();
   Sound footstep() const;
   bool lightBlocked(float ax, float ay, float bx, float by) const;
