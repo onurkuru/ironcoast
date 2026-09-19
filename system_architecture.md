@@ -106,3 +106,7 @@ Game::hazardWarning exposes the final 0.7 seconds of an inactive timed hazard cy
 Foundry horizontal sweep rounds now originate at the authored muzzle, with foundrySweepVY shared by gameplay and preview rays. Phase-two sweeps last 0.96 seconds so all four promised volleys can fire at the existing fixed-step cadence before recovery; the previous 0.82-second duration silently omitted the fourth. Regression tests cover both phases, actual origin, direction and warning boundaries.
 
 ArcadeReview treats Foundry falling columns as an area to leave during windup, retaining the chosen safe side through the impact/recovery window. This uses ordinary motion; it does not alter simulation difficulty or test pass criteria.
+
+## Continue and missed rescue routes
+
+Game::retry snapshots every worker used flag, not only already rescued workers. load(checkpoint) suppresses old pickups behind the spawn, but retry restores both true and false worker states so missed upper-route rescues remain available when backtracking. Ammo/prop pickup suppression remains unchanged. Late-chapter regressions use an actual last-life loss, Continue, a walk back, ladder climb and rescue, while preserving previous rescue and sabotage state.

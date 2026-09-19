@@ -1,8 +1,7 @@
-# Late campaign combat readability
+# Parallel completion audit
 
-- [x] Timed floor hazards warn 0.7 seconds before activating; disabled circuits stay silent.
-- [x] Relay radial windup preview.
-- [x] Independent audit found and fixed Foundry missing fourth volley and displaced bullet origins.
-- [x] Foundry controller exits the falling-column spread; six normal clears and sequential campaign pass.
-- [x] All 27 tests and 14 application checks pass; real warning captures inspected.
+- [x] Combat agent reproduced missed workers disappearing after Continue and added a regression. Root fixed restoration of both rescued and unrescued worker states.
+- [x] All 27 tests pass, including actual Continue/backtracking in all three late chapters.
 - [x] Playable package and GitHub handoff prepared.
+
+Design and independent save/ending agents hit their usage limit without completing their audits; no completed audit claim is made for those tasks.

@@ -86,6 +86,46 @@ int main() {
           "fresh mission restores route objectives");
   }
   for (int chapter = 0; chapter < 6; ++chapter) {
+    if(chapter>=3) {
+      Game retryRoute;retryRoute.load(chapter);
+      retryRoute.enemies.clear();retryRoute.props.clear();
+      std::vector<Item> workers;
+      for(const auto &item:retryRoute.items)if(item.kind==0)workers.push_back(item);
+      check(workers.size()==3,"late route fixture has three workers");
+      // One completed objective and two deliberately missed upper routes.
+      retryRoute.player.x=workers[0].x;retryRoute.player.y=workers[0].y+17;
+      retryRoute.player.grounded=true;retryRoute.update({});
+      retryRoute.routeDisabled[0]=true;
+      check(retryRoute.rescued==1,"first worker fixture rescued normally");
+      retryRoute.player.x=retryRoute.level().checkpoints.back()+2;
+      retryRoute.player.y=232;retryRoute.player.vx=retryRoute.player.vy=0;
+      retryRoute.update({});
+      check(workers[1].x<retryRoute.checkpoint-50,"missed worker lies behind recorded checkpoint");
+      retryRoute.player.health=retryRoute.player.lives=1;retryRoute.player.inv=0;
+      retryRoute.hitPlayer();
+      for(int tick=0;tick<70;++tick)retryRoute.update({});
+      check(retryRoute.status==Status::GameOver,"last-life loss reaches the real Continue screen");
+      retryRoute.retry();
+      int used=0;
+      for(const auto &item:retryRoute.items)if(item.kind==0)used+=item.used;
+      check(used==1 && retryRoute.rescued==1,"Continue must not silently remove missed workers behind its checkpoint");
+      check(retryRoute.routeDisabled[0],"Continue preserves already completed sabotage");
+      retryRoute.enemies.clear();retryRoute.props.clear();
+      const auto &ladder=retryRoute.level().ladders[2];
+      for(int tick=0;tick<600 && (std::fabs(retryRoute.player.x-ladder.x)>.5f || std::fabs(retryRoute.player.vx)>1);++tick) {
+        Input walk;walk.move=std::clamp((ladder.x-retryRoute.player.x)*.12f,-1.f,1.f);
+        retryRoute.update(walk);
+      }
+      Input climb;climb.up=true;
+      for(int tick=0;tick<300 && retryRoute.player.y>ladder.top+.1f;++tick)retryRoute.update(climb);
+      check(retryRoute.player.grounded && std::fabs(retryRoute.player.y-ladder.top)<.1f,"Continue permits returning to a missed upper route");
+      for(int tick=0;tick<300 && retryRoute.rescued<2;++tick) {
+        Input walk;walk.move=std::clamp((workers[1].x-retryRoute.player.x)*.12f,-1.f,1.f);
+        retryRoute.update(walk);
+      }
+      check(retryRoute.rescued==2,"missed worker remains rescuable after walking back from Continue");
+      check(retryRoute.status==Status::Play && !retryRoute.boss.active,"optional rescue return does not lock the boss arena");
+    }
     Game g; g.load(chapter);
     g.boss.active = true; g.boss.state = BossState::Recover;
     g.player.health = g.player.lives = 1; g.player.inv = 0;

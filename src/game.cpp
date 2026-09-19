@@ -239,15 +239,17 @@ void Game::retry() {
   int savedRescues = rescued;
   std::vector<Item> savedWorkers;
   for (const auto &item : items)
-    if (item.kind == 0 && item.used) savedWorkers.push_back(item);
+    if (item.kind == 0) savedWorkers.push_back(item);
   load(levelIndex, true, checkpoint, workshopReview, ironlineReview);
   chapterSequence = sequence;
   routeDisabled = savedRoute;
   rescued = savedRescues;
+  // Checkpoint loading suppresses old pickups. Missed workers must remain
+  // available for backtracking, while rescued workers cannot reward twice.
   for (auto &item : items)
     if (item.kind == 0)
       for (const auto &worker : savedWorkers)
-        if (item.x == worker.x && item.y == worker.y) item.used = true;
+        if (item.x == worker.x && item.y == worker.y) item.used = worker.used;
   player.lives = 3;
   continues = c;
 }
