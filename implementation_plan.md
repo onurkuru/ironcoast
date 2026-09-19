@@ -1,8 +1,6 @@
-# Parallel completion audit
+# Self-contained Mac playtest delivery
 
-1. Combat agent: inspect late-chapter death/Continue/checkpoint route state; owns src/game.cpp and tests/test_arcade_mechanics.cpp.
-2. Design agent: inspect platform support/entrance/ladder/control visual overlaps; owns src/themed_environment.cpp and src/architecture_render.cpp.
-3. Independent QA: read-only completion/save/training and ending-flow audit.
-4. Root: prioritize confirmed findings, apply save/menu fixes if necessary, review and integrate agent changes, run relevant checks and refresh delivery.
-
-Do not invent extra features when an audit finds no bug.
+1. [NEW] tools/package_macos.py: assemble app with assets/licenses and its SDL library, rewrite only the copied binary dependency, verify no Homebrew dependency remains, ad-hoc sign. Derive minimum macOS from the executable build metadata.
+2. Validate the packaged executable from a different working directory with automatic bundled asset discovery; run the existing application smoke cases against it.
+3. [MODIFY] docs/DEVELOPMENT_STATUS.md, system_architecture.md, task.md: document Apple Silicon/local signing limits and packaging commands.
+4. Update local launcher and GitHub. Preserve existing player.save and old playtest files.

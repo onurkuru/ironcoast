@@ -20,3 +20,5 @@ Late-campaign content pass: Foundry coolant valves, Relay breakers and Final Wav
 Late-boss readability pass: timed hazards now telegraph their existing cycle for 0.7 seconds, Relay previews radial firing directions, and Foundry sweep rounds originate at the real muzzle. Phase two now fires all four advertised sweep rounds. Normal-damage Foundry completes in 2697 frames (44.95 seconds), ending with one life/three health; no boss HP or damage reduction. The review controller now leaves the full falling-column spread before impact.
 
 Continue rescue fix: missed workers behind a checkpoint remain available after Continue; already rescued workers and disabled circuits remain completed. Reproduced before fixing, then verified in all three late chapters using actual last-life death and movement back to an upper-route worker. All 27 tests pass.
+
+Mac delivery: a self-contained Apple Silicon app includes SDL, assets and dependency licenses. Current host binary requires macOS 26.2 or newer; app is locally ad-hoc signed, not notarized. Bundled resource discovery is checked from /tmp without --assets. The convenience launcher retains its existing local save path.

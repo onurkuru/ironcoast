@@ -110,3 +110,9 @@ ArcadeReview treats Foundry falling columns as an area to leave during windup, r
 ## Continue and missed rescue routes
 
 Game::retry snapshots every worker used flag, not only already rescued workers. load(checkpoint) suppresses old pickups behind the spawn, but retry restores both true and false worker states so missed upper-route rescues remain available when backtracking. Ammo/prop pickup suppression remains unchanged. Late-chapter regressions use an actual last-life loss, Continue, a walk back, ladder climb and rescue, while preserving previous rescue and sabotage state.
+
+## Self-contained macOS playtest
+
+`python3 tools/package_macos.py --binary <host binary> --output <new path.app>` copies game assets/licenses and the linked SDL runtime into Contents/Resources and Contents/Frameworks. Only the copied executable receives an @executable_path dependency rewrite; nested runtime and app receive local ad-hoc signatures. The packager verifies dependency paths and the signature, derives minimum macOS/architecture from the binary, and refuses an existing output path. SDL must include LICENSE.txt alongside its installed library directory. This produces a local development app, not a notarized public release or an Intel build.
+
+The external Play-Iron-Coast.command launcher can execute the bundled binary with its existing player.save path, preserving local progress. Direct app launch uses the normal SDL application-support save location. The two launch paths deliberately do not overwrite each other’s existing saves.
