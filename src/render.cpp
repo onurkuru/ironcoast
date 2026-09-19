@@ -50,6 +50,7 @@ static const std::map<char, std::array<unsigned char, 7>> FONT = {
     {':', {0, 6, 6, 0, 6, 6, 0}},        {'-', {0, 0, 0, 31, 0, 0, 0}},
     {'/', {1, 2, 2, 4, 8, 8, 16}},       {'!', {4, 4, 4, 4, 4, 0, 4}},
     {'?', {14, 17, 1, 2, 4, 0, 4}},      {'+', {0, 4, 4, 31, 4, 4, 0}},
+    {'$', {4, 15, 20, 14, 5, 30, 4}},
     {'>', {16, 8, 4, 2, 4, 8, 16}},      {'<', {1, 2, 4, 8, 4, 2, 1}},
     {'=', {0, 0, 31, 0, 31, 0, 0}},      {'[', {14, 8, 8, 8, 8, 8, 14}},
     {']', {14, 2, 2, 2, 2, 2, 14}},      {'(', {2, 4, 8, 8, 8, 4, 2}},
@@ -834,7 +835,15 @@ void Renderer::drawGame(const Game &g, const ViewState &v) {
                           : i.kind == 6 ? "F"
                           : i.kind == 9 ? "L"
                                         : "$";
-      if (g.workshopReview) text(label, x - 2, y - 5, 1, CREAM);
+      if (g.arcadeCombat()) {
+        const uint32_t marker=i.kind==4?0x9FDAA4FF:i.kind==9?TEAL:
+                              i.kind==3?0xFF9375FF:i.kind==6?0xFFB367FF:
+                              i.kind==2?0xF0B4A3FF:GOLD;
+        const float top=feet-(i.kind==4?21:size)-12;
+        rect(x-8,top,16,12,0x08131EED);
+        line(x-7,top+11,x+7,top+11,marker);
+        text(label,x-2,top+2,1,marker);
+      } else if (g.workshopReview) text(label, x - 2, y - 5, 1, CREAM);
     }
   }
   if (g.vehicleAvailable && g.vehicleX > camera - 80 && g.vehicleX < camera + W + 80) {

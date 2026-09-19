@@ -116,3 +116,7 @@ Game::retry snapshots every worker used flag, not only already rescued workers. 
 `python3 tools/package_macos.py --binary <host binary> --output <new path.app>` copies game assets/licenses and the linked SDL runtime into Contents/Resources and Contents/Frameworks. Only the copied executable receives an @executable_path dependency rewrite; nested runtime and app receive local ad-hoc signatures. The packager verifies dependency paths and the signature, derives minimum macOS/architecture from the binary, and refuses an existing output path. SDL must include LICENSE.txt alongside its installed library directory. This produces a local development app, not a notarized public release or an Intel build.
 
 The external Play-Iron-Coast.command launcher can execute the bundled binary with its existing player.save path, preserving local progress. Direct app launch uses the normal SDL application-support save location. The two launch paths deliberately do not overwrite each other’s existing saves.
+
+## Campaign supply readability
+
+Campaign supply crates retain authored art but show dark-backed H/S/R/F/L/G/$ badges above the pickup. Letter shapes distinguish types independently of color; badges follow the actual support floor and camera transform. The bitmap font now includes the previously missing dollar glyph. Isolated cinematic art reviews retain their old presentation.
