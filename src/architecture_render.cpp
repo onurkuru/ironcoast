@@ -69,6 +69,18 @@ void Renderer::architecture(const Game &g, float camera, float time) {
     }
     for (float y = ladder.top - 2; y < ladder.bottom; y += 8)
       line(x - 8, y, x + 8, y, 0x44656ACC);
+    if(!g.cinematicReview() && g.levelIndex>=3) {
+      // Actual climb routes have bolted handrail returns at the gallery edge.
+      // Background stair flights remain scenery; these small material cues
+      // reveal the usable entry/exit without highlighting the entire ladder.
+      for(float rail:{-8.f,8.f}) {
+        const float outward=rail<0?-3.f:3.f;
+        line(x+rail,ladder.top-10,x+rail+outward,ladder.top-10,0xA5A993EE);
+        line(x+rail+outward,ladder.top-10,x+rail+outward,ladder.top+2,0x607782FF);
+        rect(x+rail+outward-2,ladder.top,4,2,0xB0A180FF);
+        rect(x+rail-2,ladder.bottom-2,4,2,0xA2967EFF);
+      }
+    }
   }
 }
 

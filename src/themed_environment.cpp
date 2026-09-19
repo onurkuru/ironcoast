@@ -41,23 +41,26 @@ void Renderer::themedPlatforms(const Game &g,float camera) {
     if (x + box.w < 0 || x > W) continue;
     const bool off = g.routeDisabled[i];
     const uint32_t signal = off ? 0x7DD2A5FF : 0xF5B26CFF;
-    contactShadow(x + 9, y + 28, y + 28, 13);
-    rect(x-2,y+25,22,3,0x0B151CFF);
-    rect(x,y,18,26,0x101E27FF);
-    rect(x+1,y+1,16,2,0x70828AFF);
-    rect(x+1,y+3,2,21,0x354955FF);
-    rect(x+4,y+5,11,9,0x071117FF);
-    if (g.levelIndex == 3) {
-      ring(x+9,y+10,4,4,signal);
-      line(x+9,y+6,x+9+(off?3:0),y+10,signal);
-      line(x+5,y+10,x+13,y+10,signal);
-    } else {
-      for(int row=0;row<3;++row)
-        rect(x+5,y+6+row*2,off?8:4+(row+i)%3,1,signal);
+    const float feet=y+box.h, center=x+box.w*.5f;
+    const bool valve=g.levelIndex==3;
+    const float size=valve?36.f:34.f;
+    contactShadow(center,feet,feet,15);
+    // Reuse the authored valve/cabinet materials rather than placing flat
+    // rectangular stand-ins over the painted industrial architecture. Their
+    // baseline stays on the same deck as the unchanged interaction box.
+    actorLight(productionProps,center,feet-16);
+    if(off)SDL_SetTextureColorMod(productionProps.texture,166,203,181);
+    groundedSprite(productionProps,valve?6:7,center-size*.5f,feet-size,size,size);
+    SDL_SetTextureColorMod(productionProps.texture,255,255,255);
+    // The marker belongs to the hardware and preserves completed-state and
+    // route numbering readability against both snow and furnace backgrounds.
+    rect(center-5,feet-size-10,11,10,0x09131DE8);
+    text(std::to_string(i+1),center-2,feet-size-8,1,signal);
+    rect(center-3,feet-3,6,2,signal);
+    if(off) {
+      line(center+5,feet-size-6,center+7,feet-size-4,signal);
+      line(center+7,feet-size-4,center+10,feet-size-8,signal);
     }
-    rect(x+5,y+17,3,3,signal);
-    line(x+11,y+20,x+(off?14:11),y+16,0xD8D8BFFF);
-    text(std::to_string(i+1),x+6,y-10,1,signal);
   }
 }
 } // namespace kh

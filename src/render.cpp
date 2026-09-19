@@ -1245,7 +1245,8 @@ void Renderer::render(const Game &g, const ViewState &v) {
   if (v.screen == Screen::Map) {
     rect(0, 0, 480, 272, 0x061525E8);
     text("COASTAL FRONT", 18, 14, 3, CREAM);
-    text("CAMPAIGN MAP / 6 MISSIONS", 20, 42, 1, TEAL);
+    text("CLEARED " + std::to_string(v.completedMissions()) + "/6   RESCUE RECORD " +
+         std::to_string(v.rescueRecord()) + "/18", 20, 42, 1, TEAL);
     const float xs[] = {45, 119, 193, 267, 341, 423}, ys[] = {96, 121, 89, 123, 91, 112};
     for (int i = 0; i < 5; i++) {
       line(xs[i], ys[i], xs[i + 1], ys[i + 1], 0x7A9576FF);
@@ -1270,6 +1271,11 @@ void Renderer::render(const Game &g, const ViewState &v) {
     text(controlHint("< > SELECT   CROSS START   CIRCLE BACK", "< > SELECT   ENTER / Z START   ESC BACK"), 20, 245, 1, CREAM);
     if (v.selected > v.unlocked && !v.assist)
       text("COMPLETE THE PREVIOUS MISSION", 20, 234, 1, RED);
+    else if (v.missionRescues[v.selected] >= 0)
+      text("CLEARED / BEST RESCUE " + std::to_string(v.missionRescues[v.selected]) + "/3",
+           20, 234, 1, TEAL);
+    else
+      text("MISSION NOT CLEARED", 20, 234, 1, GOLD);
   }
   if (v.screen == Screen::Brief) {
     rect(0, 0, 480, 272, 0x071522BA);
@@ -1318,6 +1324,10 @@ void Renderer::render(const Game &g, const ViewState &v) {
     text("SCORE  " + std::to_string(g.score), 35, 128, 2, CREAM);
     text("RESCUED  " + std::to_string(g.rescued) + " / 3", 35, 153, 1, TEAL);
     text("ENEMIES  " + std::to_string(g.kills), 35, 172, 1, CREAM);
+    if (g.rescued >= 3) text("ALL WORKERS EXTRACTED", 35, 190, 1, TEAL);
+    if (g.routeControlCount())
+      text("CIRCUITS DISABLED  " + std::to_string(std::count(g.routeDisabled.begin(),
+           g.routeDisabled.end(), true)) + "/3", 35, 207, 1, TEAL);
     text(g.levelIndex==5?controlHint("CROSS  EPILOGUE","ENTER / Z  EPILOGUE"):
          controlHint("CROSS  NEXT MISSION", "ENTER / Z  NEXT MISSION"), 35, 228, 1, GOLD);
   }
@@ -1334,6 +1344,9 @@ void Renderer::render(const Game &g, const ViewState &v) {
             30, 141, 1, 420, TEAL);
     text("CAMPAIGN SCORE " + std::to_string(g.score), 30, 199, 1, GOLD);
     text("RESCUE " + std::to_string(g.totalRescued) + " / 18", 30, 217, 1, CREAM);
+    text(v.assist ? "TRAINING RUN / RECORDS UNCHANGED" :
+         v.completedMissions() == 6 ? "ALL SIX MISSIONS CLEARED" : "FINAL MISSION CLEARED",
+         30, 231, 1, TEAL);
     text(controlHint("CROSS  MAIN MENU", "ENTER / Z   MAIN MENU"), 30, 245, 1, CREAM);
   }
   if (v.screen == Screen::Options) {
@@ -1384,6 +1397,10 @@ void Renderer::render(const Game &g, const ViewState &v) {
       rect(i, 0, 1, 272, shade);
       rect(479 - i, 0, 1, 272, shade);
     }
+  }
+  if (v.saveFailed) {
+    rect(0,H-14,W,14,0x251512F0);
+    text("PROGRESS NOT SAVED - CHECK STORAGE",12,H-10,1,0xFFB283FF);
   }
   if(nativeCanvas) {
     SDL_SetRenderTarget(r,destination);

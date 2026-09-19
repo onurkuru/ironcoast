@@ -19,38 +19,6 @@
 #include <psp2/kernel/processmgr.h>
 #endif
 using namespace kh;
-struct Save {
-  int unlocked = 0, best = 0;
-  bool muted = false, shake = true, assist = false, fullscreen = false;
-};
-static Save readSave(const std::string &path) {
-  Save s;
-  std::ifstream f(path);
-  std::string magic;
-  int m = 0, sh = 1, a = 0, fs = 0;
-  int u = 0, b = 0;
-  if (f >> magic >> u >> b >> m >> sh >> a >> fs && magic == "KH_SAVE_1") {
-    s.unlocked = std::clamp(u, 0, 5);
-    s.best = std::clamp(b, 0, 99999999);
-    s.muted = m == 1;
-    s.shake = sh == 1;
-    s.assist = a == 1;
-    s.fullscreen = fs == 1;
-  }
-  return s;
-}
-static bool writeSave(const std::string &path, const ViewState &v) {
-  std::string tmp = path + ".tmp";
-  std::ofstream f(tmp);
-  if (!f)
-    return false;
-  f << "KH_SAVE_1 " << v.unlocked << ' ' << v.best << ' ' << v.muted << ' ' << v.shake << ' '
-    << v.assist << ' ' << v.fullscreen << '\n';
-  f.close();
-  if (!f)
-    return false;
-  return std::rename(tmp.c_str(), path.c_str()) == 0;
-}
 struct Buttons {
   Input input;
   bool confirm = false, back = false, pause = false, left = false, right = false, up = false,
@@ -167,12 +135,7 @@ int main(int argc, char **argv) {
 #endif
   auto saved = readSave(savePath);
   ViewState view;
-  view.unlocked = saved.unlocked;
-  view.best = saved.best;
-  view.muted = saved.muted;
-  view.shake = saved.shake;
-  view.assist = saved.assist;
-  view.fullscreen = saved.fullscreen;
+  static_cast<SaveProgress &>(view) = saved;
   SDL_Window *window = SDL_CreateWindow("Iron Coast: Scrap Tide | Operation Iron Grid", SDL_WINDOWPOS_CENTERED,
                                         SDL_WINDOWPOS_CENTERED, 960, 544,
                                         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE |
@@ -377,7 +340,7 @@ int main(int argc, char **argv) {
           interactPress |= key == SDLK_e;
           if (event.key.keysym.sym == SDLK_m) {
             view.muted = !view.muted;
-            writeSave(savePath, view);
+            view.saveFailed = !writeSave(savePath, view);
           }
           if (event.key.keysym.sym == SDLK_F12)
             graphics.screenshot("capture.png");
@@ -517,7 +480,7 @@ int main(int argc, char **argv) {
             view.screen = Screen::Title;
             view.menu = 2;
           }
-          writeSave(savePath, view);
+          view.saveFailed = !writeSave(savePath, view);
         }
         if (back) {
           view.screen = Screen::Title;
@@ -683,9 +646,8 @@ int main(int argc, char **argv) {
           }
           if (game.status == Status::Clear) {
             if (!view.assist) {
-              view.unlocked = std::max(view.unlocked, std::min(5, game.levelIndex + 1));
-              view.best = std::max(view.best, game.score);
-              writeSave(savePath, view);
+              view.recordMission(game.levelIndex, game.rescued, game.score);
+              view.saveFailed = !writeSave(savePath, view);
             }
             view.screen = Screen::Debrief;
           }

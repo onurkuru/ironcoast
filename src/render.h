@@ -1,5 +1,6 @@
 #pragma once
 #include "game.h"
+#include "save_progress.h"
 #include <SDL.h>
 #include <string>
 #include <vector>
@@ -13,12 +14,12 @@ struct Atlas {
   std::vector<SDL_FPoint> anchors;
 };
 enum class Screen { Title, Map, Brief, Play, Pause, Debrief, Ending, Options, Controls };
-struct ViewState {
+struct ViewState : SaveProgress {
   Screen screen = Screen::Title;
-  int selected = 0, unlocked = 0, best = 0, menu = 0;
+  int selected = 0, menu = 0;
   float clock = 0, interpolation = 0;
-  bool muted = false, shake = true, assist = false, fullscreen = false;
   bool controlsFromPause = false;
+  bool saveFailed = false;
   Input input;
   void enterPause() { screen = Screen::Pause; menu = 0; }
   void pauseInput(bool confirm, bool back, bool pause, bool up, bool down) {

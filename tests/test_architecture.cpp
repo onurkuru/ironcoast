@@ -1,4 +1,6 @@
 #include "game.h"
+#include "arcade_review.h"
+#include "painted_route_review.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -89,5 +91,47 @@ int main() {
    }
   }
   std::cout << "PASS " << climbed << " ladder round trips, " << doors << " finite door encounters, roof occlusion and continuous roads\n";
+  {
+   // A continuous rescue route through the real chapter sequence. Assist
+   // isolates reachability and save-state accounting; this is not a combat
+   // balance or art-quality approval. Every movement is ordinary input.
+   Game game;int openings=0,controls=0;
+   for(int stage=0;stage<6;++stage) {
+    game.beginChapter(stage,stage>0);game.debugInvincible=true;
+    ArcadeReview combat;PaintedRouteReview route;
+    unsigned visited=0;int frames=0;bool returned=false;
+    for(;frames<18000 && game.status!=Status::Clear;++frames) {
+     Input input;
+     if(game.cinematicReview() || route.finished())input=combat.input(game);
+     else {
+      input=route.input(game);
+      // Gallery cabinets can be activated without boarding the road vehicle.
+      input.interact=game.nearbyRouteControl()>=0;
+     }
+     game.update(input);
+     if(!game.cinematicReview() && game.player.ladder>=0)visited|=1u<<game.player.ladder;
+     if(game.advanceSection())++openings;
+     check(std::isfinite(game.player.y) && game.player.y<300,"continuous rescue route lost support");
+     if(route.finished() && !returned) {
+      check(game.player.grounded && std::fabs(game.player.y-232)<.1f,"full upper route did not return to the road");
+      check(!game.boss.active,"upper route prematurely crossed the boss arena lock");
+      check(game.rescued==3,"upper route missed a worker before the boss");
+      returned=true;
+     }
+    }
+    check(game.status==Status::Clear,"full rescue chapter timed out");
+    check(returned && route.finished() && visited==63,"full rescue route skipped a gallery or return ladder");
+    check(game.rescued==3,"continuous chapter route missed a worker");
+    check(game.totalRescued==(stage+1)*3,"campaign rescue total lost or double-counted a worker");
+    for(int control=0;control<game.routeControlCount();++control) {
+     check(game.routeDisabled[control],"continuous upper route missed a sabotage cabinet");
+     ++controls;
+    }
+    std::cout<<"RESCUE chapter="<<stage+1<<" workers="<<game.rescued<<" total="<<game.totalRescued
+             <<" ladders=6 frames="<<frames<<'\n';
+   }
+   check(openings==2 && controls==9 && game.totalRescued==18,"full rescue campaign coverage incomplete");
+   std::cout<<"PASS assisted continuous rescue campaign: 18 workers, 36 ladders, 9 controls, 2 opening rooms\n";
+  }
  }catch(const std::exception &e){std::cerr << "FAIL " << e.what() << '\n';return 1;}
 }
